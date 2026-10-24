@@ -1,4 +1,4 @@
-<component name="OnScreenCodeDialog" extends="SimpleDialog">
+<component name="OnScreenCodeDialog" extends="YourTubeDialog"> <!-- YourTube: neutral dim (was SimpleDialog) -->
     <interface>
         <field id="purpose" type="string" />
         <function name="Consume" />

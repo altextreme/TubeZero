@@ -168,12 +168,12 @@ namespace DialogUtils
         dialog = CreateObject("roSGNode", "OnScreenCodeDialog")
         dialog.purpose = purpose
         dialog.title = title
-        m.top.getScene().dialog = dialog
+        ShowYourTubeDialog(dialog) ' YourTube (was m.top.getScene().dialog = dialog)
         return dialog
     end function
 
     function ConsumeOnScreenCode(purpose as DialogUtils.OnScreenCodePurpose, code as dynamic) as boolean
-        dialog = m.top.getScene().dialog
+        dialog = GetCurrentDialog() ' YourTube
         if dialog = invalid or dialog.subtype() <> "OnScreenCodeDialog"
             return false
         end if

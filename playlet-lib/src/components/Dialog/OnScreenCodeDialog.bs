@@ -30,6 +30,11 @@ function Init()
     m.top.observeField("wasClosed", FuncName(OnDialogClosed))
 end function
 
+' YourTube: YourTubeDialog has no CloseDialog (SimpleDialog did)
+function CloseDialog()
+    m.top.close = true
+end function
+
 function OnDialogClosed()
     m.expiryTimer.control = "stop"
     m.expiryTimer.unobserveFieldScoped("fire")
