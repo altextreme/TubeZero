@@ -12,8 +12,13 @@ CHROME="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-# render <svg> <width> <height> <out.png>
+ROBOTO_BOLD="data:font/ttf;base64,$(base64 < "$ROOT/playlet-lib/src/fonts/roboto/Roboto-Bold.ttf" | tr -d '\n')"
+
+# render <svg> <width> <height> <out.png>  (inlines Roboto Bold for the wordmark)
 render() {
+    local svg="$TMP/$(basename "$1")"
+    python3 -c 'import sys; open(sys.argv[3],"w").write(open(sys.argv[1]).read().replace("__ROBOTO_BOLD__", sys.argv[2]))' "$1" "$ROBOTO_BOLD" "$svg"
+    set -- "$svg" "$2" "$3" "$4"
     "$CHROME" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
         --default-background-color=00000000 --window-size="$2,$3" \
         --screenshot="$4" "file://$1" >/dev/null 2>&1
@@ -56,17 +61,17 @@ for res in 480p:0.667 720p:1 1080p:1.5; do
     k="${res##*:}"
     px() { printf "%.0f" "$(echo "$1 * $k" | bc -l)"; }
 
-    # Focus ring: white rounded ring drawn outside the item, gap 6 / stroke 3 at 720p.
-    pad=$(px 11); core=$(px 24); stroke=$(px 3); gap=$(px 6); r=$(px 13)
+    # Focus ring: white, 5 thick, sits on the thumbnail edge (outer edge 2px outside), radius 11 at 720p.
+    pad=$(px 3); core=$(px 30); stroke=$(px 5); r=$(px 11)
     size=$((pad * 2 + core))
-    o=$((pad - gap - (stroke + 1) / 2))
+    o=$(echo "$pad - $(px 2) + $stroke / 2" | bc -l)
     magick -size "${size}x${size}" xc:none -fill none -stroke white -strokewidth "$stroke" \
-        -draw "roundrectangle $o,$o $((size - 1 - o)),$((size - 1 - o)) $r,$r" "$TMP/ring.png"
+        -draw "roundrectangle $o,$o $(echo "$size - 1 - $o" | bc -l),$(echo "$size - 1 - $o" | bc -l) $r,$r" "$TMP/ring.png"
     mid=$((size / 2))
     ninepatch "$TMP/ring.png" $((mid - 1)) $((mid + 1)) "$pad" $((pad + core - 1)) "$LIB_IMG/yt-focus-ring.$name.9.png"
 
     # Thumbnail corner mask: background-colored corners, transparent middle.
-    r=$(px 8); size=$((r * 2 + 6))
+    r=$(px 10); size=$((r * 2 + 6))
     magick -size "${size}x${size}" xc:"#0F0F0F" -fill black \
         -draw "roundrectangle 0,0 $((size - 1)),$((size - 1)) $r,$r" \
         -alpha set -channel A -fx "(r+g+b)==0 && a==1 ? 0 : 1" +channel \

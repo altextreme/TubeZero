@@ -40,12 +40,15 @@ function OnListHasFocusChange()
     end if
 end function
 
-' YourTube: icon turns dark while it sits on the white focus pill
+' YourTube: like the YouTube TV rail. Focused item: dark icon on the white pill.
+' Collapsed rail: current section white, the rest gray, no pill.
 function UpdateIconColor() as void
     iconPoster = m.top.findNode("IconPoster")
     if m.top.itemHasFocus and m.top.listHasFocus
         iconPoster.blendColor = "#161616FF"
-    else
+    else if m.top.itemHasFocus
         iconPoster.blendColor = "#EBEBEBFF"
+    else
+        iconPoster.blendColor = "#929292FF"
     end if
 end function

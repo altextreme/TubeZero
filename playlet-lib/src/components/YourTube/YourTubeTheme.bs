@@ -4,7 +4,7 @@ function YourTubeStyleRowList(rowList as object) as void
     rowList.rowLabelColor = "#EBEBEBFF"
 
     font = CreateObject("roSGNode", "Font")
-    font.uri = "font:MediumSystemFontFile"
-    font.size = 24
+    font.uri = "font:BoldSystemFontFile"
+    font.size = 20
     rowList.rowLabelFont = font
 end function

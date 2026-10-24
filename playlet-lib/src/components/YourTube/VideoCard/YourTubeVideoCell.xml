@@ -6,16 +6,15 @@
     <interface>
         <field id="itemContent" type="node" onChange="OnContentSet" />
         <field id="type" type="string" value="video" />
-        <field id="focusPercent" type="float" onChange="OnFocusChange" />
-        <field id="rowListHasFocus" type="boolean" onChange="OnFocusChange" />
+        <!-- RowList focus fields, aliased from RowCell; unused while cards don't scale on focus -->
+        <field id="focusPercent" type="float" />
+        <field id="rowListHasFocus" type="boolean" />
         <field id="percentDurationWatched" type="float" onChange="OnPercentDurationWatched" />
     </interface>
     <children>
-        <Font id="BadgeFont" uri="font:MediumSystemFontFile" size="16" />
+        <Font id="BadgeFont" uri="font:MediumSystemFontFile" size="15" />
 
-        <Group
-            id="Card"
-            scaleRotateCenter="[175,98]">
+        <Group id="Card">
             <Poster
                 id="Thumbnail"
                 width="350"
@@ -45,7 +44,7 @@
                 id="DurationBadge"
                 height="24"
                 color="#000000"
-                opacity="0.8"
+                opacity="0.7"
                 visible="false">
                 <Label
                     id="DurationLabel"
@@ -57,22 +56,27 @@
         </Group>
 
         <LayoutGroup
-            id="TextGroup"
-            translation="[0,208]"
-            itemSpacings="[4]">
+            translation="[0,218]"
+            itemSpacings="[6,2]">
             <Label
                 id="TitleLabel"
                 width="350"
                 color="#F1F1F1"
                 maxLines="2"
                 wrap="true">
-                <Font role="font" uri="font:MediumSystemFontFile" size="20" />
+                <Font role="font" uri="font:BoldSystemFontFile" size="20" />
             </Label>
             <Label
-                id="MetaLabel"
+                id="ChannelLabel"
                 width="350"
                 color="#AAAAAA">
-                <Font role="font" uri="font:SystemFontFile" size="17" />
+                <Font role="font" uri="font:SystemFontFile" size="16" />
+            </Label>
+            <Label
+                id="StatsLabel"
+                width="350"
+                color="#AAAAAA">
+                <Font role="font" uri="font:SystemFontFile" size="16" />
             </Label>
         </LayoutGroup>
     </children>

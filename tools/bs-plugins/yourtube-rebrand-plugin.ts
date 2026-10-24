@@ -39,6 +39,8 @@ export class YourTubeRebrandPlugin implements CompilerPlugin {
     // (.xml and .brs), instead of editing every upstream component.
     afterPublish(builder: ProgramBuilder, _files: FileObj[]) {
         const stagingDir = builder.options.stagingDir!;
+        // Only the lib ships Roboto; the launcher keeps the system font.
+        const hasRoboto = fs.existsSync(path.join(stagingDir, 'fonts/roboto'));
         for (const filePath of walk(stagingDir)) {
             if (!/\.(xml|brs)$/i.test(filePath)) {
                 continue;
@@ -47,6 +49,11 @@ export class YourTubeRebrandPlugin implements CompilerPlugin {
             let rewritten = contents;
             for (const [from, to] of THEME_COLORS) {
                 rewritten = rewritten.replace(new RegExp(`(#|0x)${from}`, 'gi'), `$1${to}`);
+            }
+            if (hasRoboto) {
+                for (const [from, to] of THEME_FONTS) {
+                    rewritten = rewritten.split(from).join(to);
+                }
             }
             if (rewritten !== contents) {
                 fs.writeFileSync(filePath, rewritten);
@@ -59,6 +66,14 @@ export class YourTubeRebrandPlugin implements CompilerPlugin {
 const THEME_COLORS: [string, string][] = [
     // Background / surfaces: Playlet gray -> YouTube near-black
     ['242424', '0F0F0F'],
+];
+
+// Roku system font files -> bundled Roboto (Apache 2.0, playlet-lib/src/fonts/roboto).
+// Preset names like font:SmallestSystemFont carry no size, so they are left alone.
+const THEME_FONTS: [string, string][] = [
+    ['font:MediumSystemFontFile', 'pkg:/fonts/roboto/Roboto-Medium.ttf'],
+    ['font:BoldSystemFontFile', 'pkg:/fonts/roboto/Roboto-Bold.ttf'],
+    ['font:SystemFontFile', 'pkg:/fonts/roboto/Roboto-Regular.ttf'],
 ];
 
 function* walk(dir: string): Generator<string> {
