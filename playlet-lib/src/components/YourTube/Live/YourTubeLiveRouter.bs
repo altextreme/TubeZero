@@ -3,7 +3,8 @@ import "pkg:/source/utils/Types.bs"
 
 namespace Http
 
-    ' YourTube: phone page for the Live tab. GET /live is a small form; POST /api/yourtube/live plays a URL
+    ' YourTube: phone page for the Live tab. (Inside class methods m is the instance, so the scene
+    ' globals come from GetGlobalAA().global.) GET /live is a small form; POST /api/yourtube/live plays a URL
     ' on the TV ({ url, format?, title? } or Stream Caster's { u, f, t }); GET /api/yourtube/live lists
     ' recent and favorite links. Writes go through CsrfMiddleware, so the page sends the X-Playlet header.
     class YourTubeLiveRouter extends HttpRouter
@@ -23,7 +24,7 @@ namespace Http
 
         @get("/api/yourtube/live")
         function GetLive(context as object) as boolean
-            live = m.global.yourtubeLive
+            live = GetGlobalAA().global.yourtubeLive
             context.response.Json({
                 recent: ValidArray(live.recent)
                 favorites: ValidArray(live.favorites)
@@ -48,7 +49,7 @@ namespace Http
                 response.Default(400, "url must start with http:// or https://")
                 return true
             end if
-            m.global.yourtubeLive.playRequest = payload
+            GetGlobalAA().global.yourtubeLive.playRequest = payload
             response.Json({ ok: true })
             return true
         end function
