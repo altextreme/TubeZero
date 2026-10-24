@@ -17,6 +17,7 @@ function Init()
     m.progressTrack = m.top.findNode("ProgressTrack")
     m.cornerMask = m.top.findNode("CornerMask")
     m.textGroup = m.top.findNode("TextGroup")
+    m.card = m.top.findNode("Card")
     m.size = [350, 196]
     m.robotoTitleFont = m.titleLabel.font
     m.systemTitleFont = YourTubeText.SystemBoldFont(20)
@@ -58,7 +59,7 @@ end function
 ' Temporary: release builds strip print(), so the size decision goes into the Card node's id, which the
 ' TV's ECP UI tree (query/sgnodes/all) shows as name="...".
 function DebugRowSize(message as string) as void
-    m.top.findNode("Card").id = "Card|" + message
+    m.card.id = "Card|" + message
 end function
 
 function SetSize(width as float, height as float) as void
