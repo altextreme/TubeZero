@@ -574,7 +574,7 @@ function ActivateButton(index as integer) as void
             OpenComments()
             return
         end if
-    else if index = PlayerCoordinatorLogic.PlayerButton.Like or index = PlayerCoordinatorLogic.PlayerButton.Dislike or index = PlayerCoordinatorLogic.PlayerButton.Save
+    else if index >= PlayerCoordinatorLogic.PlayerButton.Like and index <= PlayerCoordinatorLogic.PlayerButton.Subscribe
         AccountAction(index)
     end if
     SyncFocus()
@@ -623,13 +623,14 @@ function AccountAction(index as integer) as void
     if content = invalid or StringUtils.IsNullOrEmpty(content.videoId)
         return
     end if
-    profile = m.top.profilesService.currentProfile
+    profile = CurrentProfile()
     if profile = invalid or profile.type <> "youtube"
-        m.toast.text = "Sign in with a YouTube account from Profile to like and save videos"
+        m.toast.text = "Sign in with a YouTube account from Profile to like, save and subscribe"
         return
     end if
 
-    previous = { liked: m.buttonRow.liked, disliked: m.buttonRow.disliked, saved: m.buttonRow.saved }
+    targetId = content.videoId
+    previous = { liked: m.buttonRow.liked, disliked: m.buttonRow.disliked, saved: m.buttonRow.saved, subscribed: m.buttonRow.subscribed }
     if index = PlayerCoordinatorLogic.PlayerButton.Like
         if m.buttonRow.liked
             action = "removelike"
@@ -650,7 +651,7 @@ function AccountAction(index as integer) as void
         end if
         m.buttonRow.disliked = not m.buttonRow.disliked
         m.buttonRow.liked = false
-    else
+    else if index = PlayerCoordinatorLogic.PlayerButton.Save
         if m.buttonRow.saved
             action = "unsave"
             message = "Removed from Watch Later"
@@ -659,12 +660,26 @@ function AccountAction(index as integer) as void
             message = "Saved to Watch Later"
         end if
         m.buttonRow.saved = not m.buttonRow.saved
+    else
+        targetId = ValidString(ValidAssociativeArray(content.metadata).authorId)
+        if targetId = ""
+            m.toast.text = "Couldn't find this video's channel"
+            return
+        end if
+        if m.buttonRow.subscribed
+            action = "unsubscribe"
+            message = "Unsubscribed"
+        else
+            action = "subscribe"
+            message = "Subscribed"
+        end if
+        m.buttonRow.subscribed = not m.buttonRow.subscribed
     end if
     m.toast.text = message
 
     m.accountActionPrevious = previous
     callback = JobSystem.CreateCallback(OnAccountActionDone)
-    JobSystem.QueueJob(m.top.jobQueue, Jobs.YourTubeAccountActionJob, { action: action, videoId: content.videoId, profile: profile }, callback)
+    JobSystem.QueueJob(m.top.jobQueue, Jobs.YourTubeAccountActionJob, { action: action, videoId: targetId, profile: profile }, callback)
 end function
 
 function OnAccountActionDone(event as object) as void
@@ -677,14 +692,48 @@ function OnAccountActionDone(event as object) as void
         m.buttonRow.liked = previous.liked
         m.buttonRow.disliked = previous.disliked
         m.buttonRow.saved = previous.saved
+        m.buttonRow.subscribed = previous.subscribed
     end if
     m.toast.text = "Couldn't update your account. Try again."
+end function
+
+function CurrentProfile() as dynamic
+    profilesService = m.top.profilesService
+    if profilesService = invalid
+        return invalid
+    end if
+    return profilesService.currentProfile
 end function
 
 function ResetAccountActions() as void
     m.buttonRow.liked = false
     m.buttonRow.disliked = false
     m.buttonRow.saved = false
+    m.buttonRow.subscribed = false
+end function
+
+' YourTube: start the like/subscribe buttons from your real state (YouTube profiles only).
+function LoadAccountState(videoId as string) as void
+    profile = CurrentProfile()
+    if profile = invalid or profile.type <> "youtube" or videoId = ""
+        return
+    end if
+    callback = JobSystem.CreateCallback(OnAccountStateLoaded)
+    JobSystem.QueueJob(m.top.jobQueue, Jobs.YourTubeVideoStateJob, { videoId: videoId, profile: profile }, callback)
+end function
+
+function OnAccountStateLoaded(event as object) as void
+    JobSystem.UnobserveCallback(event.getRoSGNode())
+    info = event.getInfo()
+    content = m.top.content
+    if not info.success or content = invalid or content.videoId <> info.data.videoId
+        return
+    end if
+    m.buttonRow.liked = info.data.likeStatus = "LIKE"
+    m.buttonRow.disliked = info.data.likeStatus = "DISLIKE"
+    if info.data.subscribed = true or info.data.subscribed = false
+        m.buttonRow.subscribed = info.data.subscribed
+    end if
 end function
 
 ' YourTube: show/hide the live chat overlay. Hidden chat stops polling.
@@ -1346,6 +1395,7 @@ function OnVideoContentJobDone(event as object) as void
     m.transport.SetLiveDvrWindow(ValidInt(metadata.liveSeekableWindowSec) * 1000)
     m.trickPlayBar.isLive = isLive
     m.buttonRow.chatMode = isLive ' YourTube: the comments button becomes chat
+    LoadAccountState(ValidString(content.videoId)) ' YourTube
     m.bifDisplay.tileSet = invalid
 
     ' anchor the live edge clock at the cushioned availabilityStartTime and start the 1s heartbeat: the brain

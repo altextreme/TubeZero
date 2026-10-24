@@ -98,11 +98,12 @@
                 <!-- YourTube: title + channel sit bottom-left above the scrubber (reference/04-player.png);
                      bottom-aligned so a one-line title hugs the bar like a two-line one. -->
                 <LayoutGroup translation="[64, 506]" layoutDirection="vert" vertAlignment="bottom" itemSpacings="[6]">
-                    <Label id="titleLabel" width="900" wrap="true" maxLines="2"
+                    <!-- YourTube: 700 wide so the title ends before the action row (x 798) -->
+                    <Label id="titleLabel" width="700" wrap="true" maxLines="2"
                         color="0xFEFEFEFF" horizAlign="left">
                         <Font role="font" uri="font:BoldSystemFontFile" size="22" />
                     </Label>
-                    <Label id="secondaryTitleLabel" width="900" height="20"
+                    <Label id="secondaryTitleLabel" width="700" height="20"
                         color="0xB4B4B4FF" horizAlign="left" vertAlign="top" wrap="false">
                         <Font role="font" uri="font:SystemFontFile" size="15" />
                     </Label>

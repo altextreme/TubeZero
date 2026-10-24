@@ -1,4 +1,5 @@
 import "pkg:/components/Services/Innertube/Context.bs"
+import "pkg:/components/YourTube/YourTubeJson.bs"
 import "pkg:/source/services/HttpClient.bs"
 
 ' YourTube: InnerTube requests for account actions (see YourTubeAccountActionJob).
@@ -10,10 +11,38 @@ namespace YourTubeAccount
             return { endpoint: "like/" + action, body: { "target": { "videoId": videoId } } }
         else if action = "save"
             return { endpoint: "browse/edit_playlist", body: { "playlistId": "WL", "actions": [{ "action": "ACTION_ADD_VIDEO", "addedVideoId": videoId }] } }
+        else if action = "subscribe" or action = "unsubscribe"
+            return { endpoint: "subscription/" + action, body: { "channelIds": [videoId] } }
         else if action = "unsave"
             return { endpoint: "browse/edit_playlist", body: { "playlistId": "WL", "actions": [{ "action": "ACTION_REMOVE_VIDEO_BY_VIDEO_ID", "removedVideoId": videoId }] } }
         end if
         return invalid
+    end function
+
+    ' Your like and subscription state from a /next response (WEB or TV shape): the first likeStatus
+    ' ("LIKE", "DISLIKE", "INDIFFERENT") and subscribed flag found. Unknown values come back as "" / invalid.
+    function ParseVideoState(nextResponse as dynamic) as object
+        state = { likeStatus: "", subscribed: invalid }
+        if not YourTubeJson.IsAA(nextResponse)
+            return state
+        end if
+        state.likeStatus = YourTubeJson.AsString(YourTubeJson.FindKey(nextResponse, "likeStatus", 0))
+        subscribed = YourTubeJson.FindKey(nextResponse, "subscribed", 0)
+        if subscribed = true or subscribed = false
+            state.subscribed = subscribed
+        end if
+        return state
+    end function
+
+    ' /next as the signed-in user (TV client, like the other account calls).
+    function CreateNextStateRequest(videoId as string) as object
+        body = {
+            "context": Innertube.CreateContext(Innertube.ClientType.Tv, CreateObject("roDeviceInfo"))
+            "videoId": videoId
+        }
+        request = HttpClient.Post("https://www.youtube.com/youtubei/v1/next?prettyPrint=false&alt=json").JsonBody(body)
+        request.Headers(Innertube.CreateHeaders(Innertube.ClientType.Tv))
+        return request
     end function
 
     function CreateActionRequest(action as string, videoId as string) as dynamic

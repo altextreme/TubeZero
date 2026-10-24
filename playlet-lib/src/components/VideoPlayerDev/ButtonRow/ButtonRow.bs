@@ -17,13 +17,14 @@ function Init()
         m.top.findNode("LikeButton") ' YourTube
         m.top.findNode("DislikeButton") ' YourTube
         m.top.findNode("SaveButton") ' YourTube
+        m.top.findNode("SubscribeButton") ' YourTube
     ]
     m.centerCluster = m.top.findNode("CenterCluster")
     m.rightCluster = m.top.findNode("RightCluster")
     LayoutClusters()
     m.top.buttonCount = m.buttons.Count() ' coordinator reads this to clamp focus
 
-    for each field in ["transportMode", "rowFocused", "focusedIndex", "playing", "liked", "disliked", "saved"]
+    for each field in ["transportMode", "rowFocused", "focusedIndex", "playing", "liked", "disliked", "saved", "subscribed"]
         m.top.ObserveField(field, FuncName(Repaint))
     end for
     m.top.ObserveField("nudge", FuncName(OnNudge))
@@ -81,6 +82,7 @@ function Repaint() as void
     m.buttons[3].toggleState = m.top.liked
     m.buttons[4].toggleState = m.top.disliked
     m.buttons[5].toggleState = m.top.saved
+    m.buttons[6].toggleState = m.top.subscribed
 
     for i = 0 to m.buttons.Count() - 1
         m.buttons[i].focused = m.top.rowFocused and i = m.top.focusedIndex

@@ -1,0 +1,34 @@
+import "pkg:/components/ContentNode/ProfileContentAuthTokenUtils.bs"
+import "pkg:/components/YourTube/Account/YourTubeAccount.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: your like and subscription state for a video, so the player's buttons start right.
+' Input: { videoId, profile } (a YouTube profile). Output: { videoId, likeStatus, subscribed }.
+@job("YourTubeVideoStateJob")
+function ExecuteJob() as void
+    input = JobGetInput()
+    videoId = ValidString(input.videoId)
+    profile = input.profile
+    if profile = invalid or profile.type <> "youtube"
+        JobError("Needs a YouTube profile")
+        return
+    end if
+
+    auth = ProfileContentAuthTokenUtils.EnsureFreshAccessToken(profile)
+    if auth.state <> ProfileContentAuthTokenUtils.AccessTokenState.Ok
+        JobError("No usable access token: " + auth.state)
+        return
+    end if
+
+    request = YourTubeAccount.CreateNextStateRequest(videoId)
+    request.Header("Authorization", "Bearer " + auth.token)
+    request.Cancellation(JobGetCancellation())
+    response = request.Await()
+    if not response.IsSuccess()
+        JobError(response.ErrorMessage())
+        return
+    end if
+
+    state = YourTubeAccount.ParseVideoState(response.Json())
+    JobSuccessData({ videoId: videoId, likeStatus: state.likeStatus, subscribed: state.subscribed })
+end function

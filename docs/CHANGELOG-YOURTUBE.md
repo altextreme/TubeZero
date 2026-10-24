@@ -25,7 +25,11 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   flip right away, and flip back with a message if the request fails.
 - Signed out or on an Invidious profile, they show "Sign in with a YouTube account from Profile...".
 - `YourTubeToast`: a short message pill at the top of the player.
-- Subscribe stays on the channel screen (Playlet's existing button).
+- Subscribe button in the player too (`subscription/subscribe` / `unsubscribe` for the video's channel).
+- When a video opens on a YouTube profile, the like, dislike and subscribe buttons load your real state from `/next`
+  (`YourTubeVideoStateJob`; parser tested against the saved `/next` sample). Watch Later membership isn't in `/next`,
+  so Save starts empty.
+- The player title is 700 wide so long titles wrap before the action row instead of running under it.
 
 ### Live chat (Phase 4)
 - On live videos the comments button becomes Chat and toggles an overlay at the top right. It never takes focus,

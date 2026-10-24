@@ -27,6 +27,7 @@
         <field id="liked" type="boolean" value="false" />
         <field id="disliked" type="boolean" value="false" />
         <field id="saved" type="boolean" value="false" />
+        <field id="subscribed" type="boolean" value="false" />
     </interface>
     <children>
         <!-- play/pause, centered on screen (x=640). -->
@@ -52,6 +53,9 @@
             <VideoPlayerButton id="SaveButton"
                 iconUri="pkg:/images/icons/ms/save_done.png"
                 iconUri2="pkg:/images/icons/ms/save.png" />
+            <VideoPlayerButton id="SubscribeButton"
+                iconUri="pkg:/images/icons/ms/subscribed.png"
+                iconUri2="pkg:/images/icons/ms/subscribe.png" />
         </Group>
     </children>
 </component>

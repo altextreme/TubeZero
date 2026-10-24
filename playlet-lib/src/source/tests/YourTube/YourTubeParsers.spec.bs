@@ -194,6 +194,31 @@ namespace Tests
             m.assertInvalid(YourTubeAccount.ActionPayload("nope", "abc"))
         end function
 
+        @it("builds subscribe payloads")
+        function _()
+            subscribePayload = YourTubeAccount.ActionPayload("subscribe", "UC123")
+            m.assertEqual(subscribePayload.endpoint, "subscription/subscribe")
+            m.assertEqual(subscribePayload.body.channelIds[0], "UC123")
+            m.assertEqual(YourTubeAccount.ActionPayload("unsubscribe", "UC123").endpoint, "subscription/unsubscribe")
+        end function
+
+        @describe("YourTubeAccount.ParseVideoState")
+
+        @it("reads like and subscription state from /next")
+        function _()
+            state = YourTubeAccount.ParseVideoState(m.Fixture("next-video.json"))
+            m.assertEqual(state.likeStatus, "INDIFFERENT")
+            m.assertEqual(state.subscribed, false)
+
+            liked = YourTubeAccount.ParseVideoState({ "contents": [{ "likeButtonRenderer": { "likeStatus": "LIKE" } }, { "subscribeButtonRenderer": { "subscribed": true } }] })
+            m.assertEqual(liked.likeStatus, "LIKE")
+            m.assertEqual(liked.subscribed, true)
+
+            empty = YourTubeAccount.ParseVideoState(invalid)
+            m.assertEqual(empty.likeStatus, "")
+            m.assertInvalid(empty.subscribed)
+        end function
+
         @describe("YourTubeText.Clean")
 
         @it("drops emoji and the double space they leave")

@@ -53,6 +53,7 @@ namespace PlayerCoordinatorLogic
         Like = 3 ' YourTube
         Dislike = 4 ' YourTube
         Save = 5 ' YourTube
+        Subscribe = 6 ' YourTube
     end enum
 
     ' The two focus targets above/at the trackbar: the bar itself (Left/Right scrub, the cursor grows) and the
