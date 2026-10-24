@@ -39,3 +39,19 @@ AAC yes, Opus yes, AC-3 yes, E-AC-3 yes.
   never picks webm sets"). Phase 5 must test whether Roku's DASH player accepts WebM/VP9 segments
   (mimeType `video/webm`, codecs `vp9` / `vp09.02...`) on this TV, starting with a hand-made manifest.
 - If DASH-WebM doesn't work, the fallback ceiling is **1080p60 AVC** (no HDR).
+
+## Phase 5 test: VP9 4K/HDR over DASH (2026-10-24, result: not possible)
+
+Tested on the TV with "Costa Rica in 4K" (`LXb3EKWsInQ`, VP9 HDR up to 2160p60), reading the player's choice from
+ECP `query/media-player` and the generated manifest from `GET :8888/api/yourtube/last-dash`.
+
+| Manifest | What the TV played |
+| --- | --- |
+| Playlet's default (AVC MP4 sets plus VP9 WebM sets) | AVC 1080p60, about 5.9 Mbps |
+| VP9 sets listed first, codecs spelled out (`vp09.02.51.10.01.09.16.09.00`, `vp09.00.51.08`) | still AVC 1080p60 |
+| VP9 WebM video only (AAC audio) | audio only: `video="none"` |
+| WebM only (VP9 video, Opus audio) | error `demux.dash: Format has no audio or video` |
+
+So although `CanDecodeVideo` says VP9 decodes at 2160p, Roku's DASH demuxer does not read YouTube's WebM
+streams. With no AV1 decoder on this TV, the ceiling for YouTube here is **AVC 1080p60**, as upstream Playlet's
+comment in `DashManifest.bs` says. The experiment was reverted; only the `last-dash` diagnostics route stays.

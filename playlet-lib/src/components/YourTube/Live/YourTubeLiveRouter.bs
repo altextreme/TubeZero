@@ -32,6 +32,16 @@ namespace Http
             return true
         end function
 
+        ' Diagnostics: the last DASH manifest the player was given (release builds have no /debug routes).
+        @get("/api/yourtube/last-dash")
+        function GetLastDash(context as object) as boolean
+            response = context.response
+            response.http_code = 200
+            response.SetBodyDataString(ValidString(ReadAsciiFile("cachefs:/last_generated_dash.xml")))
+            response.ContentType("application/dash+xml")
+            return true
+        end function
+
         @post("/api/yourtube/live")
         function PostLive(context as object) as boolean
             request = context.request

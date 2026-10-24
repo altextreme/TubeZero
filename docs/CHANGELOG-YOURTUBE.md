@@ -16,6 +16,11 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   on the next video and when the player closes.
 - Emoji between two words now leave a space ("STREAM BILLIONS", not "STREAMBILLIONS").
 
+### Best quality (Phase 5): tested, not possible on this TV
+- VP9 4K/HDR through DASH was tried four ways on the TV; Roku's DASH demuxer won't read YouTube's WebM streams and
+  the TV has no AV1, so playback stays AVC up to 1080p60. Write-up in docs/device-capabilities.md.
+- `GET /api/yourtube/last-dash` returns the last generated DASH manifest (release builds have no /debug routes).
+
 ### Interaction pass (every focus state screenshotted on the TV)
 - Google Material Symbols (Rounded) for every icon; consistent nav states (focused: dark on white pill,
   current: white filled, others: gray outline).
