@@ -79,8 +79,8 @@ Parsing for 2–4 runs in Job/Task threads; parsers are pure functions over JSON
 
 ## Status (2026-10-24)
 
-Done and verified on the TV: Phase 0, Phase 1 restyle, Phase 3 comments panel, Phase 6 Live tab.
-Next: Phase 2 account actions, Phase 4 live chat UI (parser done), Phase 5 VP9 4K/HDR.
+Done and verified on the TV: Phase 0, Phase 1 restyle, Phase 3 comments panel, Phase 4 live chat, Phase 6 Live tab.
+Next: Phase 2 account actions (need a signed-in account to test), Phase 5 VP9 4K/HDR.
 
 ## Build order
 

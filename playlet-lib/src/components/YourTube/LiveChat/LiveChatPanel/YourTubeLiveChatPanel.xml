@@ -1,0 +1,40 @@
+<!--
+    YourTube: live chat overlay, top right over the player. It never takes focus, so the remote keeps
+    controlling playback. Set `jobQueue`, then `videoId` to start; `videoId = ""` stops polling.
+-->
+<component name="YourTubeLiveChatPanel" extends="Group">
+    <interface>
+        <field id="videoId" type="string" onChange="OnVideoIdChange" alwaysNotify="true" />
+        <field id="jobQueue" type="node" />
+    </interface>
+    <children>
+        <Group translation="[860,24]">
+            <Rectangle
+                width="396"
+                height="420"
+                color="0x0F0F0FD9" />
+            <Label
+                text="Live chat"
+                color="0xF1F1F1FF"
+                translation="[18,14]">
+                <Font role="font" uri="font:BoldSystemFontFile" size="20" />
+            </Label>
+            <Rectangle
+                width="396"
+                height="1"
+                color="0x3F3F3FFF"
+                translation="[0,50]" />
+            <Label
+                id="StatusLabel"
+                width="360"
+                wrap="true"
+                color="0xAAAAAAFF"
+                translation="[18,66]">
+                <Font role="font" uri="font:SystemFontFile" size="16" />
+            </Label>
+            <!-- messages, newest at the bottom; rebuilt in code to fit y 58..410 -->
+            <Group id="Messages" translation="[18,0]" />
+        </Group>
+        <Timer id="PollTimer" repeat="false" />
+    </children>
+</component>

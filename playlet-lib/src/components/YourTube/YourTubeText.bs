@@ -6,11 +6,18 @@ namespace YourTubeText
     function Clean(text as string) as object
         cleaned = ""
         needsSystemFont = false
+        lastEmoji = -2
         for i = 0 to text.Len() - 1
             ch = text.Mid(i, 1)
             code = Asc(ch)
             isEmoji = code >= &h1F000 or (code >= &h2600 and code <= &h27BF) or code = &hFE0F or code = &h200D
-            if not isEmoji
+            if isEmoji
+                lastEmoji = i
+            else
+                ' an emoji between two words ("STREAM🔥BILLIONS") becomes a space, not a merged word
+                if lastEmoji = i - 1 and IsWordChar(code) and cleaned <> "" and IsWordChar(Asc(cleaned.Right(1)))
+                    cleaned += " "
+                end if
                 cleaned += ch
                 if code >= &h0590 and (code < &h2000 or code > &h2BFF)
                     needsSystemFont = true
@@ -22,6 +29,10 @@ namespace YourTubeText
             cleaned = cleaned.Replace("  ", " ")
         end while
         return { text: cleaned.Trim(), needsSystemFont: needsSystemFont }
+    end function
+
+    function IsWordChar(code as integer) as boolean
+        return (code >= 48 and code <= 57) or (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or code >= &hC0
     end function
 
     ' Regular system font at the given size (same trick as SystemBoldFont below).

@@ -66,8 +66,11 @@ picture_in_picture_alt picture_in_picture_alt 63
 skip_next_fill1 skip_next 42
 skip_previous_fill1 skip_previous 42
 comment comment 63
+chat chat 63
 thumb_up thumb_up 20 #AAAAAA
 LIST
-# The comment glyph fills its whole box; shrink it to sit inside the player button disc like the others.
-magick "$OUT/comment.png" -resize 48x48 -background none -gravity center -extent 63x63 "PNG32:$OUT/comment.png"
+# The comment and chat glyphs fill their whole box; shrink it to sit inside the player button disc like the others.
+for glyph in comment chat; do
+    magick "$OUT/$glyph.png" -resize 48x48 -background none -gravity center -extent 63x63 "PNG32:$OUT/$glyph.png"
+done
 echo "Material Symbols rendered to $OUT"

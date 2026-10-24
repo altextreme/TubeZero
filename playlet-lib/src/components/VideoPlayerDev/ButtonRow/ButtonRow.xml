@@ -21,6 +21,8 @@
         <!-- pulse the focused button's scale nudge (a press that couldn't move focus: Left/Right clamped at
              the row's ends, Up at the top tier). -->
         <field id="nudge" type="boolean" alwaysNotify="true" />
+        <!-- YourTube: live videos show chat instead of comments -->
+        <field id="chatMode" type="boolean" value="false" onChange="OnChatModeChange" />
     </interface>
     <children>
         <!-- play/pause, centered on screen (x=640). -->

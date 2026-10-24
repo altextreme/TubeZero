@@ -20,8 +20,8 @@ namespace YourTubeLiveChat
     const DEFAULT_TIMEOUT_MS = 5000
     const MIN_TIMEOUT_MS = 1000
 
-    ' Chat continuations from a live video's /next response. "liveChat" (all messages) is preferred
-    ' when present; "topChat" is YouTube's filtered default.
+    ' Chat continuations from a live video's /next response. "topChat" is YouTube's filtered default and the
+    ' one get_live_chat accepts first; "liveChat" (all messages) only works after a first page.
     function ParseEntry(nextResponse as dynamic) as object
         result = { topChat: "", liveChat: "", isReplay: false }
         renderer = YourTubeJson.Dig(nextResponse, ["contents", "twoColumnWatchNextResults", "conversationBar", "liveChatRenderer"])

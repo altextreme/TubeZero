@@ -1,0 +1,189 @@
+import "pkg:/components/JobSystem/Jobs.bs"
+import "pkg:/components/JobSystem/JobSystem.bs"
+import "pkg:/components/YourTube/LiveChat/LiveChatParser.bs"
+import "pkg:/source/utils/Types.bs"
+
+const MAX_MESSAGES = 30
+const LIST_TOP = 58
+const LIST_BOTTOM = 410
+const TEXT_WIDTH = 360
+const MESSAGE_GAP = 10
+' Polls again after an error, so a dropped request doesn't end the chat.
+const RETRY_MS = 5000
+
+function Init()
+    m.messagesGroup = m.top.findNode("Messages")
+    m.status = m.top.findNode("StatusLabel")
+    m.timer = m.top.findNode("PollTimer")
+    m.timer.ObserveField("fire", FuncName(Poll))
+    m.messages = []
+    m.continuation = ""
+    m.job = invalid
+end function
+
+function OnVideoIdChange() as void
+    StopPolling()
+    m.messages = []
+    m.continuation = ""
+    Render()
+    if m.top.videoId = ""
+        return
+    end if
+    m.status.text = "Connecting to chat..."
+    m.status.visible = true
+    QueueJob({ videoId: m.top.videoId })
+end function
+
+function StopPolling() as void
+    m.timer.control = "stop"
+    if m.job <> invalid
+        JobSystem.UnobserveCallback(m.job)
+        m.job.cancel = true
+        m.job = invalid
+    end if
+end function
+
+function Poll() as void
+    if m.continuation <> "" and m.job = invalid
+        QueueJob({ continuation: m.continuation })
+    end if
+end function
+
+function QueueJob(input as object) as void
+    m.job = JobSystem.CreateCallback(OnJobDone)
+    JobSystem.QueueJob(m.top.jobQueue, Jobs.YourTubeLiveChatJob, input, m.job)
+end function
+
+function OnJobDone(event as object) as void
+    JobSystem.UnobserveCallback(event.getRoSGNode())
+    m.job = invalid
+    info = event.getInfo()
+
+    if not info.success
+        if m.continuation <> ""
+            Schedule(RETRY_MS)
+        else
+            m.status.text = "Couldn't connect to chat. " + FirstLine(info.error)
+        end if
+        return
+    end if
+
+    data = info.data
+    m.continuation = ValidString(data.continuation)
+    if m.continuation = "" and m.messages.Count() = 0
+        m.status.text = "Chat isn't available for this video."
+        return
+    end if
+
+    m.messages.Append(data.messages)
+    while m.messages.Count() > MAX_MESSAGES
+        m.messages.Shift()
+    end while
+    if m.messages.Count() > 0
+        m.status.visible = false
+    else
+        m.status.text = "No messages yet."
+    end if
+    Render()
+
+    if m.continuation <> ""
+        Schedule(ValidInt(data.timeoutMs))
+    end if
+end function
+
+function Schedule(ms as integer) as void
+    if ms < 1000
+        ms = 1000
+    end if
+    m.timer.duration = ms / 1000.0
+    m.timer.control = "start"
+end function
+
+' Lays messages out bottom-up, newest last, dropping whatever no longer fits.
+function Render() as void
+    m.messagesGroup.removeChildrenIndex(m.messagesGroup.getChildCount(), 0)
+    y = LIST_BOTTOM
+    for i = m.messages.Count() - 1 to 0 step -1
+        node = CreateMessageNode(m.messages[i])
+        height = node.localBoundingRect().height
+        y -= height
+        if y < LIST_TOP
+            exit for
+        end if
+        node.translation = [0, y]
+        m.messagesGroup.appendChild(node)
+        y -= MESSAGE_GAP
+    end for
+end function
+
+function CreateMessageNode(message as object) as object
+    group = CreateObject("roSGNode", "Group")
+    isPaid = message.kind = "superchat" or message.kind = "membership"
+
+    author = group.createChild("Label")
+    author.font = CreateFont("font:MediumSystemFontFile", 14)
+    author.color = RoleColor(message.role)
+    authorText = ValidString(message.author)
+    if ValidString(message.amount) <> ""
+        authorText = authorText + "  " + message.amount
+    end if
+    author.text = authorText
+
+    text = group.createChild("Label")
+    text.font = CreateFont("font:SystemFontFile", 17)
+    text.color = "#EBEBEBFF"
+    text.width = TEXT_WIDTH
+    text.wrap = true
+    text.maxLines = 3
+    text.lineSpacing = 0
+    text.text = ValidString(message.text)
+    text.translation = [0, 18]
+
+    if isPaid
+        ' Super Chats and memberships sit on a tinted card, like the YouTube app
+        height = 20 + text.localBoundingRect().height + 12
+        card = CreateObject("roSGNode", "Rectangle")
+        card.width = TEXT_WIDTH + 12
+        card.height = height
+        card.translation = [-6, -6]
+        card.color = PaidColor(message)
+        group.insertChild(card, 0)
+        author.color = "#EBEBEBFF"
+    end if
+    return group
+end function
+
+function PaidColor(message as object) as string
+    color = ValidString(message.bodyColor)
+    if color = ""
+        color = "#2BA640FF"
+    end if
+    return color
+end function
+
+function RoleColor(role as string) as string
+    if role = YourTubeLiveChat.Role.Owner
+        return "#FFD600FF"
+    else if role = YourTubeLiveChat.Role.Moderator
+        return "#5E84F1FF"
+    else if role = YourTubeLiveChat.Role.Member
+        return "#2BA640FF"
+    end if
+    return "#AAAAAAFF"
+end function
+
+function CreateFont(uri as string, size as integer) as object
+    font = CreateObject("roSGNode", "Font")
+    font.uri = uri
+    font.size = size
+    return font
+end function
+
+' Request errors carry the whole response body; the first line is enough on screen.
+function FirstLine(text as dynamic) as string
+    lines = ValidString(text).Split(Chr(10))
+    if lines.Count() = 0
+        return ""
+    end if
+    return lines[0]
+end function

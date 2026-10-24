@@ -9,6 +9,13 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   scroll (InnerTube `/next`, `YourTubeCommentsJob`), with round avatars, author and time, likes, reply counts and
   a Pinned marker. Emoji, channel emoji shortcodes and blank lines are dropped. Back or Left closes it.
 
+### Live chat (Phase 4)
+- On live videos the comments button becomes Chat and toggles an overlay at the top right. It never takes focus,
+  so the remote keeps controlling playback. It polls `live_chat/get_live_chat` on the server's interval, keeps the
+  newest 30 messages, colors owner, moderator and member names, and tints Super Chats. Chat stops when hidden,
+  on the next video and when the player closes.
+- Emoji between two words now leave a space ("STREAM BILLIONS", not "STREAMBILLIONS").
+
 ### Interaction pass (every focus state screenshotted on the TV)
 - Google Material Symbols (Rounded) for every icon; consistent nav states (focused: dark on white pill,
   current: white filled, others: gray outline).

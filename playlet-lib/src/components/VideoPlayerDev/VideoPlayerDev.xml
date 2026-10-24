@@ -128,6 +128,9 @@
         <!-- Coordinator pulses `trigger` only on an explicit pause-from-playing, `cancel` on resume. Not chrome-gated. -->
         <LargePause id="largePause" />
 
+        <!-- YourTube: live chat overlay (live videos; toggled from the button row, never focused) -->
+        <YourTubeLiveChatPanel id="liveChatPanel" visible="false" />
+
         <!-- YourTube: comments side panel (opened from the button row) -->
         <YourTubeCommentsPanel id="commentsPanel" visible="false" />
 

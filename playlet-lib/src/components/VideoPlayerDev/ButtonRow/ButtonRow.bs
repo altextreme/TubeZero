@@ -59,6 +59,15 @@ function ClusterWidth(cluster as object) as integer
     return n * BUTTON_WIDTH + (n - 1) * BUTTON_SPACING
 end function
 
+' YourTube: same button, chat icon on live videos
+function OnChatModeChange() as void
+    if m.top.chatMode
+        m.top.findNode("CommentsButton").iconUri = "pkg:/images/icons/ms/chat.png"
+    else
+        m.top.findNode("CommentsButton").iconUri = "pkg:/images/icons/ms/comment.png"
+    end if
+end function
+
 function Repaint() as void
     ' Hide the row while a transport is active so it's out of the way during seeking. Chrome show/hide
     ' fades the parent group, so visible=true with a hidden parent stays unpainted.

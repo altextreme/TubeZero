@@ -183,6 +183,7 @@ namespace Tests
         function _()
             red = Chr(&h1F534)
             m.assertEqual(YourTubeText.Clean(red + "LIVE | radio " + red + " beats").text, "LIVE | radio beats")
+            m.assertEqual(YourTubeText.Clean("STREAM" + Chr(&h1F525) + "BILLIONS" + red + "!").text, "STREAM BILLIONS!")
             m.assertFalse(YourTubeText.Clean("plain").needsSystemFont)
             m.assertTrue(YourTubeText.Clean("日本語").needsSystemFont)
         end function

@@ -67,7 +67,7 @@ function OnJobDone(event as object) as void
 
     if not info.success
         if content.getChildCount() = 0
-            m.status.text = "Couldn't load comments. " + ValidString(info.error)
+            m.status.text = "Couldn't load comments. " + ValidString(info.error).Split(Chr(10))[0]
         end if
         return
     end if

@@ -99,6 +99,7 @@ function Initialize()
     ' YourTube: comments panel
     m.commentsPanel = m.top.findNode("commentsPanel")
     m.commentsPanel.ObserveField("closed", FuncName(OnCommentsClosed))
+    m.liveChatPanel = m.top.findNode("liveChatPanel")
     m.fullScreenHint = m.top.findNode("fullScreenHint")
 
     m.autoHide = m.top.findNode("autoHide")
@@ -559,8 +560,13 @@ function ActivateButton(index as integer) as void
         MinimizeReset()
         VideoQueueUtils.ToggleVideoPictureInPicture(m.videoQueue)
     else if index = PlayerCoordinatorLogic.PlayerButton.Comments
-        OpenComments()
-        return
+        ' live videos have chat instead of comments
+        if m.transport.isLive
+            ToggleLiveChat()
+        else
+            OpenComments()
+            return
+        end if
     end if
     SyncFocus()
 end function
@@ -575,6 +581,25 @@ function OpenComments() as void
     m.commentsPanel.visible = true
     m.commentsPanel.jobQueue = m.top.jobQueue
     m.commentsPanel.videoId = content.videoId
+end function
+
+' YourTube: show/hide the live chat overlay. Hidden chat stops polling.
+function ToggleLiveChat() as void
+    content = m.top.content
+    if m.liveChatPanel.visible or content = invalid or StringUtils.IsNullOrEmpty(content.videoId)
+        StopLiveChat()
+        return
+    end if
+    m.liveChatPanel.visible = true
+    m.liveChatPanel.jobQueue = m.top.jobQueue
+    m.liveChatPanel.videoId = content.videoId
+end function
+
+function StopLiveChat() as void
+    if m.liveChatPanel.visible
+        m.liveChatPanel.visible = false
+        m.liveChatPanel.videoId = ""
+    end if
 end function
 
 function OnCommentsClosed() as void
@@ -1116,6 +1141,7 @@ end function
 '===============================================================================
 function PlayWithContent(contentNode as object)
     LogInfo("PlayWithContent videoId=", contentNode.videoId, " title=", contentNode.title)
+    StopLiveChat() ' YourTube: chat belongs to the previous video
     videoContentNode = CreateObject("roSGNode", "ContentNode")
 
     if not StringUtils.IsNullOrEmpty(contentNode.videoId)
@@ -1213,6 +1239,7 @@ function OnVideoContentJobDone(event as object) as void
     ' The seekable depth keeps the rewind floor on the manifest's listed segments (see Innertube.GetLiveTimeline).
     m.transport.SetLiveDvrWindow(ValidInt(metadata.liveSeekableWindowSec) * 1000)
     m.trickPlayBar.isLive = isLive
+    m.buttonRow.chatMode = isLive ' YourTube: the comments button becomes chat
     m.bifDisplay.tileSet = invalid
 
     ' anchor the live edge clock at the cushioned availabilityStartTime and start the 1s heartbeat: the brain
@@ -1517,6 +1544,7 @@ function ClosePlayer() as void
 end function
 
 function OnClose() as void
+    StopLiveChat() ' YourTube
     ' a second close=true must be a no-op, not a second teardown.
     if m.onCloseCalled = true
         return

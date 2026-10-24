@@ -1,0 +1,65 @@
+import "pkg:/components/Services/Innertube/Context.bs"
+import "pkg:/components/Services/Innertube/NextEndpoint.bs"
+import "pkg:/components/YourTube/LiveChat/LiveChatParser.bs"
+import "pkg:/components/YourTube/YourTubeText.bs"
+import "pkg:/source/services/HttpClient.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: one live chat poll over InnerTube (WEB client).
+' Input: { videoId } for the first poll, or { continuation } for the next ones.
+' Output: { messages, continuation, timeoutMs }. An empty continuation means there is no chat to follow
+' (chat off, replay-only, or the stream ended).
+@job("YourTubeLiveChatJob")
+function ExecuteJob() as void
+    input = JobGetInput()
+    cancellation = JobGetCancellation()
+
+    continuation = ValidString(input.continuation)
+    if continuation = ""
+        request = Innertube.CreateNextRequest({ "videoId": ValidString(input.videoId) })
+        request.Cancellation(cancellation)
+        response = request.Await()
+        if not response.IsSuccess()
+            JobError(response.ErrorMessage())
+            return
+        end if
+        entry = YourTubeLiveChat.ParseEntry(response.Json())
+        ' Start from the default (Top chat) token: /next's menu tokens are rejected by get_live_chat until a
+        ' first page has been fetched, like on youtube.com.
+        continuation = entry.topChat
+        if continuation = "" or entry.isReplay
+            JobSuccessData({ messages: [], continuation: "", timeoutMs: 0 })
+            return
+        end if
+    end if
+
+    request = CreateGetLiveChatRequest(continuation)
+    request.Cancellation(cancellation)
+    response = request.Await()
+    if JobIsCancelled()
+        JobCancel()
+        return
+    end if
+    if not response.IsSuccess()
+        JobError(response.ErrorMessage())
+        return
+    end if
+
+    parsed = YourTubeLiveChat.ParseResponse(response.Json(), 40)
+    for each message in parsed.messages
+        message.text = YourTubeText.Clean(message.text).text
+        message.author = YourTubeText.Clean(message.author).text
+    end for
+    JobSuccessData({ messages: parsed.messages, continuation: parsed.continuation, timeoutMs: parsed.timeoutMs })
+end function
+
+function CreateGetLiveChatRequest(continuation as string) as HttpClient.Request
+    deviceInfo = CreateObject("roDeviceInfo")
+    payload = {
+        "context": Innertube.CreateContext(Innertube.ClientType.Web, deviceInfo)
+        "continuation": continuation
+    }
+    request = HttpClient.Post("https://www.youtube.com/youtubei/v1/live_chat/get_live_chat?prettyPrint=false&alt=json").JsonBody(payload)
+    request.Headers(Innertube.CreateHeaders(Innertube.ClientType.Web))
+    return request
+end function
