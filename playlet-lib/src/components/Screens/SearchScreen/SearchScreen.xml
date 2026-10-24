@@ -20,12 +20,12 @@
                 text="Filters" />
 
             <!-- YourTube: the search field's pill, drawn behind the keyboard so the text can sit inset -->
-            <RoundedRect
+            <Poster
                 id="searchFieldPill"
+                uri="pkg:/images/yt-pill-dark.$$RES$$.9.png"
                 translation="[480,40]"
                 width="352"
-                height="48"
-                color="0x282828FF" />
+                height="48" />
             <SearchKeyboard
                 id="keyboard"
                 translation="[480,40]" />

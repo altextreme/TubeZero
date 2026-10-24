@@ -142,6 +142,17 @@ function OnSearchSuggestions(event as object) as void
     if q.len() > 0 and ArrayUtils.IndexOfString(suggestions, q) = -1
         suggestions.Unshift(q)
     end if
+    ' YourTube: history and live suggestions can repeat each other; keep the first of each
+    seen = {}
+    unique = []
+    for each suggestion in suggestions
+        key = LCase(ValidString(suggestion).Trim())
+        if key <> "" and not seen.DoesExist(key)
+            seen[key] = true
+            unique.Push(suggestion)
+        end if
+    end for
+    suggestions = unique
 
     ' Capture current focused button and restore it after resetting the buttons
     buttonFocused = -1
