@@ -71,10 +71,11 @@ namespace Tests
             data = m.Fixture("comments-page.json")
             thread = data.onResponseReceivedEndpoints[1].reloadContinuationItemsCommand.continuationItems[0].commentThreadRenderer
             vm = thread.commentViewModel.commentViewModel
-            vm.pinnedText = { runs: [{ text: "Pinned by Rick Astley" }] }
+            ' fixture AAs are case-sensitive: dot assignment would write lowercase keys
+            vm["pinnedText"] = { "runs": [{ "text": "Pinned by Rick Astley" }] }
             for each mutation in data.frameworkUpdates.entityBatchUpdate.mutations
                 if mutation.entityKey = vm.toolbarStateKey
-                    mutation.payload.engagementToolbarStateEntityPayload.heartState = "TOOLBAR_HEART_STATE_HEARTED"
+                    mutation.payload.engagementToolbarStateEntityPayload["heartState"] = "TOOLBAR_HEART_STATE_HEARTED"
                 end if
             end for
             c = YourTubeComments.ParsePage(data).comments[0]
