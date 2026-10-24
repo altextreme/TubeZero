@@ -1,30 +1,60 @@
 <component name="LoadingRowCell" extends="Group">
     <interface>
-        <field id="itemContent" type="node" />
+        <field id="itemContent" type="node" onChange="OnContentSet" />
         <field id="index" type="integer" onChange="OnIndexSet" />
         <field id="type" type="string" value="loading" />
         <field id="animationDelay" type="time" alias="loadingAnimation.delay" />
         <field id="animationControl" type="string" alias="loadingAnimation.control" />
     </interface>
     <children>
-        <Rectangle
+        <!-- YourTube: skeleton card shaped like the real one (rounded thumbnail, two title lines, channel
+             line), sized from the row like YourTubeVideoCell, with a soft dark pulse. -->
+        <Poster
             id="background"
+            uri="pkg:/images/yt-rounded.$$RES$$.9.png"
             width="350"
             height="196"
-            color="0xd1d1d1"
-            opacity="0.8" />
+            blendColor="0x272727FF" />
+        <Poster
+            id="titleLine1"
+            uri="pkg:/images/yt-rounded.$$RES$$.9.png"
+            width="315"
+            height="16"
+            translation="[0,220]"
+            blendColor="0x272727FF" />
+        <Poster
+            id="titleLine2"
+            uri="pkg:/images/yt-rounded.$$RES$$.9.png"
+            width="210"
+            height="16"
+            translation="[0,244]"
+            blendColor="0x272727FF" />
+        <Poster
+            id="channelLine"
+            uri="pkg:/images/yt-rounded.$$RES$$.9.png"
+            width="122"
+            height="12"
+            translation="[0,272]"
+            blendColor="0x1F1F1FFF" />
 
         <Animation
             id="loadingAnimation"
-            duration="3"
-            easeFunction="linear"
+            duration="1.6"
+            easeFunction="inOutQuad"
             repeat="true"
             optional="true">
             <ColorFieldInterpolator
-                id="colorInterpolator"
                 key="[0.0, 0.5, 1.0]"
-                keyValue="[0xd1d1d1ff, 0x7d7d7dff, 0xd1d1d1ff]"
-                fieldToInterp="background.color" />
+                keyValue="[0x272727FF, 0x353535FF, 0x272727FF]"
+                fieldToInterp="background.blendColor" />
+            <ColorFieldInterpolator
+                key="[0.0, 0.5, 1.0]"
+                keyValue="[0x272727FF, 0x353535FF, 0x272727FF]"
+                fieldToInterp="titleLine1.blendColor" />
+            <ColorFieldInterpolator
+                key="[0.0, 0.5, 1.0]"
+                keyValue="[0x272727FF, 0x353535FF, 0x272727FF]"
+                fieldToInterp="titleLine2.blendColor" />
         </Animation>
     </children>
 </component>

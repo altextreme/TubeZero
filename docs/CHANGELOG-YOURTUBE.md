@@ -9,6 +9,12 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   scroll (InnerTube `/next`, `YourTubeCommentsJob`), with round avatars, author and time, likes, reply counts and
   a Pinned marker. Emoji, channel emoji shortcodes and blank lines are dropped. Back or Left closes it.
 
+### Loading skeletons
+- Placeholder cards take their row's size (the big first shelf is 480 × 270), so nothing jumps when the
+  thumbnails arrive.
+- Restyled like YouTube's: dark rounded thumbnail block with two title bars and a channel bar, and a soft pulse
+  that ripples across the row (was a flat light-gray box).
+
 ### Related videos
 - Down from the scrubber opens a "Related" row over the bottom of the player (YouTube's /next recommendations, up to
   12 cards). OK plays a card through the queue; Up or Back closes it and hands focus back to the player.
