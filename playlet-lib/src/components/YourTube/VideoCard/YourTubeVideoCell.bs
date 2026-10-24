@@ -27,14 +27,17 @@ end function
 function ApplyRowSize(content as object) as void
     row = content.getParent()
     if row = invalid
+        DebugRowSize("no row parent")
         return
     end if
     root = row.getParent()
     if root = invalid or not root.hasField("ytRowItemSize")
+        DebugRowSize(`row=${row.subtype()} root=${root <> invalid} stamped=false`)
         return
     end if
     sizes = root.ytRowItemSize
     if not IsArray(sizes) or sizes.Count() = 0
+        DebugRowSize(`bad sizes: ${type(sizes)}`)
         return
     end if
     rowIndex = 0
@@ -48,7 +51,13 @@ function ApplyRowSize(content as object) as void
     if not IsArray(size) or size.Count() < 2
         return
     end if
+    DebugRowSize(`ok row=${rowIndex} size=${size[0]}x${size[1]}`)
     SetSize(size[0], size[1])
+end function
+
+' Temporary: one console line per card explaining the size decision (grep YT_ROWSIZE on port 8085).
+function DebugRowSize(message as string) as void
+    print "YT_ROWSIZE " + message
 end function
 
 function SetSize(width as float, height as float) as void
