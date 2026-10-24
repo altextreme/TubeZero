@@ -55,9 +55,10 @@ function ApplyRowSize(content as object) as void
     SetSize(size[0], size[1])
 end function
 
-' Temporary: one console line per card explaining the size decision (grep YT_ROWSIZE on port 8085).
+' Temporary: release builds strip print(), so the size decision goes into the Card node's id, which the
+' TV's ECP UI tree (query/sgnodes/all) shows as name="...".
 function DebugRowSize(message as string) as void
-    print "YT_ROWSIZE " + message
+    m.top.findNode("Card").id = "Card|" + message
 end function
 
 function SetSize(width as float, height as float) as void
