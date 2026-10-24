@@ -1,0 +1,16 @@
+# YourTube: feeds for the You nav screen (history and playlists, like YouTube's "You" tab)
+- title: Watch history
+  id: yt_watch_history
+  feedSources:
+    - id: inv_auth_history
+      title: Watch history
+      apiType: Invidious
+      endpoint: watch_history
+
+- title: Playlists
+  id: yt_playlists
+  feedSources:
+    - id: inv_auth_playlists
+      title: Playlists
+      apiType: Invidious
+      endpoint: auth_playlists

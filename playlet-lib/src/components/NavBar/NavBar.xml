@@ -1,4 +1,4 @@
-<!-- YourTube: white focus pill (was Playlet red) -->
+<!-- YourTube: white focus pill (was Playlet red); 52px item pitch so 9 items fit (was 66) -->
 <component name="NavBar" extends="Group" includes="AutoBind,Focus">
     <interface>
         <field id="screensContainer" type="node" />
@@ -54,9 +54,9 @@
                 focusBitmapBlendColor="0xF1F1F1FF"
                 focusFootprintBitmapUri=""
                 vertFocusAnimationStyle="floatingFocus"
-                numRows="7"
+                numRows="9"
                 scrollSpeed="99999"
-                itemSpacing="[0, 16]"
+                itemSpacing="[0, 2]"
                 translation="[13, 150]">
             </MarkupList>
         </Rectangle>

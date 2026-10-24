@@ -128,4 +128,7 @@ magick -size 8x256 gradient:"rgba(0,0,0,0)"-"rgba(0,0,0,0.88)" -depth 8 "PNG32:$
 render "$BRAND/icon-mic.svg" 64 64 "$LIB_IMG/icons/yt-mic.png"
 magick "$LIB_IMG/icons/yt-mic.png" -channel RGB -fill "#0F0F0F" -colorize 100 +channel "$LIB_IMG/icons/yt-mic-dark.png"
 
+render "$BRAND/icon-subscriptions.svg" 48 48 "$LIB_IMG/icons/yt-subscriptions.png"
+render "$BRAND/icon-you.svg" 48 48 "$LIB_IMG/icons/yt-you.png"
+
 echo "YourTube assets written."

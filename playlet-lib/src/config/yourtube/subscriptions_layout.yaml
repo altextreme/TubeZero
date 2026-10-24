@@ -1,0 +1,9 @@
+# YourTube: feeds for the Subscriptions nav screen (ids differ from Home's so Home's layout
+# preference does not hide them)
+- title: Subscriptions
+  id: yt_subscriptions
+  feedSources:
+    - id: inv_auth_feed
+      title: Subscriptions
+      apiType: Invidious
+      endpoint: auth_feed

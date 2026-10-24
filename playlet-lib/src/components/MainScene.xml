@@ -28,6 +28,15 @@
                                 screen="HomeScreen"
                                 text="Home"
                                 icon="pkg:/images/icons/home.png" />
+                            <!-- YourTube: YouTube TV sections -->
+                            <NavBarItemContent
+                                screen="YourTubeSubscriptionsScreen"
+                                text="Subscriptions"
+                                icon="pkg:/images/icons/yt-subscriptions.png" />
+                            <NavBarItemContent
+                                screen="YourTubeYouScreen"
+                                text="You"
+                                icon="pkg:/images/icons/yt-you.png" />
                             <NavBarItemContent
                                 screen="BookmarksScreen"
                                 text="Bookmarks"

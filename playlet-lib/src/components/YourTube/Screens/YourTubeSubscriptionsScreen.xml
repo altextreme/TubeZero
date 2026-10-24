@@ -1,0 +1,6 @@
+<!-- YourTube: "Subscriptions" nav screen. Home's screen (top bar + rows) with its own feeds. -->
+<component name="YourTubeSubscriptionsScreen" extends="HomeScreen">
+    <interface>
+        <field id="feedFile" type="string" value="libpkg:/config/yourtube/subscriptions_layout.yaml" />
+    </interface>
+</component>

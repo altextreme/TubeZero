@@ -76,6 +76,11 @@
         <source>Subscriptions</source>
         <translation>Subscriptions</translation>
     </message>
+    <!-- YourTube: nav item -->
+    <message>
+        <source>You</source>
+        <translation>You</translation>
+    </message>
     <message>
         <source>Recommended</source>
         <translation>Recommended</translation>
