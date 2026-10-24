@@ -6,9 +6,10 @@
     <interface>
         <field id="itemContent" type="node" onChange="OnContentSet" />
         <field id="type" type="string" value="video" />
-        <!-- RowList focus fields, aliased from RowCell; unused while cards don't scale on focus -->
-        <field id="focusPercent" type="float" />
-        <field id="rowListHasFocus" type="boolean" />
+        <!-- RowList focus fields, aliased from RowCell. They reach the cards that are actually drawn, so they
+             also (re)apply the row size: on first load the drawn cards can miss the content-time sizing. -->
+        <field id="focusPercent" type="float" onChange="OnRowFocusChange" />
+        <field id="rowListHasFocus" type="boolean" onChange="OnRowFocusChange" />
         <field id="percentDurationWatched" type="float" onChange="OnPercentDurationWatched" />
     </interface>
     <children>

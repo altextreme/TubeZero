@@ -62,6 +62,13 @@ function DebugRowSize(message as string) as void
     m.card.id = "Card|" + message
 end function
 
+function OnRowFocusChange() as void
+    content = m.top.itemContent
+    if content <> invalid
+        ApplyRowSize(content)
+    end if
+end function
+
 function SetSize(width as float, height as float) as void
     if m.size[0] = width and m.size[1] = height
         return
