@@ -38,6 +38,7 @@ namespace Locale
     @locale
     enum Feed
         Subscriptions = "Subscriptions"
+        You = "You" ' YourTube: nav item
         Recommended = "Recommended"
         Playlists = "Playlists"
         WatchHistory = "Watch history"
