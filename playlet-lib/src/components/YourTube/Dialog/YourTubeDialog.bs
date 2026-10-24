@@ -77,7 +77,7 @@ function AddLines(lines as object, prefix as string, textWidth as float, y as fl
         label.font = "font:SmallSystemFont"
         label.text = prefix + ValidString(line)
         label.translation = [0, y]
-        y += label.localBoundingRect().height + 10
+        y += label.localBoundingRect().height + 16 ' paragraph spacing
     end for
     return y
 end function

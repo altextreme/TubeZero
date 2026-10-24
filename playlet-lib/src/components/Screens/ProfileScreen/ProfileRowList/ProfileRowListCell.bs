@@ -13,12 +13,12 @@ function OnContentSet() as void
     end if
 
     if content.type = "login"
-        m.top.circlePosterInnerUri = "pkg:/images/icons/user-200.png"
+        ' YourTube: "Add account" tile, a plus in a dark circle (was a white avatar labelled Login)
+        m.top.circlePosterInnerUri = "pkg:/images/white-circle.png"
         m.top.backendTypePosterUri = ""
-        ' bs:disable-next-line LINT3023
-        m.top.circlePosterInnerBlendColor = "#FFFFFFFF"
-        m.top.letter = ""
-        m.top.username = Tr(Locale.Buttons.Login)
+        m.top.circlePosterInnerBlendColor = "#272727FF"
+        m.top.letter = "+"
+        m.top.username = "Add account"
         m.top.serverUrl = ""
         m.top.crownVisible = false
         return
@@ -81,16 +81,21 @@ function OnFocusPercent()
     end if
 end function
 
+' YourTube: focus is a white ring around the avatar and a brighter name, like YouTube's account picker
+' (was a floating avatar with a drop shadow inside a square focus frame).
 function OnAnimate()
     animate = m.top.animate
-    m.top.shadowVisible = animate
+    m.top.shadowVisible = false
     m.top.serverLabelVisible = animate
     m.top.circlePosterTranslation = [20, 20]
+    m.top.animationControl = "stop"
     if animate
         m.top.UsernameLabelFont = m.boldFont
-        m.top.animationControl = "start"
+        m.top.ringColor = "#EBEBEBFF"
+        m.top.usernameColor = "#EBEBEBFF"
     else
         m.top.UsernameLabelFont = m.normalFont
-        m.top.animationControl = "stop"
+        m.top.ringColor = "#3F3F3FFF"
+        m.top.usernameColor = "#B4B4B4FF"
     end if
 end function

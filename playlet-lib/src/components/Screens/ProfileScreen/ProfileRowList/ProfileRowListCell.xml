@@ -17,6 +17,9 @@
         <field id="shadowVisible" type="boolean" alias="shadowPoster.visible" />
         <field id="crownVisible" type="boolean" alias="CrownPoster.visible" />
         <field id="serverLabelVisible" type="boolean" alias="ServerLabel.visible" />
+        <!-- YourTube: focus ring and name color -->
+        <field id="ringColor" type="color" alias="circlePoster.blendColor" />
+        <field id="usernameColor" type="color" alias="UsernameLabel.color" />
     </interface>
     <children>
         <Font id="normalFont" uri="font:SystemFontFile" size="24" />
@@ -44,7 +47,7 @@
                 width="160"
                 height="160"
                 translation="[20,20]"
-                blendColor="#DDDDDDFF"
+                blendColor="#3F3F3FFF"
                 uri="pkg:/images/white-circle.png">
                 <CirclePoster
                     id="circlePosterInner"
@@ -78,6 +81,7 @@
             </Poster>
             <Label
                 id="UsernameLabel"
+                color="0xAAAAAAFF"
                 width="300"
                 horizAlign="center"
                 translation="[-50,250]">

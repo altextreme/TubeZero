@@ -1,0 +1,104 @@
+import "pkg:/components/Dialog/DialogUtils.bs"
+import "pkg:/components/JobSystem/Jobs.bs"
+import "pkg:/components/JobSystem/JobSystem.bs"
+import "pkg:/components/Screens/ProfileScreen/YouTubeAccountSelectionView/YouTubeAccountSelectionViewUtils.bs"
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/Locale.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+' Same flow as YouTubeLoginDialog: YouTubeLoginJob gets a device code, sets `url` and `code`, then polls until the
+' user approves on their phone; on success the account picker takes over.
+function Init()
+    m.qrCode = m.top.findNode("QrCodePoster")
+    m.codeLabel = m.top.findNode("CodeLabel")
+    m.closed = false
+    m.top.focusable = true
+end function
+
+function OnNodeReady()
+    input = {
+        dialog: m.top
+        profilesService: m.top.profilesService
+    }
+    m.youTubeLoginJob = JobSystem.CreateCallback(OnYouTubeLoginJobDone)
+    JobSystem.QueueJob(m.top.jobQueue, Jobs.YouTubeLoginJob, input, m.youTubeLoginJob)
+end function
+
+' callFunc target (DialogUtils.ShowYourTubeDialog), hence the unused parameter
+function FocusButtons(_unused as dynamic) as void
+    NodeSetFocus(m.top, true)
+end function
+
+function OnCodeSet() as void
+    m.codeLabel.text = m.top.code
+end function
+
+function OnUrlSet() as void
+    m.qrCode.text = m.top.url
+end function
+
+function OnYouTubeLoginJobDone(event as object) as void
+    JobSystem.UnobserveCallback(event.getRoSGNode())
+    m.youTubeLoginJob = invalid
+
+    info = event.getInfo()
+    if info.cancel
+        m.top.close = true
+        return
+    end if
+
+    if not info.success
+        m.top.close = true
+        DialogUtils.ShowDialogEx({
+            message: info.error
+            title: Tr(Locale.Generic.Error)
+            large: true
+        })
+        return
+    end if
+
+    data = info.data
+    ' if accounts is invalid, a profile was already created
+    if data = invalid or data.accounts = invalid or data.accessToken = invalid
+        m.top.close = true
+        return
+    end if
+
+    ' the account picker takes over creating the profile
+    accountSelectionView = YouTubeAccountSelectionViewUtils.Open(m.top.appController)
+    accountSelectionView.accessToken = data.accessToken
+    accountSelectionView.accounts = data.accounts
+    m.top.close = true
+end function
+
+function OnClose() as void
+    if m.closed or not m.top.close
+        return
+    end if
+    m.closed = true
+    if m.youTubeLoginJob <> invalid
+        m.youTubeLoginJob.cancel = true
+        m.youTubeLoginJob = invalid
+    end if
+    hadFocus = m.top.isInFocusChain()
+    parent = m.top.getParent()
+    if parent <> invalid
+        parent.removeChild(m.top)
+        if parent.hasField("currentDialog") and parent.currentDialog <> invalid and parent.currentDialog.isSameNode(m.top)
+            parent.currentDialog = invalid
+        end if
+    end if
+    if hadFocus and m.top.returnFocus <> invalid
+        NodeSetFocus(m.top.returnFocus, true)
+    end if
+    m.top.wasClosed = true
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press and (key = RemoteKeys.Back or key = RemoteKeys.Ok)
+        m.top.close = true
+    end if
+    ' the screens behind must not react while signing in
+    return true
+end function

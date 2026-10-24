@@ -7,9 +7,23 @@
     </interface>
 
     <children>
+        <!-- YourTube: heading and a signed-out explanation -->
+        <Label text="Accounts" color="0xF1F1F1FF" translation="[96,64]">
+            <Font role="font" uri="font:BoldSystemFontFile" size="30" />
+        </Label>
+        <Label
+            id="SignedOutHint"
+            visible="false"
+            width="760"
+            wrap="true"
+            color="0xAAAAAAFF"
+            translation="[96,108]"
+            text="Add your YouTube account to see your subscriptions, history and playlists, and to like, save and subscribe from the TV.">
+            <Font role="font" uri="font:SystemFontFile" size="20" />
+        </Label>
         <RowList
             id="ProfileRowList"
-            translation="[0,160]"
+            translation="[0,190]"
             numRows="2"
             rowitemSize="[[240,340]]"
             rowItemSpacing="[[0,0]]"
@@ -17,6 +31,7 @@
             focusXOffset="[165]"
             itemComponentName="ProfileRowListCell"
             rowFocusAnimationStyle="floatingfocus"
+            drawFocusFeedback="false"
             focusBitmapUri="pkg:/images/focus-glow-padding-30.$$RES$$.9.png" />
     </children>
 </component>

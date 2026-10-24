@@ -8,7 +8,7 @@
             width="1280"
             height="720"
             color="#000000"
-            opacity="0.5">
+            opacity="0.85"> <!-- YourTube: hide the screen behind (was 0.5) -->
         </Rectangle>
 
         <Rectangle
@@ -20,7 +20,7 @@
                 width="720"
                 horizAlign="center"
                 translation="[0,38]"
-                text="Select a service to login">
+                text="Choose an account type"> <!-- YourTube (was "Select a service to login") -->
                 <Font role="font" uri="font:SystemFontFile" size="24" />
             </Label>
 

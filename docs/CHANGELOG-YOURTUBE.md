@@ -6,6 +6,15 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 
 ## Unreleased: TubeZero
 
+### Sign-in flow restyle
+- Profile: "Accounts" heading, a signed-out explanation, an "Add account" tile (plus in a dark circle) and a white
+  focus ring instead of the floating avatar, drop shadow and square focus frame.
+- Account type picker: matching white-circle logos, "Choose an account type", and a darker dim behind it.
+- Disclaimer: narrower panel (820) with paragraph spacing.
+- New full-screen "Sign in to YouTube" page (`YourTubeSignInView`) instead of Roku's cramped login dialog: two
+  numbered steps, the code large, a QR code, Cancel. Same YouTubeLoginJob, so approving on the phone moves straight on
+  to picking the account.
+
 ### Rebrand to TubeZero
 - New name everywhere people see it: TV title, launcher, Info screen, cast name ("TubeZero on ..."), phone pages,
   build zip (`out/TubeZero-*.zip`). The build-time rename now maps Playlet to TubeZero.

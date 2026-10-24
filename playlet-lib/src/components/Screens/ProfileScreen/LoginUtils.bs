@@ -19,12 +19,15 @@ namespace LoginUtils
                 Tr(Locale.Dialogs.YouTubeLoginDisclaimer2)
                 Tr(Locale.Dialogs.YouTubeLoginDisclaimer3)
             ]
-            large: true
             buttons: [
                 Tr(Locale.Buttons.OK)
                 Tr(Locale.Buttons.Cancel)
             ]
         })
+        if dialog = invalid
+            return
+        end if
+        dialog.width = 820 ' YourTube: readable line length (was large: true, nearly full width)
         dialog.ObserveField("buttonSelected", FuncName(LoginUtils.OnLoginWithYouTubeDisclaimerDialogButtonSelected))
     end function
 
@@ -38,9 +41,10 @@ namespace LoginUtils
     end function
 
     function ShowYouTubeLoginDialog() as void
-        dialog = CreateObject("roSGNode", "YouTubeLoginDialog")
+        ' YourTube: full-screen sign-in page in the app's style (was the YouTubeLoginDialog dialog)
+        dialog = CreateObject("roSGNode", "YourTubeSignInView")
         dialog@.BindNode()
-        m.top.getScene().dialog = dialog
+        DialogUtils.ShowYourTubeDialog(dialog)
     end function
 
 end namespace
