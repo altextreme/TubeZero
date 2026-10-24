@@ -201,7 +201,7 @@ namespace Tests
             m.assertTrue(m.top.findNode("bullet").visible)
             m.assertTrue(m.top.findNode("liveLabel").visible)
             m.assertEqual(m.top.findNode("remainingLabel").text, "")
-            ' the badge styling: red bullet + bold size-30 LIVE. blendColor reads back as a signed 32-bit int.
+            ' the badge styling: red bullet + bold LIVE (YourTube: size 20, was 30). blendColor reads back as a signed 32-bit int.
             m.AssertBlend(m.top.findNode("bullet").blendColor, &hD53E5AFF)
             m.assertEqual(m.top.findNode("liveLabel").text, Tr(Locale.RowCell.Live))
             ' the badge is right-aligned to the track end whatever the language ("EN DIRECT" >> "LIVE").

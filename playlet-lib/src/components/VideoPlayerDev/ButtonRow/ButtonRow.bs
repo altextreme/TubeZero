@@ -2,7 +2,7 @@ import "pkg:/components/VideoPlayerDev/TransportController.bs"
 import "pkg:/source/utils/Types.bs"
 
 ' Trackbar track spans x=68..1212: right cluster right-aligns to 1212, center cluster centers on 640.
-const ROW_Y = 560
+const ROW_Y = 458 ' YourTube: action row just above the scrubber (was 560)
 const BUTTON_WIDTH = 42
 const BUTTON_SPACING = 20
 const SCREEN_CENTER_X = 640
@@ -39,8 +39,9 @@ end function
 function LayoutClusters() as void
     LayoutButtons(m.centerCluster)
     LayoutButtons(m.rightCluster)
-    m.centerCluster.translation = [SCREEN_CENTER_X - ClusterWidth(m.centerCluster) / 2, ROW_Y]
+    ' YourTube: one right-aligned action row like the YouTube TV player (play/pause leads it)
     m.rightCluster.translation = [TRACKBAR_RIGHT_X - ClusterWidth(m.rightCluster), ROW_Y]
+    m.centerCluster.translation = [m.rightCluster.translation[0] - BUTTON_SPACING - ClusterWidth(m.centerCluster), ROW_Y]
 end function
 
 function LayoutButtons(cluster as object) as void

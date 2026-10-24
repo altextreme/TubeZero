@@ -23,13 +23,14 @@
         <field id="chapterText" type="string" alias="chapterLabel.text" />
     </interface>
     <children>
+        <!-- YourTube: thin 5px track centred in the 12px band, red-to-pink fill (reference/04-player.png). -->
         <Poster id="trackBg"
-            uri="/RokuOS/Artwork/SceneGraph/FixedTheme/Base/FHD/osd_sliderControl_small.9.png"
-            width="1144" height="12" opacity="0.3" loadDisplayMode="noScale" />
-        <!-- same asset tinted red, clipped to progress width in code. -->
+            uri="pkg:/images/yt-rounded.$$RES$$.9.png"
+            translation="[0, 3.5]" width="1144" height="5" opacity="0.45" />
+        <!-- clipped to progress width in code. -->
         <Poster id="trackFill"
-            uri="/RokuOS/Artwork/SceneGraph/FixedTheme/Base/FHD/osd_sliderControl_small.9.png"
-            width="1144" height="12" blendColor="0xFF1C30FF" clippingRect="[0,0,0,12]" loadDisplayMode="noScale" />
+            uri="pkg:/images/yt-scrub-fill.$$RES$$.png"
+            translation="[0, 3.5]" width="1144" height="5" clippingRect="[0,0,0,12]" loadDisplayMode="scaleToFill" />
         <!-- the cursor: a 12px dot that swells half-again while the bar tier holds focus. PositionPlayhead
              moves it; the grow/shrink animations scale it about its center. -->
         <Poster id="playhead"
@@ -50,14 +51,14 @@
         </Poster>
         <!-- left label. VOD: counts up (short). LIVE: the translated "Rewind live TV" — width is generous so
              no language clips (e.g. the French string); left-aligned, so the extra width paints nothing. -->
-        <Label id="currentLabel" translation="[0, 24]" width="700" height="24"
+        <Label id="currentLabel" translation="[0, 26]" width="700" height="24"
             color="0xFEFEFEFF" horizAlign="left" vertAlign="top">
-            <Font role="font" uri="font:SystemFontFile" size="24" />
+            <Font role="font" uri="font:SystemFontFile" size="16" />
         </Label>
         <!-- right label. VOD: counts down. LIVE: offset M:SS (hidden at edge). -->
-        <Label id="remainingLabel" translation="[1024, 24]" width="120" height="24"
+        <Label id="remainingLabel" translation="[1024, 26]" width="120" height="24"
             color="0xFEFEFEFF" horizAlign="right" vertAlign="top">
-            <Font role="font" uri="font:SystemFontFile" size="24" />
+            <Font role="font" uri="font:SystemFontFile" size="16" />
         </Label>
         <!-- LIVE bullet: shown only at the edge. -->
         <Poster id="bullet" visible="false"
@@ -66,7 +67,7 @@
         <!-- LIVE badge: shown only at the edge. -->
         <Label id="liveLabel" visible="false" translation="[1080, 24]" height="30"
             text="LIVE" color="0xFEFEFEFF" horizAlign="left" vertAlign="top">
-            <Font role="font" uri="font:BoldSystemFontFile" size="30" />
+            <Font role="font" uri="font:BoldSystemFontFile" size="20" />
         </Label>
         <Label id="chapterLabel" translation="[111, 25]" width="350" height="25"
             color="0xFEFEFEFF" horizAlign="center" vertAlign="center" font="font:SmallestSystemFont" />

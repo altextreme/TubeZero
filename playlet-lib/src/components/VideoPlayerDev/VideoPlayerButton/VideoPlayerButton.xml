@@ -2,7 +2,8 @@
     <!-- Round icon button. Focus is virtual: `focused` is an input driven by the coordinator (real focus
          stays on the Video node), so this never joins the SceneGraph focus chain. -->
     <interface>
-        <field id="backgroundColor" type="color" value="#3C3C3C" />
+        <!-- YourTube: icons sit on the video with no disc until focused (white disc, dark icon) -->
+        <field id="backgroundColor" type="color" value="0x00000000" />
         <field id="focusedBackgroundColor" type="color" value="#DDDDDD" />
 
         <field id="iconUri" type="uri" alias="icon.uri" />

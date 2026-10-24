@@ -38,6 +38,10 @@ export class YourTubeRebrandPlugin implements CompilerPlugin {
     // Theme: swap Playlet's colors and fonts for YourTube's in the transpiled output
     // (.xml and .brs), instead of editing every upstream component.
     afterPublish(builder: ProgramBuilder, _files: FileObj[]) {
+        // Test builds keep Playlet's colors/fonts so the upstream specs keep asserting logic, not theme.
+        if ((builder.options as any).testMode) {
+            return;
+        }
         const stagingDir = builder.options.stagingDir!;
         // Only the lib ships Roboto; the launcher keeps the system font.
         const hasRoboto = fs.existsSync(path.join(stagingDir, 'fonts/roboto'));

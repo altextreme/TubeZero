@@ -76,9 +76,12 @@
         <!-- ===================== Chrome group (the HUD, faded as one opacity unit) ===================== -->
         <Group id="Chrome" opacity="0" visible="false">
             <!-- Full-screen darkening scrim, chrome-gated (rides the fade), not pause-gated. -->
+            <!-- YourTube: bottom-only scrim like the YouTube TV player (was the OS full-screen PauseGradient) -->
             <Poster id="pauseGradient"
-                uri="/RokuOS/Artwork/SceneGraph/FixedTheme/Base/FHD/PauseGradient.9.png"
-                width="1280" height="720" />
+                uri="pkg:/images/yt-player-scrim.png"
+                loadDisplayMode="scaleToFill"
+                translation="[0,260]"
+                width="1280" height="460" />
 
             <!-- First content sibling: its full-screen black backdrop must paint UNDER the title/bar/buttons
                  (all later siblings), and the bar's scan-glyph in front of the tiles. Its `visible` is
@@ -92,20 +95,23 @@
                 <!-- Static wrapped title (up to 3 lines) instead of a marquee: a ScrollingLabel repaints the
                      whole HUD continuously (~25fps) for as long as the chrome is up. The LayoutGroup keeps the
                      secondary title flowing under however many lines the title takes. -->
-                <LayoutGroup translation="[68, 40]" layoutDirection="vert" itemSpacings="[5]">
-                    <Label id="titleLabel" width="900" wrap="true" maxLines="3"
+                <!-- YourTube: title + channel sit bottom-left above the scrubber (reference/04-player.png);
+                     bottom-aligned so a one-line title hugs the bar like a two-line one. -->
+                <LayoutGroup translation="[64, 506]" layoutDirection="vert" vertAlignment="bottom" itemSpacings="[6]">
+                    <Label id="titleLabel" width="900" wrap="true" maxLines="2"
                         color="0xFEFEFEFF" horizAlign="left">
-                        <Font role="font" uri="font:BoldSystemFontFile" size="30" />
+                        <Font role="font" uri="font:BoldSystemFontFile" size="22" />
                     </Label>
-                    <Label id="secondaryTitleLabel" width="900" height="26"
-                        color="0xFEFEFEFF" horizAlign="left" vertAlign="top" wrap="false">
-                        <Font role="font" uri="font:SystemFontFile" size="24" />
+                    <Label id="secondaryTitleLabel" width="900" height="20"
+                        color="0xB4B4B4FF" horizAlign="left" vertAlign="top" wrap="false">
+                        <Font role="font" uri="font:SystemFontFile" size="15" />
                     </Label>
                 </LayoutGroup>
                 <Clock id="clock" />
             </Group>
 
-            <TrickPlayBar id="trickPlayBar" translation="[68, 632]" />
+            <!-- YourTube: scrubber raised to the YouTube TV position -->
+            <TrickPlayBar id="trickPlayBar" translation="[68, 535]" />
 
             <!-- Round-icon control buttons above the trackbar; virtual focus, self-positions its clusters,
                  visible only while idle + chrome up. -->

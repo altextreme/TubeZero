@@ -105,4 +105,13 @@ done
 render "$BRAND/icon-history.svg" 64 64 "$LIB_IMG/icons/yt-history.png"
 magick "$LIB_IMG/icons/yt-history.png" -channel RGB -fill "#0F0F0F" -colorize 100 +channel "$LIB_IMG/icons/yt-history-dark.png"
 
+# Player: scrubber fill (red -> pink, sized to the 1144px trackbar) and the bottom scrim.
+for res in 480p:0.667 720p:1 1080p:1.5; do
+    name="${res%%:*}"
+    k="${res##*:}"
+    w=$(printf "%.0f" "$(echo "1144 * $k" | bc -l)"); h=$(printf "%.0f" "$(echo "5 * $k" | bc -l)")
+    magick -size "${h}x${w}" gradient:"#FD1C7A"-"#FB0034" -rotate 90 -depth 8 "PNG32:$LIB_IMG/yt-scrub-fill.$name.png"
+done
+magick -size 8x256 gradient:"rgba(0,0,0,0)"-"rgba(0,0,0,0.88)" -depth 8 "PNG32:$LIB_IMG/yt-player-scrim.png"
+
 echo "YourTube assets written."
