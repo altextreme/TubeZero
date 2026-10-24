@@ -62,9 +62,10 @@ Parsing for 2–4 runs in Job/Task threads; parsers are pure functions over JSON
 ## Risks
 
 - **4K/HDR (Phase 5).** Playlet builds DASH from fragmented MP4 only; Roku's player won't select WebM sets. YouTube
-  serves 4K/HDR as VP9 (WebM) or AV1 (MP4). So 4K/HDR on this TV most likely requires **AV1 support**. The codec
-  probe (`CodecProbe.bs`, prints `YT_PROBE` lines on 8085) answers this on first launch. If AV1 is missing, the
-  realistic ceiling is 1080p60 AVC, and HEVC is moot because YouTube doesn't serve it.
+  serves 4K/HDR as VP9 (WebM) or AV1 (MP4). The Phase 0 codec probe (since removed;
+  results in docs/device-capabilities.md) found no AV1 on this TV, but VP9 profile 0 and 2 decode at 2160p60 when
+  declared in an `mkv` container, and HDR10/HLG/Dolby Vision are supported. So the 4K/HDR route is VP9 WebM in
+  DASH; AVC stops at 1080p60, and HEVC is moot because YouTube doesn't serve it.
 - **YouTube changes.** InnerTube shapes change often. Defensive parsers (missing field → skip, never crash), saved
   fixtures, and pulling upstream Playlet fixes regularly.
 - **Merge conflicts.** Mitigated by the build-time theme and new components. Files we do edit carry `' YourTube:`
@@ -73,7 +74,13 @@ Parsing for 2–4 runs in Job/Task threads; parsers are pure functions over JSON
   exact look is only partly controllable (palette + layout JSON).
 - **Performance on a 2020 TV.** Comments/chat lists must be bounded (≤ ~200 comment nodes, 150 chat messages),
   built off the render thread, and measured (frame drops via the debug console `fps` / timing logs).
-- **Unverified on device so far.** Everything since Phase 0 compiles and lints, but has not run on the TV yet.
+- **Device verification.** Every build is installed with `tools/yourtube/install-zip.js` and checked with
+  `tools/yourtube/capture-all.sh`, which screenshots every interactive state over ECP.
+
+## Status (2026-10-24)
+
+Done and verified on the TV: Phase 0, Phase 1 restyle, Phase 3 comments panel, Phase 6 Live tab.
+Next: Phase 2 account actions, Phase 4 live chat UI (parser done), Phase 5 VP9 4K/HDR.
 
 ## Build order
 

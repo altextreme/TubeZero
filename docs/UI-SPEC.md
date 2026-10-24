@@ -109,12 +109,15 @@ How the restyle is applied:
 | Card: thumbnail, radius, badge, title, channel, stats line, focus ring | Done |
 | Home top bar: mic, Search pill, logo; Up from the first row, OK opens Search | Done |
 | Nav rail: gray icons, white current icon, white focus pill | Done |
-| Search: A–G keyboard, &123 page, SPACE/CLEAR/SEARCH, pill suggestions, results row | Done (key spacing set by Roku's keyboard; check on TV) |
-| Player: bottom-left title, right action row, thin red→pink scrubber, bottom scrim | Done (only Play/Pause and Minimize exist until Phase 2 adds actions) |
+| Search: A–G keyboard, &123 page, SPACE/CLEAR/SEARCH, padded input pill, 5 pill suggestions, results row | Done, checked on the TV |
+| Player: bottom-left title, right action row, thin red→pink scrubber, bottom scrim | Done (Play/Pause, Minimize, Comments; Like/Save arrive with Phase 2) |
+| Comments panel: right side, 560 wide, `#212121`, round avatars, `#3F3F3F` focused card | Done, checked on the TV |
 | Dialogs (`#212121` surface), context menu, settings categories, buttons | Done |
 | Info screen: YourTube labels, Playlet AGPL credit | Done |
-| Large first shelf (480 × 270) | Done (card reads its row size; check on TV) |
+| Large first shelf (480 × 270) | Done, checked on the TV (first open included) |
 | CC / 4K / HDR chips on cards | Done (badges parsed from YouTube's renderers) |
 | Related shelf under the player scrubber | Not yet |
-| Nav items: Subscriptions and You added, 52px pitch | Done (Shorts not planned; Live arrives in Phase 6) |
+| Nav items: Subscriptions, You and Live added, 52px pitch, Material Symbols | Done (Shorts not planned) |
 | Voice search via the mic button on Home | Opens Search; the remote's voice key dictates there (needs a TV check) |
+| Empty states (Subscriptions, You, Live) | Done |
+| Lists in settings, dialogs, context menu: inset white pill, no sideways shift | Done |
