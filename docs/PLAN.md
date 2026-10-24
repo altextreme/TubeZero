@@ -32,7 +32,8 @@ Every video play calls `playlet-v8556.ondigitalocean.app`:
 - `POST /v2/decipher` (deciphers stream URLs, and mints a PoToken server-side).
 
 Roku can't run YouTube's player JavaScript, so this can't move onto the TV. What it sends: the format URLs/ciphers
-of the video being played and a PoToken identity (visitor data or account-derived id; not your OAuth tokens).
+of the video being played and a PoToken identity (`LIVING_ROOM_PO_TOKEN_ID`, scraped from YouTube's TV page;
+your OAuth tokens are not sent).
 No YourTube branding or telemetry goes with it.
 
 | Option | Pros | Cons |
