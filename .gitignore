@@ -17,3 +17,6 @@ playlet-web/stats.html
 *.squashfs*
 *token*.json
 *cookies*.txt
+
+# YourTube: reference photos of the official app stay local (Google's images)
+reference/*.png
