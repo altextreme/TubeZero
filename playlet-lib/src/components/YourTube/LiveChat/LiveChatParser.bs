@@ -1,0 +1,224 @@
+import "pkg:/components/YourTube/YourTubeJson.bs"
+
+' YourTube: parses InnerTube live chat (WEB) into plain associative arrays.
+' Pure functions over parsed JSON: run them in a Task, never on the render thread.
+'
+' Flow: /next (live video) -> conversationBar.liveChatRenderer -> continuation ("Top chat" by default,
+' "Live chat" from the header's view selector) -> POST live_chat/get_live_chat {continuation}
+' -> continuationContents.liveChatContinuation { actions, continuations[0].{timeoutMs, continuation} }.
+' Poll again after timeoutMs with the new continuation.
+namespace YourTubeLiveChat
+
+    ' Roles drive the author name color, like the YouTube app.
+    enum Role
+        Viewer = "viewer"
+        Member = "member"
+        Moderator = "moderator"
+        Owner = "owner"
+    end enum
+
+    const DEFAULT_TIMEOUT_MS = 5000
+    const MIN_TIMEOUT_MS = 1000
+
+    ' Chat continuations from a live video's /next response. "liveChat" (all messages) is preferred
+    ' when present; "topChat" is YouTube's filtered default.
+    function ParseEntry(nextResponse as dynamic) as object
+        result = { topChat: "", liveChat: "", isReplay: false }
+        renderer = YourTubeJson.Dig(nextResponse, ["contents", "twoColumnWatchNextResults", "conversationBar", "liveChatRenderer"])
+        if not YourTubeJson.IsAA(renderer)
+            return result
+        end if
+        result.isReplay = renderer["isReplay"] = true
+        result.topChat = YourTubeJson.AsString(YourTubeJson.Dig(renderer, ["continuations", 0, "reloadContinuationData", "continuation"]))
+
+        items = YourTubeJson.Dig(renderer, ["header", "liveChatHeaderRenderer", "viewSelector", "sortFilterSubMenuRenderer", "subMenuItems"])
+        if YourTubeJson.IsArr(items)
+            for each item in items
+                token = YourTubeJson.AsString(YourTubeJson.Dig(item, ["continuation", "reloadContinuationData", "continuation"]))
+                title = LCase(YourTubeJson.AsString(YourTubeJson.Dig(item, ["title"])))
+                if token <> "" and title.InStr("live") <> -1
+                    result.liveChat = token
+                else if token <> "" and result.topChat = ""
+                    result.topChat = token
+                end if
+            end for
+        end if
+        return result
+    end function
+
+    ' One get_live_chat response. maxMessages caps what is returned (the caller keeps a ring buffer).
+    function ParseResponse(response as dynamic, maxMessages = 150 as integer) as object
+        result = { messages: [], continuation: "", timeoutMs: DEFAULT_TIMEOUT_MS }
+        chat = YourTubeJson.Dig(response, ["continuationContents", "liveChatContinuation"])
+        if not YourTubeJson.IsAA(chat)
+            return result
+        end if
+
+        continuations = chat["continuations"]
+        if YourTubeJson.IsArr(continuations)
+            for each entry in continuations
+                if YourTubeJson.IsAA(entry)
+                    for each kind in entry
+                        data = entry[kind]
+                        token = YourTubeJson.AsString(YourTubeJson.Dig(data, ["continuation"]))
+                        if token <> ""
+                            result.continuation = token
+                            timeout = YourTubeJson.AsInt(YourTubeJson.Dig(data, ["timeoutMs"]))
+                            if timeout > 0
+                                result.timeoutMs = MathMax(timeout, MIN_TIMEOUT_MS)
+                            end if
+                        end if
+                    end for
+                end if
+            end for
+        end if
+
+        actions = chat["actions"]
+        if not YourTubeJson.IsArr(actions)
+            return result
+        end if
+        for each action in actions
+            item = YourTubeJson.Dig(action, ["addChatItemAction", "item"])
+            if item = invalid
+                ' replay chat wraps actions one level deeper
+                item = YourTubeJson.Dig(action, ["replayChatItemAction", "actions", 0, "addChatItemAction", "item"])
+            end if
+            message = ParseItem(item)
+            if message <> invalid
+                result.messages.Push(message)
+            end if
+        end for
+
+        ' keep the newest messages if the server sent more than we keep
+        extra = result.messages.Count() - maxMessages
+        for i = 1 to extra
+            result.messages.Shift()
+        end for
+        return result
+    end function
+
+    function ParseItem(item as dynamic) as dynamic
+        if not YourTubeJson.IsAA(item)
+            return invalid
+        end if
+        if item.DoesExist("liveChatTextMessageRenderer")
+            return BuildMessage(item["liveChatTextMessageRenderer"], "text")
+        else if item.DoesExist("liveChatPaidMessageRenderer")
+            message = BuildMessage(item["liveChatPaidMessageRenderer"], "superchat")
+            if message <> invalid
+                renderer = item["liveChatPaidMessageRenderer"]
+                message.amount = YourTubeJson.RunsText(renderer["purchaseAmountText"])
+                message.headerColor = ArgbToRgba(renderer["headerBackgroundColor"])
+                message.bodyColor = ArgbToRgba(renderer["bodyBackgroundColor"])
+            end if
+            return message
+        else if item.DoesExist("liveChatMembershipItemRenderer")
+            message = BuildMessage(item["liveChatMembershipItemRenderer"], "membership")
+            if message <> invalid
+                header = YourTubeJson.RunsText(item["liveChatMembershipItemRenderer"]["headerSubtext"])
+                if message.text = ""
+                    message.text = header
+                end if
+            end if
+            return message
+        end if
+        return invalid
+    end function
+
+    function BuildMessage(renderer as dynamic, kind as string) as dynamic
+        if not YourTubeJson.IsAA(renderer)
+            return invalid
+        end if
+        return {
+            id: YourTubeJson.AsString(renderer["id"])
+            kind: kind
+            author: YourTubeJson.RunsText(renderer["authorName"])
+            authorId: YourTubeJson.AsString(renderer["authorExternalChannelId"])
+            role: AuthorRole(renderer["authorBadges"])
+            text: MessageText(renderer["message"])
+            timestampUsec: YourTubeJson.AsString(renderer["timestampUsec"])
+            amount: ""
+            headerColor: ""
+            bodyColor: ""
+        }
+    end function
+
+    ' Text with emoji as text: unicode emoji as the character, custom channel emoji as their :shortcut:.
+    function MessageText(message as dynamic) as string
+        if not YourTubeJson.IsAA(message)
+            return ""
+        end if
+        runs = message["runs"]
+        if not YourTubeJson.IsArr(runs)
+            return YourTubeJson.RunsText(message)
+        end if
+        text = ""
+        for each part in runs
+            if not YourTubeJson.IsAA(part)
+                continue for
+            end if
+            if part.DoesExist("text")
+                text += YourTubeJson.AsString(part["text"])
+            else if part.DoesExist("emoji")
+                emoji = part["emoji"]
+                if emoji["isCustomEmoji"] = true
+                    text += YourTubeJson.AsString(YourTubeJson.Dig(emoji, ["shortcuts", 0]))
+                else
+                    text += YourTubeJson.AsString(emoji["emojiId"])
+                end if
+            end if
+        end for
+        return text
+    end function
+
+    ' Highest role wins: owner > moderator > member > viewer.
+    function AuthorRole(badges as dynamic) as string
+        best = Role.Viewer
+        if not YourTubeJson.IsArr(badges)
+            return best
+        end if
+        for each badge in badges
+            renderer = YourTubeJson.Dig(badge, ["liveChatAuthorBadgeRenderer"])
+            if not YourTubeJson.IsAA(renderer)
+                continue for
+            end if
+            iconType = YourTubeJson.AsString(YourTubeJson.Dig(renderer, ["icon", "iconType"]))
+            if iconType = "OWNER"
+                return Role.Owner
+            else if iconType = "MODERATOR"
+                best = Role.Moderator
+            else if renderer.DoesExist("customThumbnail") and best = Role.Viewer
+                best = Role.Member
+            end if
+        end for
+        return best
+    end function
+
+    ' YouTube sends colors as unsigned ARGB integers (often above 2^31); SceneGraph wants "#RRGGBBAA".
+    function ArgbToRgba(value as dynamic) as string
+        numeric = GetInterface(value, "ifLongInt") <> invalid or GetInterface(value, "ifInt") <> invalid or GetInterface(value, "ifDouble") <> invalid or GetInterface(value, "ifFloat") <> invalid
+        if not numeric
+            return ""
+        end if
+        n = 0&
+        n = n + value
+        if n < 0
+            n = n + 4294967296&
+        end if
+        digits = "0123456789ABCDEF"
+        hex = ""
+        for i = 1 to 8
+            hex = digits.Mid(n mod 16, 1) + hex
+            n = n \ 16
+        end for
+        return "#" + hex.Mid(2, 6) + hex.Mid(0, 2)
+    end function
+
+    function MathMax(a as integer, b as integer) as integer
+        if a > b
+            return a
+        end if
+        return b
+    end function
+
+end namespace

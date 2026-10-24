@@ -1,0 +1,194 @@
+import "pkg:/components/YourTube/YourTubeJson.bs"
+
+' YourTube: parses InnerTube (WEB) comment responses into plain associative arrays.
+' Pure functions over parsed JSON: run them in a Task/Job, never on the render thread.
+' Missing or unexpected fields are skipped; nothing here throws on odd input.
+'
+' Shapes (fixtures in source/tests/fixtures/yourtube/):
+'   /next (video)         -> itemSection "comment-item-section" -> continuation token for page 1
+'   /next (continuation)  -> onResponseReceivedEndpoints[*].{reload|append}... continuationItems:
+'                            commentsHeaderRenderer (count, Top/Newest tokens), commentThreadRenderer,
+'                            continuationItemRenderer (next page)
+'   frameworkUpdates.entityBatchUpdate.mutations -> commentEntityPayload / engagementToolbarStateEntityPayload,
+'   joined to each commentViewModel by commentKey / toolbarStateKey.
+namespace YourTubeComments
+
+    ' Page-1 continuation token and the comment count from a video's /next response.
+    function ParseEntry(nextResponse as dynamic) as object
+        result = { continuation: "", countText: "" }
+        if not YourTubeJson.IsAA(nextResponse)
+            return result
+        end if
+
+        section = YourTubeJson.FindFirst(nextResponse, "sectionIdentifier", "comment-item-section", 0)
+        if section <> invalid
+            result.continuation = YourTubeJson.FindContinuationToken(section, 0)
+        end if
+
+        panels = nextResponse["engagementPanels"]
+        if YourTubeJson.IsArr(panels)
+            for each panel in panels
+                renderer = YourTubeJson.Dig(panel, ["engagementPanelSectionListRenderer"])
+                if YourTubeJson.IsAA(renderer) and YourTubeJson.AsString(renderer["panelIdentifier"]) = "engagement-panel-comments-section"
+                    result.countText = YourTubeJson.RunsText(YourTubeJson.Dig(renderer, ["header", "engagementPanelTitleHeaderRenderer", "contextualInfo"]))
+                    if result.continuation = ""
+                        result.continuation = YourTubeJson.FindContinuationToken(renderer, 0)
+                    end if
+                end if
+            end for
+        end if
+        return result
+    end function
+
+    ' One page of comments (or replies). maxComments caps how many are kept.
+    function ParsePage(response as dynamic, maxComments = 50 as integer) as object
+        result = { comments: [], continuation: "", countText: "", sortOptions: [] }
+        if not YourTubeJson.IsAA(response)
+            return result
+        end if
+
+        entities = BuildEntityMap(response)
+        endpoints = response["onResponseReceivedEndpoints"]
+        if not YourTubeJson.IsArr(endpoints)
+            return result
+        end if
+
+        for each endpoint in endpoints
+            command = invalid
+            if YourTubeJson.IsAA(endpoint)
+                command = endpoint["reloadContinuationItemsCommand"]
+                if command = invalid
+                    command = endpoint["appendContinuationItemsAction"]
+                end if
+            end if
+            items = YourTubeJson.Dig(command, ["continuationItems"])
+            if not YourTubeJson.IsArr(items)
+                continue for
+            end if
+
+            for each item in items
+                if not YourTubeJson.IsAA(item)
+                    continue for
+                end if
+                if item.DoesExist("commentsHeaderRenderer")
+                    ParseHeader(item["commentsHeaderRenderer"], result)
+                else if item.DoesExist("commentThreadRenderer")
+                    if result.comments.Count() < maxComments
+                        comment = ParseThread(item["commentThreadRenderer"], entities)
+                        if comment <> invalid
+                            result.comments.Push(comment)
+                        end if
+                    end if
+                else if item.DoesExist("commentViewModel")
+                    if result.comments.Count() < maxComments
+                        comment = BuildComment(YourTubeJson.Dig(item, ["commentViewModel"]), entities)
+                        if comment <> invalid
+                            result.comments.Push(comment)
+                        end if
+                    end if
+                else if item.DoesExist("continuationItemRenderer")
+                    result.continuation = YourTubeJson.FindContinuationToken(item["continuationItemRenderer"], 0)
+                end if
+            end for
+        end for
+        return result
+    end function
+
+    function ParseHeader(header as dynamic, result as object) as void
+        if not YourTubeJson.IsAA(header)
+            return
+        end if
+        result.countText = YourTubeJson.RunsText(header["countText"])
+        items = YourTubeJson.Dig(header, ["sortMenu", "sortFilterSubMenuRenderer", "subMenuItems"])
+        if not YourTubeJson.IsArr(items)
+            return
+        end if
+        for each item in items
+            if YourTubeJson.IsAA(item)
+                result.sortOptions.Push({
+                    title: YourTubeJson.AsString(item["title"])
+                    selected: item["selected"] = true
+                    continuation: YourTubeJson.AsString(YourTubeJson.Dig(item, ["serviceEndpoint", "continuationCommand", "token"]))
+                })
+            end if
+        end for
+    end function
+
+    function ParseThread(thread as dynamic, entities as object) as dynamic
+        if not YourTubeJson.IsAA(thread)
+            return invalid
+        end if
+        comment = BuildComment(YourTubeJson.Dig(thread, ["commentViewModel", "commentViewModel"]), entities)
+        if comment = invalid
+            return invalid
+        end if
+        replies = YourTubeJson.Dig(thread, ["replies", "commentRepliesRenderer"])
+        if YourTubeJson.IsAA(replies)
+            comment.repliesContinuation = YourTubeJson.FindContinuationToken(replies, 0)
+        end if
+        return comment
+    end function
+
+    function BuildComment(viewModel as dynamic, entities as object) as dynamic
+        if not YourTubeJson.IsAA(viewModel)
+            return invalid
+        end if
+        entity = YourTubeJson.Dig(entities[YourTubeJson.AsString(viewModel["commentKey"])], ["commentEntityPayload"])
+        if not YourTubeJson.IsAA(entity)
+            return invalid
+        end if
+        properties = entity["properties"]
+        author = entity["author"]
+        toolbar = entity["toolbar"]
+        toolbarState = YourTubeJson.Dig(entities[YourTubeJson.AsString(viewModel["toolbarStateKey"])], ["engagementToolbarStateEntityPayload"])
+
+        isHearted = YourTubeJson.AsString(YourTubeJson.Dig(toolbarState, ["heartState"])) = "TOOLBAR_HEART_STATE_HEARTED"
+        pinnedText = YourTubeJson.RunsText(viewModel["pinnedText"])
+        if pinnedText = ""
+            pinnedText = YourTubeJson.AsString(viewModel["pinnedText"])
+        end if
+
+        replyCount = YourTubeJson.AsString(YourTubeJson.Dig(toolbar, ["replyCount"]))
+        return {
+            id: YourTubeJson.AsString(YourTubeJson.Dig(properties, ["commentId"]))
+            text: YourTubeJson.AsString(YourTubeJson.Dig(properties, ["content", "content"]))
+            publishedText: YourTubeJson.AsString(YourTubeJson.Dig(properties, ["publishedTime"]))
+            replyLevel: YourTubeJson.AsInt(YourTubeJson.Dig(properties, ["replyLevel"]))
+            author: YourTubeJson.AsString(YourTubeJson.Dig(author, ["displayName"]))
+            authorId: YourTubeJson.AsString(YourTubeJson.Dig(author, ["channelId"]))
+            avatar: YourTubeJson.AsString(YourTubeJson.Dig(author, ["avatarThumbnailUrl"]))
+            isCreator: YourTubeJson.Dig(author, ["isCreator"]) = true
+            isVerified: YourTubeJson.Dig(author, ["isVerified"]) = true
+            likeCount: YourTubeJson.AsString(YourTubeJson.Dig(toolbar, ["likeCountNotliked"]))
+            replyCount: replyCount
+            isHearted: isHearted
+            heartedBy: HeartedBy(toolbar, isHearted)
+            isPinned: pinnedText <> ""
+            pinnedText: pinnedText
+            repliesContinuation: ""
+        }
+    end function
+
+    ' "❤ by @Channel" only when the creator actually hearted it (the tooltip is present either way).
+    function HeartedBy(toolbar as dynamic, isHearted as boolean) as string
+        if not isHearted
+            return ""
+        end if
+        return YourTubeJson.AsString(YourTubeJson.Dig(toolbar, ["heartActiveTooltip"]))
+    end function
+
+    function BuildEntityMap(response as object) as object
+        map = {}
+        mutations = YourTubeJson.Dig(response, ["frameworkUpdates", "entityBatchUpdate", "mutations"])
+        if not YourTubeJson.IsArr(mutations)
+            return map
+        end if
+        for each mutation in mutations
+            if YourTubeJson.IsAA(mutation) and YourTubeJson.IsAA(mutation["payload"])
+                map[YourTubeJson.AsString(mutation["entityKey"])] = mutation["payload"]
+            end if
+        end for
+        return map
+    end function
+
+end namespace

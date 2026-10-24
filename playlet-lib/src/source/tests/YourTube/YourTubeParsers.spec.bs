@@ -1,0 +1,175 @@
+' YourTube: comments + live chat parsers against real InnerTube fixtures
+' (captured with tools/yourtube/capture-fixtures.mjs into source/tests/fixtures/yourtube/).
+import "pkg:/components/YourTube/Comments/CommentsParser.bs"
+import "pkg:/components/YourTube/LiveChat/LiveChatParser.bs"
+import "pkg:/components/YourTube/YourTubeJson.bs"
+import "pkg:/source/utils/StringUtils.bs"
+
+namespace Tests
+
+    @suite
+    class YourTubeParsersTests extends Rooibos.BaseTestSuite
+
+        function Fixture(name as string) as dynamic
+            return StringUtils.ParseJsonSafe(ReadAsciiFile("pkg:/source/tests/fixtures/yourtube/" + name))
+        end function
+
+        @describe("YourTubeComments.ParseEntry")
+
+        @it("finds the page-1 continuation in a video's /next")
+        function _()
+            entry = YourTubeComments.ParseEntry(m.Fixture("next-video.json"))
+            m.assertTrue(entry.continuation.Len() > 20)
+        end function
+
+        @it("returns empty values for bad input")
+        function _()
+            m.assertEqual(YourTubeComments.ParseEntry(invalid).continuation, "")
+            m.assertEqual(YourTubeComments.ParseEntry({ contents: [1, "x"] }).continuation, "")
+        end function
+
+        @describe("YourTubeComments.ParsePage")
+
+        @it("parses header, threads and next-page continuation")
+        function _()
+            page = YourTubeComments.ParsePage(m.Fixture("comments-page.json"))
+            m.assertEqual(page.countText, "2,460,436 Comments")
+            m.assertEqual(page.sortOptions.Count(), 2)
+            m.assertEqual(page.sortOptions[0].title, "Top")
+            m.assertEqual(page.sortOptions[1].title, "Newest")
+            m.assertTrue(page.sortOptions[1].continuation.Len() > 20)
+            m.assertTrue(page.continuation.Len() > 20)
+            m.assertEqual(page.comments.Count(), 20)
+        end function
+
+        @it("joins the comment view model with its entity payloads")
+        function _()
+            c = YourTubeComments.ParsePage(m.Fixture("comments-page.json")).comments[0]
+            m.assertEqual(c.id, "Ugxzbv_ZeZXNRcfwsSF4AaABAg")
+            m.assertEqual(c.author, "@candycake9531")
+            m.assertEqual(c.likeCount, "292K")
+            m.assertEqual(c.replyCount, "713")
+            m.assertEqual(c.publishedText, "6 years ago")
+            m.assertTrue(c.text.Len() > 0)
+            m.assertTrue(c.avatar.StartsWith("https://"))
+            m.assertTrue(c.repliesContinuation.Len() > 20)
+            m.assertFalse(c.isHearted)
+            m.assertEqual(c.heartedBy, "")
+            m.assertFalse(c.isPinned)
+        end function
+
+        @it("caps how many comments it keeps")
+        function _()
+            page = YourTubeComments.ParsePage(m.Fixture("comments-page.json"), 5)
+            m.assertEqual(page.comments.Count(), 5)
+        end function
+
+        @it("reports hearted and pinned comments")
+        function _()
+            data = m.Fixture("comments-page.json")
+            thread = data.onResponseReceivedEndpoints[1].reloadContinuationItemsCommand.continuationItems[0].commentThreadRenderer
+            vm = thread.commentViewModel.commentViewModel
+            vm.pinnedText = { runs: [{ text: "Pinned by Rick Astley" }] }
+            for each mutation in data.frameworkUpdates.entityBatchUpdate.mutations
+                if mutation.entityKey = vm.toolbarStateKey
+                    mutation.payload.engagementToolbarStateEntityPayload.heartState = "TOOLBAR_HEART_STATE_HEARTED"
+                end if
+            end for
+            c = YourTubeComments.ParsePage(data).comments[0]
+            m.assertTrue(c.isHearted)
+            m.assertTrue(c.heartedBy.InStr("RickAstleyYT") <> -1)
+            m.assertTrue(c.isPinned)
+            m.assertEqual(c.pinnedText, "Pinned by Rick Astley")
+        end function
+
+        @it("skips threads whose entity payload is missing")
+        function _()
+            data = m.Fixture("comments-page.json")
+            data.frameworkUpdates.entityBatchUpdate.mutations = []
+            page = YourTubeComments.ParsePage(data)
+            m.assertEqual(page.comments.Count(), 0)
+            m.assertTrue(page.continuation.Len() > 20)
+        end function
+
+        @it("parses a replies page (append action, reply level 1)")
+        function _()
+            page = YourTubeComments.ParsePage(m.Fixture("comment-replies.json"))
+            m.assertEqual(page.comments.Count(), 3)
+            m.assertEqual(page.comments[0].replyLevel, 1)
+            m.assertTrue(page.continuation.Len() > 20)
+        end function
+
+        @it("survives bad input")
+        function _()
+            m.assertEqual(YourTubeComments.ParsePage(invalid).comments.Count(), 0)
+            m.assertEqual(YourTubeComments.ParsePage({ onResponseReceivedEndpoints: [invalid, 3, {}] }).comments.Count(), 0)
+        end function
+
+        @describe("YourTubeLiveChat")
+
+        @it("finds Top chat and Live chat continuations")
+        function _()
+            entry = YourTubeLiveChat.ParseEntry(m.Fixture("next-live.json"))
+            m.assertTrue(entry.topChat.Len() > 20)
+            m.assertTrue(entry.liveChat.Len() > 20)
+            m.assertFalse(entry.isReplay)
+        end function
+
+        @it("parses text messages, the next continuation and the poll interval")
+        function _()
+            result = YourTubeLiveChat.ParseResponse(m.Fixture("live-chat.json"))
+            m.assertEqual(result.messages.Count(), 37)
+            m.assertEqual(result.timeoutMs, 10000)
+            m.assertTrue(result.continuation.Len() > 20)
+            first = result.messages[0]
+            m.assertEqual(first.id, "ChwKGkNQN19oYnp6MFpjREZXNDQxZ0FkdFljbTd3")
+            m.assertEqual(first.text, "SHARP ..")
+            m.assertEqual(first.kind, "text")
+            m.assertTrue(first.author.Len() > 0)
+        end function
+
+        @it("keeps only the newest messages over the cap")
+        function _()
+            result = YourTubeLiveChat.ParseResponse(m.Fixture("live-chat.json"), 10)
+            m.assertEqual(result.messages.Count(), 10)
+            m.assertEqual(result.messages[9].id, "ChwKGkNNdURvTHI3MFpjREZVTEJ3Z1FkdDhVRGNn")
+        end function
+
+        @it("turns emoji into text")
+        function _()
+            text = YourTubeLiveChat.MessageText({
+                runs: [
+                    { text: "hi " }
+                    { emoji: { emojiId: "🕉" } }
+                    { emoji: { isCustomEmoji: true, shortcuts: [":yt-wave:"] } }
+                ]
+            })
+            m.assertEqual(text, "hi 🕉:yt-wave:")
+        end function
+
+        @it("ranks author roles")
+        function _()
+            owner = { liveChatAuthorBadgeRenderer: { icon: { iconType: "OWNER" } } }
+            moderator = { liveChatAuthorBadgeRenderer: { icon: { iconType: "MODERATOR" } } }
+            member = { liveChatAuthorBadgeRenderer: { customThumbnail: { thumbnails: [] } } }
+            m.assertEqual(YourTubeLiveChat.AuthorRole(invalid), "viewer")
+            m.assertEqual(YourTubeLiveChat.AuthorRole([member]), "member")
+            m.assertEqual(YourTubeLiveChat.AuthorRole([member, moderator]), "moderator")
+            m.assertEqual(YourTubeLiveChat.AuthorRole([moderator, owner]), "owner")
+        end function
+
+        @it("converts YouTube ARGB colors")
+        function _()
+            m.assertEqual(YourTubeLiveChat.ArgbToRgba(4280191205&), "#1E88E5FF")
+            m.assertEqual(YourTubeLiveChat.ArgbToRgba(invalid), "")
+        end function
+
+        @it("survives bad input")
+        function _()
+            m.assertEqual(YourTubeLiveChat.ParseResponse(invalid).messages.Count(), 0)
+            m.assertEqual(YourTubeLiveChat.ParseResponse({ continuationContents: { liveChatContinuation: { actions: [1, {}] } } }).messages.Count(), 0)
+        end function
+
+    end class
+
+end namespace

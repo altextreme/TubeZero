@@ -1,0 +1,117 @@
+' YourTube: tiny defensive JSON helpers shared by the comments and live chat parsers.
+namespace YourTubeJson
+
+    const MAX_SEARCH_DEPTH = 12
+
+    function FindContinuationToken(node as dynamic, depth as integer) as string
+        found = FindKey(node, "continuationCommand", depth)
+        return AsString(Dig(found, ["token"]))
+    end function
+
+    function FindKey(node as dynamic, key as string, depth as integer) as dynamic
+        if depth > MAX_SEARCH_DEPTH
+            return invalid
+        end if
+        if IsAA(node)
+            if node.DoesExist(key)
+                return node[key]
+            end if
+            for each childKey in node
+                found = FindKey(node[childKey], key, depth + 1)
+                if found <> invalid
+                    return found
+                end if
+            end for
+        else if IsArr(node)
+            for each child in node
+                found = FindKey(child, key, depth + 1)
+                if found <> invalid
+                    return found
+                end if
+            end for
+        end if
+        return invalid
+    end function
+
+    function FindFirst(node as dynamic, key as string, value as string, depth as integer) as dynamic
+        if depth > MAX_SEARCH_DEPTH
+            return invalid
+        end if
+        if IsAA(node)
+            if AsString(node[key]) = value
+                return node
+            end if
+            for each childKey in node
+                found = FindFirst(node[childKey], key, value, depth + 1)
+                if found <> invalid
+                    return found
+                end if
+            end for
+        else if IsArr(node)
+            for each child in node
+                found = FindFirst(child, key, value, depth + 1)
+                if found <> invalid
+                    return found
+                end if
+            end for
+        end if
+        return invalid
+    end function
+
+    function RunsText(node as dynamic) as string
+        if not IsAA(node)
+            return ""
+        end if
+        if node["simpleText"] <> invalid
+            return AsString(node["simpleText"])
+        end if
+        text = ""
+        runs = node["runs"]
+        if IsArr(runs)
+            for each part in runs
+                text += AsString(Dig(part, ["text"]))
+            end for
+        end if
+        return text
+    end function
+
+    ' Walks keys (objects) and integer indexes (arrays); invalid as soon as a step doesn't fit.
+    function Dig(node as dynamic, path as object) as dynamic
+        for each key in path
+            if IsAA(node) and GetInterface(key, "ifString") <> invalid
+                node = node[key]
+            else if IsArr(node) and GetInterface(key, "ifInt") <> invalid
+                if key < 0 or key >= node.Count()
+                    return invalid
+                end if
+                node = node[key]
+            else
+                return invalid
+            end if
+        end for
+        return node
+    end function
+
+    function IsAA(value as dynamic) as boolean
+        return GetInterface(value, "ifAssociativeArray") <> invalid
+    end function
+
+    function IsArr(value as dynamic) as boolean
+        return GetInterface(value, "ifArray") <> invalid
+    end function
+
+    function AsString(value as dynamic) as string
+        if GetInterface(value, "ifString") <> invalid
+            return value
+        end if
+        return ""
+    end function
+
+    function AsInt(value as dynamic) as integer
+        if GetInterface(value, "ifInt") <> invalid or GetInterface(value, "ifFloat") <> invalid or GetInterface(value, "ifDouble") <> invalid
+            return value
+        end if
+        return 0
+    end function
+
+end namespace

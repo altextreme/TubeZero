@@ -1,0 +1,233 @@
+{
+ "contents": {
+  "twoColumnWatchNextResults": {
+   "conversationBar": {
+    "liveChatRenderer": {
+     "continuations": [
+      {
+       "reloadContinuationData": {
+        "continuation": "0ofMyAOEARpeQ2lrcUp3b1lWVU4xY0haYVJ5MDFhMjlmWldsWVFYVndZa1JtZUZkM0VndEhiM1JzUVRGTFMxZHZieG9UNnFqZHVRRU5DZ3RIYjNSc1FURkxTMWR2YnlBQk1BQSUzRDABggEMCAQYAiAAKAAwADgAiAEBoAGGlcym_NGXA6gBALIBAA%3D%3D",
+        "clickTrackingParams": "CFEQxqYCIhMIoYDKpvzRlwMVYEQ3CB3IRCn9ygEEfBL2KQ=="
+       }
+      }
+     ],
+     "header": {
+      "liveChatHeaderRenderer": {
+       "overflowMenu": {
+        "menuRenderer": {
+         "items": [
+          {
+           "menuServiceItemRenderer": {
+            "text": {
+             "runs": [
+              {
+               "text": "Participants"
+              }
+             ]
+            },
+            "icon": {
+             "iconType": "PERSON"
+            },
+            "serviceEndpoint": {
+             "clickTrackingParams": "CEkQl98BIhMIoYDKpvzRlwMVYEQ3CB3IRCn9ygEEfBL2KQ==",
+             "showLiveChatParticipantsEndpoint": {
+              "hack": true
+             }
+            },
+            "trackingParams": "CEkQl98BIhMIoYDKpvzRlwMVYEQ3CB3IRCn9"
+           }
+          },
+          {
+           "menuServiceItemRenderer": {
+            "text": {
+             "runs": [
+              {
+               "text": "Popout chat"
+              }
+             ]
+            },
+            "icon": {
+             "iconType": "OPEN_IN_NEW"
+            },
+            "serviceEndpoint": {
+             "clickTrackingParams": "CEkQl98BIhMIoYDKpvzRlwMVYEQ3CB3IRCn9ygEEfBL2KQ==",
+             "popoutLiveChatEndpoint": {
+              "url": "https://www.youtube.com/live_chat?is_popout=1&v=GotlA1KKWoo"
+             }
+            },
+            "trackingParams": "CEkQl98BIhMIoYDKpvzRlwMVYEQ3CB3IRCn9"
+           }
+          },
+          {
+           "menuNavigationItemRenderer": {
+            "text": {
+             "runs": [
+              {
+               "text": "Send feedback"
+              }
+             ]
+            },
+            "icon": {
+             "iconType": "FEEDBACK"
+            },
+            "navigationEndpoint": {
+             "clickTrackingParams": "CEkQl98BIhMIoYDKpvzRlwMVYEQ3CB3IRCn9ygEEfBL2KQ==",
+             "commandMetadata": {
+              "webCommandMetadata": {
+               "ignoreNavigation": true
+              }
+             },
+             "userFeedbackEndpoint": {
+              "hack": true,
+              "bucketIdentifier": "live_chat"
+             }
+            },
+            "trackingParams": "CEkQl98BIhMIoYDKpvzRlwMVYEQ3CB3IRCn9"
+           }
+          }
+         ],
+         "trackingParams": "CEkQl98BIhMIoYDKpvzRlwMVYEQ3CB3IRCn9",
+         "accessibility": {
+          "accessibilityData": {
+           "label": "More options"
+          }
+         }
+        }
+       },
+       "collapseButton": {
+        "buttonRenderer": {
+         "style": "STYLE_DEFAULT",
+         "size": "SIZE_DEFAULT",
+         "isDisabled": false,
+         "icon": {
+          "iconType": "CLOSE"
+         },
+         "accessibility": {
+          "label": "Close"
+         },
+         "trackingParams": "CFAQ8FsiEwihgMqm_NGXAxVgRDcIHchEKf0=",
+         "command": {
+          "clickTrackingParams": "CFAQ8FsiEwihgMqm_NGXAxVgRDcIHchEKf3KAQR8EvYp",
+          "commandMetadata": {
+           "webCommandMetadata": {
+            "sendPost": true
+           }
+          },
+          "signalServiceEndpoint": {
+           "signal": "CLIENT_SIGNAL",
+           "actions": [
+            {
+             "clickTrackingParams": "CFAQ8FsiEwihgMqm_NGXAxVgRDcIHchEKf3KAQR8EvYp",
+             "signalAction": {
+              "signal": "HIDE_LIVE_CHAT"
+             }
+            }
+           ]
+          }
+         }
+        }
+       },
+       "viewSelector": {
+        "sortFilterSubMenuRenderer": {
+         "subMenuItems": [
+          {
+           "title": "Top chat",
+           "selected": true,
+           "continuation": {
+            "reloadContinuationData": {
+             "continuation": "0ofMyAMWGgAwAYIBDAgEGAAgACgBMAA4AKgBAQ%3D%3D",
+             "clickTrackingParams": "CE8QxqYCIhMIoYDKpvzRlwMVYEQ3CB3IRCn9ygEEfBL2KQ=="
+            }
+           },
+           "accessibility": {
+            "accessibilityData": {
+             "label": "Top chat"
+            }
+           },
+           "subtitle": "Some messages, such as potential spam, may not be visible",
+           "trackingParams": "CE4Q48AHGAAiEwihgMqm_NGXAxVgRDcIHchEKf0="
+          },
+          {
+           "title": "Live chat",
+           "selected": false,
+           "continuation": {
+            "reloadContinuationData": {
+             "continuation": "0ofMyAMWGgAwAYIBDAgBGAAgACgBMAA4AKgBAQ%3D%3D",
+             "clickTrackingParams": "CE0QxqYCIhMIoYDKpvzRlwMVYEQ3CB3IRCn9ygEEfBL2KQ=="
+            }
+           },
+           "accessibility": {
+            "accessibilityData": {
+             "label": "Live chat"
+            }
+           },
+           "subtitle": "All messages are visible",
+           "trackingParams": "CEwQ48AHGAEiEwihgMqm_NGXAxVgRDcIHchEKf0="
+          }
+         ],
+         "accessibility": {
+          "accessibilityData": {
+           "label": "Live Chat mode selection"
+          }
+         },
+         "trackingParams": "CEsQgdoEIhMIoYDKpvzRlwMVYEQ3CB3IRCn9",
+         "targetId": "live-chat-view-selector-sub-menu"
+        }
+       }
+      }
+     },
+     "trackingParams": "CEkQl98BIhMIoYDKpvzRlwMVYEQ3CB3IRCn9",
+     "clientMessages": {
+      "reconnectMessage": {
+       "runs": [
+        {
+         "text": "Chat disconnected. Please wait while we try to reconnect you."
+        }
+       ]
+      },
+      "unableToReconnectMessage": {
+       "runs": [
+        {
+         "text": "Unable to connect to chat. Please try again later."
+        }
+       ]
+      },
+      "fatalError": {
+       "runs": [
+        {
+         "text": "Unable to connect to chat. Please try again later."
+        }
+       ]
+      },
+      "reconnectedMessage": {
+       "runs": [
+        {
+         "text": "Successfully connected."
+        }
+       ]
+      },
+      "genericError": {
+       "runs": [
+        {
+         "text": "Error, try again."
+        }
+       ]
+      }
+     },
+     "initialDisplayState": "LIVE_CHAT_DISPLAY_STATE_EXPANDED",
+     "showButton": {
+      "buttonRenderer": {
+       "style": "STYLE_DEFAULT",
+       "size": "SIZE_DEFAULT",
+       "isDisabled": false,
+       "text": {
+        "simpleText": "Show chat"
+       },
+       "trackingParams": "CEoQ8FsiEwihgMqm_NGXAxVgRDcIHchEKf0="
+      }
+     }
+    }
+   }
+  }
+ }
+}
