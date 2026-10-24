@@ -1,6 +1,2 @@
-<!-- YourTube: "You" nav screen. Home's screen (top bar + rows) with its own feeds. -->
-<component name="YourTubeYouScreen" extends="HomeScreen">
-    <interface>
-        <field id="feedFile" type="string" value="libpkg:/config/yourtube/you_layout.yaml" />
-    </interface>
-</component>
+<!-- YourTube: "You" nav screen. Home's screen (top bar + rows) with its own feeds (set in Init). -->
+<component name="YourTubeYouScreen" extends="HomeScreen" />

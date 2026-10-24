@@ -58,6 +58,11 @@ function ShowRootScreen(screenName as string) as void
     end if
     if not m.screens.DoesExist(screenName)
         screen = CreateObject("roSGNode", screenName)
+        ' YourTube: a screen that fails to load (e.g. bad component XML) must not drop the app into the debugger
+        if screen = invalid
+            LogError("Failed to create screen:", screenName)
+            return
+        end if
         screen.id = screenName
         m.screens[screenName] = screen
         ' insert child at 0 to make sure it is behind the navbar

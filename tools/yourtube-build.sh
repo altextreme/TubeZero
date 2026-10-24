@@ -4,6 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+node tools/yourtube/check-components.mjs
 node tools/rm.js dist
 npm run build:web
 (cd playlet-lib && npx bsc --create-package --sourceMap=false --lintConfig ../config/bslint.jsonc && npm run postbuild --silent)

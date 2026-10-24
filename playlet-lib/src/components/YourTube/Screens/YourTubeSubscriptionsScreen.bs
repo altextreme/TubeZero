@@ -1,0 +1,4 @@
+' feedFile is inherited from HomeScreen; Roku rejects re-declaring it, so it is set here instead.
+function Init()
+    m.top.feedFile = "libpkg:/config/yourtube/subscriptions_layout.yaml"
+end function
