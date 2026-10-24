@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # YourTube: screenshots every interactive state over ECP (keys) + tools/screenshot.js (needs .env).
 # Each section relaunches the app so it starts from a known state. Output: out/screens/all/<section>-<n>-<name>.jpg
-# Usage: tools/yourtube/capture-all.sh [section...]   (sections: home nav search empty settings live profile player comments chat related channel filters menu exit)
+# Usage: [OUT=out/screens/other] tools/yourtube/capture-all.sh [section...]   (sections: home nav search empty settings live profile player comments chat related channel filters menu exit)
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 TV="$(sed -n 's/^ROKU_DEV_TARGET=//p' .env)"; TV="${TV:-192.168.1.164}"
 ECP="http://$TV:8060"
-OUT="out/screens/all"
+OUT="${OUT:-out/screens/all}"
 mkdir -p "$OUT"
 
 key() { curl -s -m 5 -d '' "$ECP/keypress/$1" >/dev/null; sleep "${2:-0.9}"; }
