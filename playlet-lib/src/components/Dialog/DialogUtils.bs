@@ -126,7 +126,7 @@ namespace DialogUtils
             return invalid
         end if
 
-        dialog = CreateObject("roSGNode", "TimedDialog")
+        dialog = CreateObject("roSGNode", "YourTubeDialog") ' YourTube: neutral dim (was TimedDialog)
         if IsString(message)
             if message.Len() > MESSAGE_LENGTH_LIMIT
                 message = message.Left(MESSAGE_LENGTH_LIMIT) + "..."
@@ -150,7 +150,7 @@ namespace DialogUtils
         dialog.defaultActionTimeoutSeconds = timeoutSeconds
         dialog.startCountdown = true
 
-        m.top.getScene().dialog = dialog
+        ShowYourTubeDialog(dialog) ' YourTube (was m.top.getScene().dialog = dialog)
 
         dialog.focusDefaultButton = true
 

@@ -19,6 +19,14 @@
         <field id="close" type="boolean" alwaysNotify="true" onChange="OnClose" />
         <!-- set by the host: the node that had focus before the dialog opened -->
         <field id="returnFocus" type="node" />
+        <!-- timed mode (DialogUtils.ShowTimedDialogButtons, same fields as TimedDialog): the default button counts
+             down and is chosen when it reaches zero; any key stops the countdown. -->
+        <field id="actualButtons" type="stringarray" />
+        <field id="defaultButtonIndex" type="integer" value="-1" />
+        <field id="defaultActionTimeoutSeconds" type="integer" value="10" />
+        <field id="actualButtonSelected" type="integer" value="-1" />
+        <field id="startCountdown" type="boolean" alwaysNotify="true" onChange="OnStartCountdown" />
+        <field id="focusDefaultButton" type="boolean" alwaysNotify="true" onChange="OnFocusDefaultButton" />
         <function name="FocusButtons" />
     </interface>
     <children>
@@ -34,5 +42,6 @@
         <!-- takes focus again just after opening: the screen stack can reclaim it while the key that opened us
              is still being handled -->
         <Timer id="FocusTimer" duration="0.05" />
+        <Timer id="CountdownTimer" duration="1" repeat="true" />
     </children>
 </component>

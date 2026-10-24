@@ -35,7 +35,8 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 ### App-drawn dialogs
 - Message dialogs (exit, errors, notices) are drawn by the app (`YourTubeDialog` on `YourTubeDialogHost`) with a
   neutral black dim; Roku's own dialog dims in purple with no setting to change it. Same fields as before for
-  callers. Keyboard, sign-in, timed and on-screen-code dialogs still use Roku's.
+  callers. Timed dialogs (the playback-error "Play next video (10)" countdown) use it too. Keyboard,
+  Invidious sign-in and on-screen-code dialogs still use Roku's.
 
 ### Loading skeletons
 - Placeholder cards take their row's size (the big first shelf is 480 × 270), so nothing jumps when the

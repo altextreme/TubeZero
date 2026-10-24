@@ -233,6 +233,7 @@ function TestPlaybackErrorDialog(errorFields as object) as object
     ' tear down without firing the close-response (it hits the stub videoQueue).
     dialog.unobserveFieldScoped("wasClosed")
     m.top.getScene().dialog = invalid
+    dialog.close = true ' YourTube: timed dialogs are YourTubeDialogs on YourTubeDialogHost now
     m.errorDialogNode = invalid
     return result
 end function

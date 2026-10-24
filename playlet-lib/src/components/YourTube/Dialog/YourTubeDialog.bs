@@ -18,6 +18,9 @@ function Init()
     m.closed = false
     m.focusTimer = m.top.findNode("FocusTimer")
     m.focusTimer.observeField("fire", FuncName(TakeFocus))
+    m.countdownTimer = m.top.findNode("CountdownTimer")
+    m.countdownTimer.observeField("fire", FuncName(OnCountdownTick))
+    m.countdown = 0
     Layout()
 end function
 
@@ -95,6 +98,8 @@ function TakeFocus() as void
 end function
 
 function OnItemSelected() as void
+    StopCountdown()
+    m.top.actualButtonSelected = m.buttonList.itemSelected
     m.top.buttonSelected = m.buttonList.itemSelected
     ' like SimpleDialog: any button closes the dialog
     m.top.close = true
@@ -109,6 +114,7 @@ function OnClose() as void
         return
     end if
     m.closed = true
+    m.countdownTimer.control = "stop"
     ' Only hand focus back if the dialog still had it: callers like VideoQueue move focus first, then close.
     hadFocus = m.top.isInFocusChain()
     NodeSetFocus(m.buttonList, false)
@@ -126,7 +132,61 @@ function OnClose() as void
     m.top.wasClosed = true
 end function
 
+' --- timed mode ---------------------------------------------------------------------------------------------
+
+function OnStartCountdown() as void
+    m.top.buttons = m.top.actualButtons
+    m.countdown = m.top.defaultActionTimeoutSeconds
+    if m.top.defaultButtonIndex < 0 or m.countdown <= 0
+        return
+    end if
+    ShowCountdown()
+    m.countdownTimer.control = "start"
+end function
+
+function OnFocusDefaultButton() as void
+    if m.top.defaultButtonIndex >= 0
+        m.buttonList.jumpToItem = m.top.defaultButtonIndex
+    end if
+end function
+
+function OnCountdownTick() as void
+    m.countdown -= 1
+    if m.countdown <= 0
+        StopCountdown()
+        m.top.actualButtonSelected = m.top.defaultButtonIndex
+        m.top.close = true
+        return
+    end if
+    ShowCountdown()
+end function
+
+' "Play next video (7)" on the default button
+function ShowCountdown() as void
+    index = m.top.defaultButtonIndex
+    content = m.buttonList.content
+    if content = invalid or index < 0 or index >= content.getChildCount()
+        return
+    end if
+    label = m.top.actualButtons[index]
+    if m.countdown > 0
+        label = `${label} (${m.countdown})`
+    end if
+    content.getChild(index).title = label
+end function
+
+function StopCountdown() as void
+    if m.countdown > 0
+        m.countdown = 0
+        m.countdownTimer.control = "stop"
+        ShowCountdown()
+    end if
+end function
+
 function OnKeyEvent(key as string, press as boolean) as boolean
+    if press
+        StopCountdown()
+    end if
     if press and key = RemoteKeys.Back
         m.top.close = true
     end if
