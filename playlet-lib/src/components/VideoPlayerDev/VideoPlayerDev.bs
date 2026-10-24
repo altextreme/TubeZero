@@ -101,6 +101,8 @@ function Initialize()
     m.commentsPanel.ObserveField("closed", FuncName(OnCommentsClosed))
     m.liveChatPanel = m.top.findNode("liveChatPanel")
     m.toast = m.top.findNode("toast")
+    m.relatedShelf = m.top.findNode("relatedShelf")
+    m.relatedShelf.ObserveField("closed", FuncName(OnRelatedClosed))
     m.fullScreenHint = m.top.findNode("fullScreenHint")
 
     m.autoHide = m.top.findNode("autoHide")
@@ -349,6 +351,10 @@ function OnKeyEvent(key as string, press as boolean) as boolean
     if press and CanFocusInteract()
         ' Up/Down move between the two tiers; a no-op at the ends is still consumed — Up at the top tier
         ' (the buttons) pulses the focused button so the press visibly lands somewhere.
+        ' YourTube: Down from the scrubber opens the related videos row
+        if key = RemoteKeys.Down and m.focusTarget = PlayerCoordinatorLogic.FocusTarget.Bar and OpenRelated()
+            return true
+        end if
         if key = RemoteKeys.Up or key = RemoteKeys.Down
             newTarget = PlayerCoordinatorLogic.NextFocusTarget(m.focusTarget, key)
             if newTarget <> m.focusTarget
@@ -584,6 +590,30 @@ function OpenComments() as void
     m.commentsPanel.visible = true
     m.commentsPanel.jobQueue = m.top.jobQueue
     m.commentsPanel.videoId = content.videoId
+end function
+
+' YourTube: related videos from /next; false when there are none (Down stays a no-op).
+function OpenRelated() as boolean
+    content = m.top.content
+    if content = invalid
+        return false
+    end if
+    videos = ValidAssociativeArray(content.metadata).recommendedVideos
+    if not IsArray(videos) or videos.Count() = 0
+        return false
+    end if
+    HideChrome()
+    m.relatedShelf.invidious = m.top.invidious
+    m.relatedShelf.videoQueue = m.top.videoQueue
+    m.relatedShelf.visible = true
+    m.relatedShelf.videos = videos
+    return true
+end function
+
+function OnRelatedClosed() as void
+    m.relatedShelf.visible = false
+    NodeSetFocus(m.top, true)
+    SyncFocus()
 end function
 
 ' YourTube: like / dislike / Watch Later. The icon flips right away and flips back if the request fails.
@@ -1217,6 +1247,7 @@ function PlayWithContent(contentNode as object)
     LogInfo("PlayWithContent videoId=", contentNode.videoId, " title=", contentNode.title)
     StopLiveChat() ' YourTube: chat belongs to the previous video
     ResetAccountActions() ' YourTube
+    m.relatedShelf.visible = false ' YourTube
     videoContentNode = CreateObject("roSGNode", "ContentNode")
 
     if not StringUtils.IsNullOrEmpty(contentNode.videoId)

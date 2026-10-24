@@ -116,7 +116,7 @@ How the restyle is applied:
 | Info screen: YourTube labels, Playlet AGPL credit | Done |
 | Large first shelf (480 × 270) | Done, checked on the TV (first open included) |
 | CC / 4K / HDR chips on cards | Done (badges parsed from YouTube's renderers) |
-| Related shelf under the player scrubber | Not yet |
+| Related shelf under the player scrubber | Done (Down from the scrubber), checked on the TV |
 | Nav items: Subscriptions, You and Live added, 52px pitch, Material Symbols | Done (Shorts not planned) |
 | Voice search via the mic button on Home | Opens Search; the remote's voice key dictates there (needs a TV check) |
 | Empty states (Subscriptions, You, Live) | Done |

@@ -1,0 +1,39 @@
+<!--
+    YourTube: "Related" row over the bottom of the player, from the /next recommendations. The player opens it
+    (Down from the scrubber) by setting `videos`; it takes focus, OK plays a card through the video queue, and
+    Up or Back raises `closed`.
+-->
+<component name="YourTubeRelatedShelf" extends="Group">
+    <interface>
+        <field id="videos" type="array" onChange="OnVideosChange" />
+        <field id="invidious" type="node" />
+        <field id="videoQueue" type="node" />
+        <field id="closed" type="boolean" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Rectangle
+            width="1280"
+            height="330"
+            translation="[0,390]"
+            color="0x0F0F0FE6" />
+        <Label
+            text="Related"
+            color="0xF1F1F1FF"
+            translation="[68,410]">
+            <Font role="font" uri="font:BoldSystemFontFile" size="22" />
+        </Label>
+        <RowList
+            id="Row"
+            itemComponentName="RowCell"
+            translation="[0,450]"
+            numRows="1"
+            rowItemSize="[[320,180]]"
+            rowItemSpacing="[[20,0]]"
+            rowHeights="[260]"
+            itemSize="[1280,260]"
+            focusXOffset="[68]"
+            showRowLabel="[false]"
+            rowFocusAnimationStyle="floatingFocus"
+            focusBitmapUri="pkg:/images/yt-focus-ring.$$RES$$.9.png" />
+    </children>
+</component>

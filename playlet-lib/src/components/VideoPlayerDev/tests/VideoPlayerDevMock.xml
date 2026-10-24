@@ -113,6 +113,7 @@
         <!-- YourTube: mirrors VideoPlayerDev's chat, comments and toast nodes -->
         <YourTubeLiveChatPanel id="liveChatPanel" visible="false" />
         <YourTubeCommentsPanel id="commentsPanel" visible="false" />
+        <YourTubeRelatedShelf id="relatedShelf" visible="false" />
         <YourTubeToast id="toast" />
     </children>
 </component>

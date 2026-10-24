@@ -1,0 +1,71 @@
+import "pkg:/components/Services/Invidious/InvidiousToContentNode.bs"
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+const MAX_VIDEOS = 12
+
+function Init()
+    m.row = m.top.findNode("Row")
+    m.row.ObserveField("rowItemSelected", FuncName(OnItemSelected))
+end function
+
+function OnVideosChange() as void
+    instance = invalid
+    if m.top.invidious <> invalid
+        instance = m.top.invidious@.GetInstance()
+    end if
+
+    root = CreateObject("roSGNode", "ContentNode")
+    ' the card reads its size from the content root (see VideoRowListContentJob)
+    root.AddFields({ ytRowItemSize: [[320, 180]] })
+    row = root.CreateChild("ContentNode")
+    for each video in ValidArray(m.top.videos)
+        if row.getChildCount() >= MAX_VIDEOS
+            exit for
+        end if
+        if IsAssociativeArray(video) and not StringUtils.IsNullOrEmpty(video.videoId)
+            node = InvidiousContent.ToVideoContentNode(invalid, video, instance)
+            if node <> invalid
+                row.appendChild(node)
+            end if
+        end if
+    end for
+    ' a fresh content node each open; clearing first makes the RowList drop its old focus position
+    m.row.content = invalid
+    m.row.content = root
+    m.row.jumpToRowItem = [0, 0]
+    NodeSetFocus(m.row, true)
+end function
+
+function OnItemSelected() as void
+    selection = m.row.rowItemSelected
+    content = m.row.content
+    if content = invalid or selection = invalid
+        return
+    end if
+    node = content.getChild(selection[0]).getChild(selection[1])
+    if node <> invalid and m.top.videoQueue <> invalid
+        Close()
+        m.top.videoQueue.playVideo = node
+    end if
+end function
+
+' The row must let go of focus itself: the player can't take it back while a child still holds it.
+function Close() as void
+    NodeSetFocus(m.row, false)
+    m.top.closed = true
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if not press
+        return true
+    end if
+    if key = RemoteKeys.Up or key = RemoteKeys.Back
+        Close()
+        return true
+    end if
+    ' the player underneath must not see the shelf's keys
+    return true
+end function

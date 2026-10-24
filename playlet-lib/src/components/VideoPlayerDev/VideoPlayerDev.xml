@@ -134,6 +134,9 @@
         <!-- YourTube: comments side panel (opened from the button row) -->
         <YourTubeCommentsPanel id="commentsPanel" visible="false" />
 
+        <!-- YourTube: related videos row (Down from the scrubber) -->
+        <YourTubeRelatedShelf id="relatedShelf" visible="false" />
+
         <!-- YourTube: feedback for like/dislike/save -->
         <YourTubeToast id="toast" />
 

@@ -9,6 +9,12 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   scroll (InnerTube `/next`, `YourTubeCommentsJob`), with round avatars, author and time, likes, reply counts and
   a Pinned marker. Emoji, channel emoji shortcodes and blank lines are dropped. Back or Left closes it.
 
+### Related videos
+- Down from the scrubber opens a "Related" row over the bottom of the player (YouTube's /next recommendations, up to
+  12 cards). OK plays a card through the queue; Up or Back closes it and hands focus back to the player.
+- Panels over the player now let go of focus before closing, so the next OK reaches the player instead of the
+  hidden list (affected the comments panel too).
+
 ### Tests and polish
 - The Rooibos suites run green on the TV (748 lib, 20 app). The player test double mirrors the new YourTube nodes.
 - Bookmarks uses the app's empty state when there are no bookmarks.

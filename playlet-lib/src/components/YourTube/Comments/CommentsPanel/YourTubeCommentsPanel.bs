@@ -102,6 +102,7 @@ end function
 
 function Close() as void
     CancelJob()
+    NodeSetFocus(m.list, false) ' let go first: the player can't take focus back from a focused child
     m.top.closed = true
 end function
 
