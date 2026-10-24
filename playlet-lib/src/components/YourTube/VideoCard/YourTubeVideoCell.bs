@@ -17,7 +17,6 @@ function Init()
     m.progressTrack = m.top.findNode("ProgressTrack")
     m.cornerMask = m.top.findNode("CornerMask")
     m.textGroup = m.top.findNode("TextGroup")
-    m.card = m.top.findNode("Card")
     m.size = [350, 196]
     m.robotoTitleFont = m.titleLabel.font
     m.systemTitleFont = YourTubeText.SystemBoldFont(20)
@@ -28,12 +27,10 @@ end function
 function ApplyRowSize(content as object) as void
     row = content.getParent()
     if row = invalid
-        DebugRowSize("no row parent")
         return
     end if
     root = row.getParent()
     if root = invalid or not root.hasField("ytRowItemSize")
-        DebugRowSize(`row=${row.subtype()} root=${root <> invalid} stamped=false`)
         return
     end if
     ' Rows get removed after load (e.g. an empty Subscriptions row when signed out), which shifts every
@@ -47,7 +44,6 @@ function ApplyRowSize(content as object) as void
     end if
     sizes = root.ytRowItemSize
     if not IsArray(sizes) or sizes.Count() = 0
-        DebugRowSize(`bad sizes: ${type(sizes)}`)
         return
     end if
     rowIndex = 0
@@ -61,15 +57,9 @@ function ApplyRowSize(content as object) as void
     if not IsArray(size) or size.Count() < 2
         return
     end if
-    DebugRowSize(`ok row=${rowIndex} size=${size[0]}x${size[1]}`)
     SetSize(size[0], size[1])
 end function
 
-' Temporary: release builds strip print(), so the size decision goes into the Card node's id, which the
-' TV's ECP UI tree (query/sgnodes/all) shows as name="...".
-function DebugRowSize(message as string) as void
-    m.card.id = "Card|" + message
-end function
 
 function OnRowsChanged() as void
     content = m.top.itemContent

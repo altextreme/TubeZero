@@ -35,6 +35,12 @@ namespace CodecProbe
             { label: "vp9 p2 5.1 (2160p60 HDR) mp4", f: { Codec: "vp9", Profile: "profile 2", Level: "5.1", Container: "mp4" } }
             { label: "vp9 p2 5.1 (2160p60 HDR) webm", f: { Codec: "vp9", Profile: "profile 2", Level: "5.1", Container: "webm" } }
             { label: "vp9 no profile", f: { Codec: "vp9", Container: "webm" } }
+            ' The TV asked for container "mkv" (WebM is Matroska); retest VP9 with it.
+            { label: "vp9 p0 4.1 (1080p) mkv", f: { Codec: "vp9", Profile: "profile 0", Level: "4.1", Container: "mkv" } }
+            { label: "vp9 p0 5.1 (2160p60) mkv", f: { Codec: "vp9", Profile: "profile 0", Level: "5.1", Container: "mkv" } }
+            { label: "vp9 p2 4.1 (1080p HDR) mkv", f: { Codec: "vp9", Profile: "profile 2", Level: "4.1", Container: "mkv" } }
+            { label: "vp9 p2 5.1 (2160p60 HDR) mkv", f: { Codec: "vp9", Profile: "profile 2", Level: "5.1", Container: "mkv" } }
+            { label: "vp9 mkv no profile", f: { Codec: "vp9", Container: "mkv" } }
             { label: "av1 main 4.1 (1080p)", f: { Codec: "av1", Profile: "main", Level: "4.1", Container: "mp4" } }
             { label: "av1 main 5.1 (2160p60)", f: { Codec: "av1", Profile: "main", Level: "5.1", Container: "mp4" } }
             { label: "av1 no profile", f: { Codec: "av1", Container: "mp4" } }
