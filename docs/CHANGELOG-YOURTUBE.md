@@ -29,8 +29,8 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 - `YourTubeToast`: a short message pill at the top of the player.
 - Subscribe button in the player too (`subscription/subscribe` / `unsubscribe` for the video's channel).
 - When a video opens on a YouTube profile, the like, dislike and subscribe buttons load your real state from `/next`
-  (`YourTubeVideoStateJob`; parser tested against the saved `/next` sample). Watch Later membership isn't in `/next`,
-  so Save starts empty.
+  (`YourTubeVideoStateJob`; parser tested against the saved `/next` sample). Save checks the first page of your Watch Later
+  playlist (`browse` `VLWL`, the newest saves).
 - The player title is 700 wide so long titles wrap before the action row instead of running under it.
 
 ### Live chat (Phase 4)

@@ -734,6 +734,9 @@ function OnAccountStateLoaded(event as object) as void
     if info.data.subscribed = true or info.data.subscribed = false
         m.buttonRow.subscribed = info.data.subscribed
     end if
+    if info.data.saved = true or info.data.saved = false
+        m.buttonRow.saved = info.data.saved
+    end if
 end function
 
 ' YourTube: show/hide the live chat overlay. Hidden chat stops polling.

@@ -3,7 +3,7 @@ import "pkg:/components/YourTube/Account/YourTubeAccount.bs"
 import "pkg:/source/utils/Types.bs"
 
 ' YourTube: your like and subscription state for a video, so the player's buttons start right.
-' Input: { videoId, profile } (a YouTube profile). Output: { videoId, likeStatus, subscribed }.
+' Input: { videoId, profile } (a YouTube profile). Output: { videoId, likeStatus, subscribed, saved }.
 @job("YourTubeVideoStateJob")
 function ExecuteJob() as void
     input = JobGetInput()
@@ -30,5 +30,16 @@ function ExecuteJob() as void
     end if
 
     state = YourTubeAccount.ParseVideoState(response.Json())
-    JobSuccessData({ videoId: videoId, likeStatus: state.likeStatus, subscribed: state.subscribed })
+
+    ' Watch Later isn't in /next: look for the video in the playlist's first page (the newest saves).
+    saved = invalid
+    wlRequest = YourTubeAccount.CreateWatchLaterRequest()
+    wlRequest.Header("Authorization", "Bearer " + auth.token)
+    wlRequest.Cancellation(JobGetCancellation())
+    wlResponse = wlRequest.Await()
+    if wlResponse.IsSuccess()
+        saved = YourTubeAccount.PlaylistHasVideo(wlResponse.Json(), videoId)
+    end if
+
+    JobSuccessData({ videoId: videoId, likeStatus: state.likeStatus, subscribed: state.subscribed, saved: saved })
 end function

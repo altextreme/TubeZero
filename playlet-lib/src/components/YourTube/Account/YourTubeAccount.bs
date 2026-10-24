@@ -34,6 +34,42 @@ namespace YourTubeAccount
         return state
     end function
 
+'' True when a browse response (your Watch Later playlist) lists videoId anywhere. TV responses nest
+    ' deeply, so this searches further than YourTubeJson's helpers.
+    function PlaylistHasVideo(response as dynamic, videoId as string, depth = 0 as integer) as boolean
+        if depth > 40 or videoId = ""
+            return false
+        end if
+        if YourTubeJson.IsAA(response)
+            if YourTubeJson.AsString(response["videoId"]) = videoId
+                return true
+            end if
+            for each key in response
+                if PlaylistHasVideo(response[key], videoId, depth + 1)
+                    return true
+                end if
+            end for
+        else if YourTubeJson.IsArr(response)
+            for each child in response
+                if PlaylistHasVideo(child, videoId, depth + 1)
+                    return true
+                end if
+            end for
+        end if
+        return false
+    end function
+
+    ' Your Watch Later playlist (first page) as the signed-in user.
+    function CreateWatchLaterRequest() as object
+        body = {
+            "context": Innertube.CreateContext(Innertube.ClientType.Tv, CreateObject("roDeviceInfo"))
+            "browseId": "VLWL"
+        }
+        request = HttpClient.Post("https://www.youtube.com/youtubei/v1/browse?prettyPrint=false&alt=json").JsonBody(body)
+        request.Headers(Innertube.CreateHeaders(Innertube.ClientType.Tv))
+        return request
+    end function
+
     ' /next as the signed-in user (TV client, like the other account calls).
     function CreateNextStateRequest(videoId as string) as object
         body = {

@@ -219,6 +219,15 @@ namespace Tests
             m.assertInvalid(empty.subscribed)
         end function
 
+        @it("finds a video in a Watch Later browse response")
+        function _()
+            response = { "contents": { "tvBrowseRenderer": { "content": [{ "tileRenderer": { "onSelectCommand": { "watchEndpoint": { "videoId": "abc" } } } }] } } }
+            m.assertTrue(YourTubeAccount.PlaylistHasVideo(response, "abc"))
+            m.assertFalse(YourTubeAccount.PlaylistHasVideo(response, "xyz"))
+            m.assertFalse(YourTubeAccount.PlaylistHasVideo(invalid, "abc"))
+            m.assertFalse(YourTubeAccount.PlaylistHasVideo(response, ""))
+        end function
+
         @describe("YourTubeText.Clean")
 
         @it("drops emoji and the double space they leave")
