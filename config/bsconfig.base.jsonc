@@ -89,6 +89,8 @@
         "!**/*.proto",
         "!**/*.md",
         "locale/**",
+        // YourTube: bundled Roboto
+        "fonts/**",
         "config/**",
         "lib/**",
         "www/**",
