@@ -1,0 +1,50 @@
+<!--
+    YourTube: centered empty state (icon, title, message, optional action button) for screens with nothing
+    to show, e.g. Subscriptions when signed out. Focusable only when it has an action; OK raises `selected`.
+-->
+<component name="YourTubeEmptyState" extends="Group">
+    <interface>
+        <field id="iconUri" type="uri" alias="Icon.uri" />
+        <field id="title" type="string" alias="Title.text" />
+        <field id="message" type="string" alias="Message.text" />
+        <field id="actionText" type="string" onChange="OnActionText" />
+        <field id="selected" type="boolean" alwaysNotify="true" />
+    </interface>
+    <children>
+        <!-- centered in the content area right of the nav rail (x 62..1280) -->
+        <Poster id="Icon" width="96" height="96" translation="[623,170]" />
+        <Label
+            id="Title"
+            width="900"
+            horizAlign="center"
+            color="0xF1F1F1FF"
+            translation="[221,290]">
+            <Font role="font" uri="font:MediumSystemFontFile" size="26" />
+        </Label>
+        <Label
+            id="Message"
+            width="620"
+            horizAlign="center"
+            wrap="true"
+            maxLines="3"
+            color="0xAAAAAAFF"
+            translation="[361,334]">
+            <Font role="font" uri="font:SystemFontFile" size="18" />
+        </Label>
+        <Poster
+            id="Action"
+            uri="pkg:/images/yt-pill-dark.$$RES$$.9.png"
+            height="44"
+            translation="[0,430]"
+            visible="false">
+            <Label
+                id="ActionLabel"
+                height="44"
+                vertAlign="center"
+                color="0xF1F1F1FF"
+                translation="[24,0]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="18" />
+            </Label>
+        </Poster>
+    </children>
+</component>

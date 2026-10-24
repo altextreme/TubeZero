@@ -1,4 +1,7 @@
 ' feedFile is inherited from HomeScreen; Roku rejects re-declaring it, so it is set here instead.
 function Init()
+    m.top.emptyIcon = "pkg:/images/icons/ms/empty_subscriptions.png"
+    m.top.emptySignedOutTitle = "Sign in to see your subscriptions"
+    m.top.emptySignedOutMessage = "New videos from the channels you subscribe to show up here."
     m.top.feedFile = "libpkg:/config/yourtube/subscriptions_layout.yaml"
 end function

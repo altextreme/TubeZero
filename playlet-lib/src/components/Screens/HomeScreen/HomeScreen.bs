@@ -10,6 +10,7 @@ function Init()
     m.rowList = m.top.FindNode("rowList")
     m.rowList.screen = m.top
     m.topBar = m.top.FindNode("topBar")
+    m.emptyState = m.top.FindNode("emptyState")
 end function
 
 function OnNodeReady()
@@ -17,8 +18,13 @@ function OnNodeReady()
     SetNavigation(invalid, RemoteKeys.Left, m.navBar)
     ' YourTube: Up from the first row reaches the top bar; OK there opens Search
     SetNavigation(m.rowList, RemoteKeys.Up, m.topBar)
+    SetNavigation(m.emptyState, RemoteKeys.Up, m.topBar)
+    SetNavigation(m.topBar, RemoteKeys.Down, m.emptyState)
     SetNavigation(m.topBar, RemoteKeys.Down, m.rowList)
     m.topBar.ObserveField("selected", FuncName(OnTopBarSelected))
+    ' YourTube: empty state when all rows come back empty (rows are removed as they load empty)
+    m.emptyState.ObserveField("selected", FuncName(OnEmptyStateSelected))
+    m.rowList.ObserveField("content", FuncName(OnRowListContent))
 
     m.rowList@.BindNode()
 
@@ -36,6 +42,11 @@ function OnFocusChange() as void
     if not m.top.focus
         return
     end if
+    ' YourTube: with nothing to show, focus the empty state's action (if any) instead of the empty rows
+    if m.emptyState.visible and m.emptyState.focusable
+        NodeSetFocus(m.emptyState, true)
+        return
+    end if
     NodeSetFocus(m.rowList, true)
 end function
 
@@ -46,23 +57,66 @@ function OnKeyEvent(key as string, press as boolean) as boolean
     return false
 end function
 
-' YourTube: switch the nav rail to Search and hand it focus
+' YourTube: top bar opens Search
 function OnTopBarSelected() as void
+    NavigateToRootScreen("SearchScreen")
+end function
+
+' YourTube: empty state's "Go to Profile"
+function OnEmptyStateSelected() as void
+    NavigateToRootScreen("ProfileScreen")
+end function
+
+' YourTube: switch the nav rail to a root screen and hand it focus
+function NavigateToRootScreen(screenName as string) as void
     itemsList = m.navBar.itemsList
     content = itemsList.content
     if content = invalid
         return
     end if
     for i = 0 to content.getChildCount() - 1
-        if content.getChild(i).screen = "SearchScreen"
+        if content.getChild(i).screen = screenName
             itemsList.jumpToItem = i
-            searchScreen = m.appController@.GetRootScreen("SearchScreen")
-            if searchScreen <> invalid
-                NodeSetFocus(searchScreen, true)
+            screen = m.appController@.GetRootScreen(screenName)
+            if screen <> invalid
+                NodeSetFocus(screen, true)
             end if
             return
         end if
     end for
+end function
+
+function OnRowListContent() as void
+    content = m.rowList.content
+    if content <> invalid
+        content.ObserveFieldScoped("change", FuncName(UpdateEmptyState))
+    end if
+    UpdateEmptyState()
+end function
+
+function UpdateEmptyState() as void
+    content = m.rowList.content
+    isEmpty = content <> invalid and content.getChildCount() = 0
+    wasFocused = m.top.isInFocusChain()
+    if isEmpty
+        signedIn = m.profilesService <> invalid and m.profilesService.currentProfile <> invalid
+        m.emptyState.iconUri = m.top.emptyIcon
+        if signedIn
+            m.emptyState.title = "Nothing here yet"
+            m.emptyState.message = "Check back later."
+            m.emptyState.actionText = ""
+        else
+            m.emptyState.title = m.top.emptySignedOutTitle
+            m.emptyState.message = m.top.emptySignedOutMessage
+            m.emptyState.actionText = "Go to Profile"
+        end if
+    else
+        m.emptyState.actionText = ""
+    end if
+    m.emptyState.visible = isEmpty
+    if wasFocused and isEmpty and m.emptyState.focusable
+        NodeSetFocus(m.emptyState, true)
+    end if
 end function
 
 function GetContextMenuOptionsForItem(_rowItem as object) as object

@@ -168,10 +168,10 @@ const roboto = (role: string, weight: string, size: number) =>
     `<Font role="${role}" uri="pkg:/fonts/roboto/Roboto-${weight}.ttf" size="${size}" />`;
 const WIDGET_STYLES: WidgetStyle[] = [
     {
-        // settings lists, dialogs, pickers: nothing behind resting rows
+        // settings lists, dialogs, pickers: nothing behind resting rows; padded pill keeps text inset
         bases: new Set(['LabelList', 'CheckList', 'RadioButtonList']),
         defaults: [
-            ['focusBitmapUri', 'pkg:/images/yt-pill-light.$$RES$$.9.png'],
+            ['focusBitmapUri', 'pkg:/images/yt-pill-light-padded.$$RES$$.9.png'],
             ['focusFootprintBitmapUri', 'pkg:/images/yt-transparent.png'],
             ['color', '0xF1F1F1FF'],
             ['focusedColor', '0x0F0F0FFF'],

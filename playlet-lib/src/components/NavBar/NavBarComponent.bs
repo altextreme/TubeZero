@@ -1,3 +1,5 @@
+import "pkg:/source/utils/Types.bs" ' YourTube: FuncName
+
 function OnContentSet() as void
     content = m.top.itemContent
     if content = invalid
@@ -32,7 +34,7 @@ function OnListHasFocusChange()
     if not listHasFocus
         m.top.titleLabelFocusedVisible = false
         m.top.titleLabelVisible = false
-        m.top.opacity = 0.8
+        m.top.opacity = 1 ' YourTube: full white for the current section (was 0.8)
         UpdateIconColor()
     else
         OnItemHasFocusChange()
@@ -40,22 +42,29 @@ function OnListHasFocusChange()
     end if
 end function
 
-' YourTube: like the YouTube TV rail. Focused item: dark icon on the white pill.
-' Collapsed rail: current section white, the rest gray, no pill.
+' YourTube: like the YouTube TV rail. Focused item: dark filled icon on the white pill. Current section:
+' white filled icon. Everything else: gray outlined icon. Same rules expanded or collapsed.
 function UpdateIconColor() as void
     iconPoster = m.top.findNode("IconPoster")
-    ' Material Symbols: filled glyph for the current/focused section, outlined for the rest
     content = m.top.itemContent
-    if content <> invalid and not content.isProfile
-        icon = content.icon
-        if m.top.itemHasFocus and icon.InStr("/icons/ms/") <> -1
-            icon = icon.Replace(".png", "_fill.png")
-        end if
-        iconPoster.uri = icon
+    if content = invalid or content.isProfile
+        return
     end if
-    if m.top.itemHasFocus and m.top.listHasFocus
+    if not m.observingCurrent = true
+        m.global.ObserveFieldScoped("ytNavCurrent", FuncName(UpdateIconColor))
+        m.observingCurrent = true
+    end if
+
+    onPill = m.top.itemHasFocus and m.top.listHasFocus
+    isCurrent = content.screen = m.global.ytNavCurrent
+    icon = content.icon
+    if (onPill or isCurrent) and icon.InStr("/icons/ms/") <> -1
+        icon = icon.Replace(".png", "_fill.png")
+    end if
+    iconPoster.uri = icon
+    if onPill
         iconPoster.blendColor = "#161616FF"
-    else if m.top.itemHasFocus
+    else if isCurrent
         iconPoster.blendColor = "#EBEBEBFF"
     else
         iconPoster.blendColor = "#929292FF"

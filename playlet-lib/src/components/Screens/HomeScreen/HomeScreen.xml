@@ -3,6 +3,11 @@
         <field id="navBar" type="node" bind="/NavBar" />
         <!-- YourTube: used by the top bar to open Search -->
         <field id="appController" type="node" bind="/AppController" />
+        <!-- YourTube: empty state shown when every row comes back empty (screens override these in Init) -->
+        <field id="profilesService" type="node" bind="/ProfilesService" />
+        <field id="emptyIcon" type="string" value="pkg:/images/icons/ms/empty_home.png" />
+        <field id="emptySignedOutTitle" type="string" value="Sign in for your recommended feed" />
+        <field id="emptySignedOutMessage" type="string" value="Go to Profile and sign in with your YouTube account. Your recommendations show up here." />
         <field id="invidious" type="node" bind="/Invidious" />
         <field id="preferences" type="node" bind="/Preferences" />
         <field id="feedFile" type="string" value="libpkg:/config/default_home_layout.yaml" />
@@ -10,6 +15,7 @@
     <children>
         <!-- YourTube: YouTube TV top bar; rows start below it (were at y=50). First shelf uses big 480x270 cards. -->
         <YourTubeTopBar id="topBar" />
+        <YourTubeEmptyState id="emptyState" visible="false" focusable="false" />
         <VideoRowList
             itemComponentName="RowCell"
             id="rowList"

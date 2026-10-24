@@ -30,7 +30,8 @@ function OnNodeReady()
     Rebuild()
 end function
 
-' Favorites section, then recent links not already favorited.
+' Favorites (with a star) first, then recent links not already favorited. A flat list: Roku's LabelList
+' shows section nodes as plain rows rather than headers.
 function Rebuild() as void
     favorites = ValidArray(m.live.favorites)
     recent = ValidArray(m.live.recent)
@@ -41,14 +42,14 @@ function Rebuild() as void
 
     root = CreateObject("roSGNode", "ContentNode")
     m.items = []
-    AddSection(root, "Favorites", favorites)
-    others = []
+    for each item in favorites
+        AddItem(root, item, true)
+    end for
     for each item in recent
         if not favoriteUrls.DoesExist(item.url)
-            others.Push(item)
+            AddItem(root, item, false)
         end if
     end for
-    AddSection(root, "Recent", others)
 
     m.list.content = root
     isEmpty = m.items.Count() = 0
@@ -58,17 +59,14 @@ function Rebuild() as void
     m.top.focusable = not isEmpty
 end function
 
-function AddSection(root as object, title as string, items as object) as void
-    if items.Count() = 0
-        return
+function AddItem(root as object, item as object, isFavorite as boolean) as void
+    node = root.createChild("ContentNode")
+    node.title = `${item.title}  ·  ${UCase(item.format)}`
+    if isFavorite
+        node.HDListItemIconUrl = "pkg:/images/icons/ms/star.png"
+        node.HDListItemIconSelectedUrl = "pkg:/images/icons/ms/star_dark.png"
     end if
-    section = root.createChild("ContentNode")
-    section.title = title
-    for each item in items
-        node = section.createChild("ContentNode")
-        node.title = `${item.title}  ·  ${UCase(item.format)}`
-        m.items.Push(item)
-    end for
+    m.items.Push(item)
 end function
 
 function OnFocusChange() as void

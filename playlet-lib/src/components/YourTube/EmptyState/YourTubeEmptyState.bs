@@ -1,0 +1,43 @@
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+' Content area is x 62..1280; the button is centered in it.
+const CENTER_X = 671
+
+function Init()
+    m.action = m.top.findNode("Action")
+    m.actionLabel = m.top.findNode("ActionLabel")
+    m.top.ObserveField("focusedChild", FuncName(OnFocusedChildChange))
+end function
+
+function OnActionText() as void
+    text = m.top.actionText
+    m.actionLabel.text = text
+    hasAction = text <> ""
+    m.action.visible = hasAction
+    m.top.focusable = hasAction
+    if hasAction
+        width = m.actionLabel.localBoundingRect().width + 48
+        m.action.width = width
+        m.action.translation = [CENTER_X - width / 2, m.action.translation[1]]
+    end if
+end function
+
+' Focused: white pill with dark text, like every other button in the app.
+function OnFocusedChildChange() as void
+    if m.top.hasFocus()
+        m.action.uri = "pkg:/images/yt-pill-light.$$RES$$.9.png"
+        m.actionLabel.color = "#161616FF"
+    else
+        m.action.uri = "pkg:/images/yt-pill-dark.$$RES$$.9.png"
+        m.actionLabel.color = "#EBEBEBFF"
+    end if
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press and key = RemoteKeys.Ok and m.top.actionText <> ""
+        m.top.selected = true
+        return true
+    end if
+    return false
+end function

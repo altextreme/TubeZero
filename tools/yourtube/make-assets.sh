@@ -101,6 +101,23 @@ for res in 480p:0.667 720p:1 1080p:1.5; do
     done
 done
 
+# List focus pill with 16px (720p) horizontal padding, so focused list text sits inset from the pill's edge.
+for res in 480p:0.667 720p:1 1080p:1.5; do
+    name="${res%%:*}"
+    k="${res##*:}"
+    r=$(printf "%.0f" "$(echo "18 * $k" | bc -l)"); p=$(printf "%.0f" "$(echo "16 * $k" | bc -l)")
+    w=$((r * 2 + 4 + p * 2)); h=$((r * 2 + 4))
+    magick -size "${w}x${h}" xc:none -fill "#F1F1F1" \
+        -draw "roundrectangle 0,0 $((w - 1)),$((h - 1)) $r,$r" "$TMP/pill.png"
+    mid=$((h / 2)); midx=$((w / 2))
+    magick "$TMP/pill.png" -background none -gravity center -extent "$((w + 2))x$((h + 2))" -fill black \
+        -draw "line $((midx)),0 $((midx + 2)),0" \
+        -draw "line 0,$((mid)) 0,$((mid + 2))" \
+        -draw "line $((p + 1)),$((h + 1)) $((w - p)),$((h + 1))" \
+        -draw "line $((w + 1)),1 $((w + 1)),$h" \
+        "PNG32:$LIB_IMG/yt-pill-light-padded.$name.9.png"
+done
+
 # ButtonEx background: white, tinted in code. Radius 24 at 720p.
 for res in 480p:0.667 720p:1 1080p:1.5; do
     name="${res%%:*}"

@@ -1,4 +1,7 @@
 ' feedFile is inherited from HomeScreen; Roku rejects re-declaring it, so it is set here instead.
 function Init()
+    m.top.emptyIcon = "pkg:/images/icons/ms/empty_you.png"
+    m.top.emptySignedOutTitle = "Sign in to see your history and playlists"
+    m.top.emptySignedOutMessage = "Your watch history, Watch later and playlists show up here."
     m.top.feedFile = "libpkg:/config/yourtube/you_layout.yaml"
 end function

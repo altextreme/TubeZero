@@ -47,7 +47,9 @@ function YourTubeStyleKeyboard(keyboard as object) as void
     ' White pill: the keyboard tints it with InputFieldColor (a dark pill came out black on the TV).
     ' The pill is drawn by the screen (searchFieldPill); the text box itself is shifted in from its left edge.
     textEditBox.backgroundUri = "pkg:/images/yt-transparent.png"
+    ' 18px in from both ends of the 352px pill so long text never touches the edges
     textEditBox.translation = [18, textEditBox.translation[1]]
+    textEditBox.width = 316
     YourTubePadSearchField(keyboard)
 
     ' No key backgrounds or separators; rounded white focus like the YouTube TV keyboard.
