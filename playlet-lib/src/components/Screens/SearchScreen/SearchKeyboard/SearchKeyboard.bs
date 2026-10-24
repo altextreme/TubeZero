@@ -33,6 +33,16 @@ function keySelected(key as string) as boolean
         OnLanguageKeySelected()
         return true
     end if
+    ' YourTube: SEARCH key and the &123 / ABC page switch
+    if key = "Search"
+        m.top.searchRequested = true
+        return true
+    end if
+    if key = "Symbols" or key = "Letters"
+        m.symbolsPage = key = "Symbols"
+        ApplyKeyboardLayout()
+        return true
+    end if
 
     LogDebug("Key selected:", key)
     return false
@@ -88,5 +98,21 @@ function SetCurrentLanguage(code as string) as void
 
     LogDebug("Setting keyboard language to", code)
     m.currentLanguage = code
+    ' YourTube: English uses the YouTube TV-style layout
+    m.symbolsPage = false
+    ApplyKeyboardLayout()
+end function
+
+' YourTube: English has a letters page and a symbols page; other languages keep Playlet's layout
+function ApplyKeyboardLayout() as void
+    code = m.currentLanguage
+    if code = "en_US"
+        page = ""
+        if m.symbolsPage = true
+            page = "-symbols"
+        end if
+        m.top.keyGrid.keyDefinitionUri = "libpkg:/config/search-kb-layout/yourtube/en_US" + page + ".json5"
+        return
+    end if
     m.top.keyGrid.keyDefinitionUri = "libpkg:/config/search-kb-layout/" + code + ".json5"
 end function

@@ -8,3 +8,23 @@ function YourTubeStyleRowList(rowList as object) as void
     font.size = 20
     rowList.rowLabelFont = font
 end function
+
+' YourTube: search keyboard with no key backgrounds, a white focus and a pill-shaped field.
+function YourTubeStyleKeyboard(keyboard as object) as void
+    palette = CreateObject("roSGNode", "RSGPalette")
+    palette.colors = {
+        KeyboardColor: "#161616FF"
+        PrimaryTextColor: "#BBBBBBFF"
+        SecondaryTextColor: "#AAAAAAFF"
+        FocusColor: "#EBEBEBFF"
+        FocusItemColor: "#161616FF"
+        InputFieldColor: "#282828FF"
+    }
+    keyboard.palette = palette
+
+    textEditBox = keyboard.textEditBox
+    textEditBox.hintText = "Search"
+    textEditBox.hintTextColor = "#AAAAAAFF"
+    textEditBox.textColor = "#EBEBEBFF"
+    textEditBox.backgroundUri = "pkg:/images/yt-pill-dark.$$RES$$.9.png"
+end function

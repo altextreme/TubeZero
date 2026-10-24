@@ -1,0 +1,174 @@
+// YourTube: YouTube TV-style search keyboard (letters page). Keys: A-G rows plus a right-hand
+// column; SPACE / CLEAR / SEARCH along the bottom. "Symbols"/"Letters" switch pages.
+{
+  "keyboardWidthHD": 352,
+  "keyboardHeightHD": 220,
+  "sections": [
+    {
+      "grids": [
+        {
+          "rows": [
+            {
+              "keys": [
+                {
+                  "label": "A",
+                  "strOut": "a"
+                },
+                {
+                  "label": "B",
+                  "strOut": "b"
+                },
+                {
+                  "label": "C",
+                  "strOut": "c"
+                },
+                {
+                  "label": "D",
+                  "strOut": "d"
+                },
+                {
+                  "label": "E",
+                  "strOut": "e"
+                },
+                {
+                  "label": "F",
+                  "strOut": "f"
+                },
+                {
+                  "label": "G",
+                  "strOut": "g"
+                },
+                {
+                  "icon": "theme:DKB_DeleteKeyBitmap",
+                  "focusIcon": "theme:DKB_DeleteKeyFocusBitmap",
+                  "autoRepeat": 1,
+                  "strOut": "backspace"
+                }
+              ]
+            },
+            {
+              "keys": [
+                {
+                  "label": "H",
+                  "strOut": "h"
+                },
+                {
+                  "label": "I",
+                  "strOut": "i"
+                },
+                {
+                  "label": "J",
+                  "strOut": "j"
+                },
+                {
+                  "label": "K",
+                  "strOut": "k"
+                },
+                {
+                  "label": "L",
+                  "strOut": "l"
+                },
+                {
+                  "label": "M",
+                  "strOut": "m"
+                },
+                {
+                  "label": "N",
+                  "strOut": "n"
+                },
+                {
+                  "label": "&123",
+                  "strOut": "Symbols"
+                }
+              ]
+            },
+            {
+              "keys": [
+                {
+                  "label": "O",
+                  "strOut": "o"
+                },
+                {
+                  "label": "P",
+                  "strOut": "p"
+                },
+                {
+                  "label": "Q",
+                  "strOut": "q"
+                },
+                {
+                  "label": "R",
+                  "strOut": "r"
+                },
+                {
+                  "label": "S",
+                  "strOut": "s"
+                },
+                {
+                  "label": "T",
+                  "strOut": "t"
+                },
+                {
+                  "label": "U",
+                  "strOut": "u"
+                },
+                {
+                  "icon": "tmp:/globe-white.png",
+                  "focusIcon": "tmp:/globe-black.png",
+                  "strOut": "LanguageSelect"
+                }
+              ]
+            },
+            {
+              "keys": [
+                {
+                  "label": "V",
+                  "strOut": "v"
+                },
+                {
+                  "label": "W",
+                  "strOut": "w"
+                },
+                {
+                  "label": "X",
+                  "strOut": "x"
+                },
+                {
+                  "label": "Y",
+                  "strOut": "y"
+                },
+                {
+                  "label": "Z",
+                  "strOut": "z"
+                },
+                {
+                  "label": "-"
+                },
+                {
+                  "label": "'"
+                },
+                {}
+              ]
+            },
+            {
+              "keys": [
+                {
+                  "label": "SPACE",
+                  "strOut": "space"
+                },
+                {
+                  "label": "CLEAR",
+                  "strOut": "clear"
+                },
+                {
+                  "label": "SEARCH",
+                  "strOut": "Search"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

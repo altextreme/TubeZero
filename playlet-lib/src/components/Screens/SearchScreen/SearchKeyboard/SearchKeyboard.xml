@@ -1,6 +1,8 @@
 <component name="SearchKeyboard" extends="DynamicCustomKeyboard" includes="AutoBind">
     <interface>
         <field id="preferences" type="node" bind="/Preferences" />
+        <!-- YourTube: fired by the SEARCH key -->
+        <field id="searchRequested" type="boolean" alwaysNotify="true" />
         <function name="keySelected" />
     </interface>
 </component>

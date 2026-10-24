@@ -88,4 +88,21 @@ for res in 480p:0.667 720p:1 1080p:1.5; do
     ninepatch "$TMP/pill.png" $((mid - 1)) $((mid + 1)) 0 $((size - 1)) "$LIB_IMG/yt-rounded.$name.9.png"
 done
 
+# Fully rounded pills (suggestions, keys, chips): light = focused, dark = resting surface.
+for res in 480p:0.667 720p:1 1080p:1.5; do
+    name="${res%%:*}"
+    k="${res##*:}"
+    r=$(printf "%.0f" "$(echo "18 * $k" | bc -l)"); size=$((r * 2 + 4))
+    for variant in light:#F1F1F1 dark:#282828; do
+        magick -size "${size}x${size}" xc:none -fill "${variant##*:}" \
+            -draw "roundrectangle 0,0 $((size - 1)),$((size - 1)) $r,$r" "$TMP/pill.png"
+        mid=$((size / 2))
+        ninepatch "$TMP/pill.png" $((mid - 1)) $((mid + 1)) 0 $((size - 1)) "$LIB_IMG/yt-pill-${variant%%:*}.$name.9.png"
+    done
+done
+
+# Icons: white for resting, dark for on a light focus pill.
+render "$BRAND/icon-history.svg" 64 64 "$LIB_IMG/icons/yt-history.png"
+magick "$LIB_IMG/icons/yt-history.png" -channel RGB -fill "#0F0F0F" -colorize 100 +channel "$LIB_IMG/icons/yt-history-dark.png"
+
 echo "YourTube assets written."

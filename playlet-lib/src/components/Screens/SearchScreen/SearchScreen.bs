@@ -3,6 +3,7 @@ import "pkg:/components/JobSystem/Jobs.bs"
 import "pkg:/components/JobSystem/JobSystem.bs"
 import "pkg:/components/Navigation/Navigation.bs"
 import "pkg:/components/Services/SearchHistory/SearchHistoryUtils.bs"
+import "pkg:/components/YourTube/YourTubeTheme.bs"
 import "pkg:/source/utils/CryptoUtils.bs"
 import "pkg:/source/utils/ErrorUtils.bs"
 import "pkg:/source/utils/FocusManagement.bs"
@@ -27,6 +28,8 @@ function Init()
     textEditBox = m.keyboard.textEditBox
     textEditBox.voiceEntryType = "generic"
     textEditBox.voiceEnabled = true
+    ' YourTube: YouTube TV-style keyboard and search field
+    YourTubeStyleKeyboard(m.keyboard)
 
     m.top.filters = {
         date: ""
@@ -43,6 +46,8 @@ function OnNodeReady()
     m.rowlist@.BindNode()
     m.keyboard@.BindNode()
     m.keyboard.ObserveField("text", FuncName(OnTextChange))
+    ' YourTube: SEARCH key on the keyboard
+    m.keyboard.ObserveField("searchRequested", FuncName(OnKeyboardSearchRequested))
     m.suggestions.ObserveField("buttonFocused", FuncName(OnSearchButtonFocused))
     m.suggestions.ObserveField("buttonSelected", FuncName(OnSearchButtonSelected))
     m.filtersButton.ObserveField("buttonSelected", FuncName(OnFiltersButtonSelected))
@@ -149,6 +154,16 @@ function OnSearchSuggestions(event as object) as void
         m.suggestions.focusButton = buttonFocused
     end if
     m.suggestions.focusable = m.suggestions.buttons.Count() > 0
+end function
+
+' YourTube: search for whatever is typed when the SEARCH key is pressed
+function OnKeyboardSearchRequested() as void
+    text = m.keyboard.text.Trim()
+    if text = ""
+        return
+    end if
+    SearchHistoryUtils.Save(m.preferences, text)
+    Search(text)
 end function
 
 function OnFiltersButtonSelected()

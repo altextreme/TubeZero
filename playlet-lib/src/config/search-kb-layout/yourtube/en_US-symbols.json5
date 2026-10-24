@@ -1,0 +1,148 @@
+// YourTube: YouTube TV-style search keyboard (symbols page). Keys: A-G rows plus a right-hand
+// column; SPACE / CLEAR / SEARCH along the bottom. "Symbols"/"Letters" switch pages.
+{
+  "keyboardWidthHD": 352,
+  "keyboardHeightHD": 220,
+  "sections": [
+    {
+      "grids": [
+        {
+          "rows": [
+            {
+              "keys": [
+                {
+                  "label": "1"
+                },
+                {
+                  "label": "2"
+                },
+                {
+                  "label": "3"
+                },
+                {
+                  "label": "4"
+                },
+                {
+                  "label": "5"
+                },
+                {
+                  "label": "6"
+                },
+                {
+                  "label": "7"
+                },
+                {
+                  "icon": "theme:DKB_DeleteKeyBitmap",
+                  "focusIcon": "theme:DKB_DeleteKeyFocusBitmap",
+                  "autoRepeat": 1,
+                  "strOut": "backspace"
+                }
+              ]
+            },
+            {
+              "keys": [
+                {
+                  "label": "8"
+                },
+                {
+                  "label": "9"
+                },
+                {
+                  "label": "0"
+                },
+                {
+                  "label": "&"
+                },
+                {
+                  "label": "#"
+                },
+                {
+                  "label": "("
+                },
+                {
+                  "label": ")"
+                },
+                {
+                  "label": "ABC",
+                  "strOut": "Letters"
+                }
+              ]
+            },
+            {
+              "keys": [
+                {
+                  "label": "@"
+                },
+                {
+                  "label": "!"
+                },
+                {
+                  "label": "?"
+                },
+                {
+                  "label": ":"
+                },
+                {
+                  "label": "~"
+                },
+                {
+                  "label": "\""
+                },
+                {
+                  "label": ","
+                },
+                {
+                  "icon": "tmp:/globe-white.png",
+                  "focusIcon": "tmp:/globe-black.png",
+                  "strOut": "LanguageSelect"
+                }
+              ]
+            },
+            {
+              "keys": [
+                {
+                  "label": "."
+                },
+                {
+                  "label": "_"
+                },
+                {
+                  "label": "/"
+                },
+                {
+                  "label": "$"
+                },
+                {
+                  "label": "%"
+                },
+                {
+                  "label": "+"
+                },
+                {
+                  "label": "="
+                },
+                {}
+              ]
+            },
+            {
+              "keys": [
+                {
+                  "label": "SPACE",
+                  "strOut": "space"
+                },
+                {
+                  "label": "CLEAR",
+                  "strOut": "clear"
+                },
+                {
+                  "label": "SEARCH",
+                  "strOut": "Search"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

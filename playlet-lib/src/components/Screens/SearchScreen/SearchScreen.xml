@@ -1,3 +1,4 @@
+<!-- YourTube: layout follows the YouTube TV search screen (reference/03-search.png) -->
 <component name="SearchScreen" extends="Group" includes="AutoBind,Focus">
     <interface>
         <field id="navBar" type="node" bind="/NavBar" />
@@ -12,7 +13,7 @@
         <Group id="container">
             <ButtonEx
                 id="filtersButton"
-                translation="[155,64]"
+                translation="[880,70]"
                 iconUri="pkg:/images/icons/filters.png"
                 anchor="[0,0.5]"
                 padding="[30,30]"
@@ -20,20 +21,30 @@
 
             <SearchKeyboard
                 id="keyboard"
-                translation="[630,102]" />
+                translation="[480,40]" />
 
             <ButtonGroup
                 id="suggestions"
                 focusable="false"
-                minWidth="400"
-                maxWidth="480"
-                buttonHeight="50"
-                translation="[125,100]" />
+                minWidth="216"
+                maxWidth="330"
+                buttonHeight="36"
+                itemSpacings="[8]"
+                iconUri="pkg:/images/icons/yt-history.png"
+                focusedIconUri="pkg:/images/icons/yt-history-dark.png"
+                focusBitmapUri="pkg:/images/yt-pill-light.$$RES$$.9.png"
+                focusFootprintBitmapUri="pkg:/images/yt-pill-dark.$$RES$$.9.png"
+                textColor="0xF1F1F1FF"
+                focusedTextColor="0x0F0F0FFF"
+                translation="[104,122]">
+                <Font role="textFont" uri="font:SystemFontFile" size="16" />
+                <Font role="focusedTextFont" uri="font:MediumSystemFontFile" size="16" />
+            </ButtonGroup>
             <VideoRowList
                 itemComponentName="RowCell"
                 id="rowList"
                 focusable="false"
-                translation="[0,620]"
+                translation="[0,370]"
                 numRows="1"
                 rowitemSize="[[350,196]]"
                 rowItemSpacing="[[25,0]]"

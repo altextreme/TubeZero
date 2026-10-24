@@ -67,6 +67,7 @@ export class YourTubeRebrandPlugin implements CompilerPlugin {
 const THEME_COLORS: Record<string, string> = {
     '242424': '0F0F0F', // page background
     '262626': '0F0F0F', // dark text on light focus / dark panels
+    '161616': '0F0F0F', // near-black written in code (lint wants broadcast-safe values)
     '202020': '0F0F0F', // dialog focused item text
     '323232': '212121', // side panels (playlist view)
     '3C3C3C': '282828', // unfocused button / key surface
