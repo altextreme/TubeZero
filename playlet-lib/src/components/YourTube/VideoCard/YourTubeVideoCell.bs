@@ -36,6 +36,15 @@ function ApplyRowSize(content as object) as void
         DebugRowSize(`row=${row.subtype()} root=${root <> invalid} stamped=false`)
         return
     end if
+    ' Rows get removed after load (e.g. an empty Subscriptions row when signed out), which shifts every
+    ' row index; re-size whenever the root's children change.
+    if m.observedRoot = invalid or not m.observedRoot.isSameNode(root)
+        if m.observedRoot <> invalid
+            m.observedRoot.unobserveFieldScoped("change")
+        end if
+        root.observeFieldScoped("change", FuncName(OnRowsChanged))
+        m.observedRoot = root
+    end if
     sizes = root.ytRowItemSize
     if not IsArray(sizes) or sizes.Count() = 0
         DebugRowSize(`bad sizes: ${type(sizes)}`)
@@ -60,6 +69,13 @@ end function
 ' TV's ECP UI tree (query/sgnodes/all) shows as name="...".
 function DebugRowSize(message as string) as void
     m.card.id = "Card|" + message
+end function
+
+function OnRowsChanged() as void
+    content = m.top.itemContent
+    if content <> invalid
+        ApplyRowSize(content)
+    end if
 end function
 
 function OnRowFocusChange() as void
