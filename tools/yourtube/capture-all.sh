@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # YourTube: screenshots every interactive state over ECP (keys) + tools/screenshot.js (needs .env).
 # Each section relaunches the app so it starts from a known state. Output: out/screens/all/<section>-<n>-<name>.jpg
-# Usage: tools/yourtube/capture-all.sh [section...]   (sections: home nav search empty settings live profile player comments chat related menu exit)
+# Usage: tools/yourtube/capture-all.sh [section...]   (sections: home nav search empty settings live profile player comments chat related channel filters menu exit)
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 TV="$(sed -n 's/^ROKU_DEV_TARGET=//p' .env)"; TV="${TV:-192.168.1.164}"
@@ -107,6 +107,20 @@ comments() {
     key Back 2; shot comments-04-closed
 }
 
+channel() {
+    echo "channel"; fresh
+    key Down 1.5; long_press Select; keys Down Down; key Select 6; shot channel-01-open
+    key Down 2; shot channel-02-row
+}
+
+filters() {
+    echo "filters"; fresh; nav_open; key Up 1.5; key Right 1.5
+    key Up; shot filters-00-button
+    key Select 3; shot filters-01-open
+    key Down; key Select 1.5; shot filters-02-selected
+    key Back
+}
+
 related() {
     echo "related"; key Home 2
     curl -s -m 5 -d '' "$ECP/launch/dev?contentId=LXb3EKWsInQ&mediaType=movie" >/dev/null; sleep 25
@@ -141,7 +155,7 @@ exit_dialog() {
 }
 
 sections=("$@")
-[ ${#sections[@]} -eq 0 ] && sections=(home nav search empty settings live profile player comments chat related menu exit)
+[ ${#sections[@]} -eq 0 ] && sections=(home nav search empty settings live profile player comments chat related channel filters menu exit)
 for s in "${sections[@]}"; do
     case "$s" in exit) exit_dialog ;; *) "$s" ;; esac
 done

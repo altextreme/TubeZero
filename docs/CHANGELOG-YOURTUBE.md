@@ -18,6 +18,8 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 ### Tests and polish
 - The Rooibos suites run green on the TV (748 lib, 20 app). The player test double mirrors the new YourTube nodes.
 - Bookmarks uses the app's empty state when there are no bookmarks.
+- Search Filters panel uses the `#212121` dialog surface so it stands off the page.
+- `capture-all.sh` covers the channel page and the Filters dialog.
 
 ### Account actions (Phase 2, signed-in path not yet tested)
 - Like, Dislike and Save (Watch Later) buttons in the player row; icons fill in when active. They call InnerTube
