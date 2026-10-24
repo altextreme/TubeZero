@@ -67,10 +67,16 @@ skip_next_fill1 skip_next 42
 skip_previous_fill1 skip_previous 42
 comment comment 63
 chat chat 63
+thumb_up like 63
+thumb_up_fill1 like_fill 63
+thumb_down dislike 63
+thumb_down_fill1 dislike_fill 63
+playlist_add save 63
+playlist_add_check save_done 63
 thumb_up thumb_up 20 #AAAAAA
 LIST
-# The comment and chat glyphs fill their whole box; shrink it to sit inside the player button disc like the others.
-for glyph in comment chat; do
+# Player action glyphs fill their whole box; shrink it to sit inside the player button disc like the others.
+for glyph in comment chat like like_fill dislike dislike_fill save save_done; do
     magick "$OUT/$glyph.png" -resize 48x48 -background none -gravity center -extent 63x63 "PNG32:$OUT/$glyph.png"
 done
 echo "Material Symbols rendered to $OUT"

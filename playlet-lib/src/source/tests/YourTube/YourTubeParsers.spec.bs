@@ -1,5 +1,6 @@
 ' YourTube: comments + live chat parsers against real InnerTube fixtures
 ' (captured with tools/yourtube/capture-fixtures.mjs into source/tests/fixtures/yourtube/).
+import "pkg:/components/YourTube/Account/YourTubeAccount.bs"
 import "pkg:/components/YourTube/Comments/CommentsParser.bs"
 import "pkg:/components/YourTube/LiveChat/LiveChatParser.bs"
 import "pkg:/components/YourTube/YourTubeJson.bs"
@@ -175,6 +176,21 @@ namespace Tests
         function _()
             text = "Wow :face-blue-smiling:" + Chr(13) + Chr(10) + Chr(10) + Chr(10) + "at 1:23:45"
             m.assertEqual(YourTubeComments.CleanText(text), "Wow " + Chr(10) + "at 1:23:45")
+        end function
+
+        @describe("YourTubeAccount.ActionPayload")
+
+        @it("builds like and Watch Later payloads")
+        function _()
+            like = YourTubeAccount.ActionPayload("like", "abc")
+            m.assertEqual(like.endpoint, "like/like")
+            m.assertEqual(like.body.target.videoId, "abc")
+            m.assertEqual(YourTubeAccount.ActionPayload("removelike", "abc").endpoint, "like/removelike")
+            save = YourTubeAccount.ActionPayload("save", "abc")
+            m.assertEqual(save.body.playlistId, "WL")
+            m.assertEqual(save.body.actions[0].addedVideoId, "abc")
+            m.assertEqual(YourTubeAccount.ActionPayload("unsave", "abc").body.actions[0].removedVideoId, "abc")
+            m.assertInvalid(YourTubeAccount.ActionPayload("nope", "abc"))
         end function
 
         @describe("YourTubeText.Clean")

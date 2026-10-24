@@ -9,6 +9,14 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   scroll (InnerTube `/next`, `YourTubeCommentsJob`), with round avatars, author and time, likes, reply counts and
   a Pinned marker. Emoji, channel emoji shortcodes and blank lines are dropped. Back or Left closes it.
 
+### Account actions (Phase 2, signed-in path not yet tested)
+- Like, Dislike and Save (Watch Later) buttons in the player row; icons fill in when active. They call InnerTube
+  (`like/like`, `like/dislike`, `like/removelike`, `browse/edit_playlist` on `WL`) with the YouTube profile's token,
+  flip right away, and flip back with a message if the request fails.
+- Signed out or on an Invidious profile, they show "Sign in with a YouTube account from Profile...".
+- `YourTubeToast`: a short message pill at the top of the player.
+- Subscribe stays on the channel screen (Playlet's existing button).
+
 ### Live chat (Phase 4)
 - On live videos the comments button becomes Chat and toggles an overlay at the top right. It never takes focus,
   so the remote keeps controlling playback. It polls `live_chat/get_live_chat` on the server's interval, keeps the

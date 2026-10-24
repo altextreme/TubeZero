@@ -946,11 +946,14 @@ namespace Tests
             m.top.callFunc("TestKey", RemoteKeys.Up, true) ' bar -> buttons tier, play/pause (leftmost)
             m.top.callFunc("TestKey", RemoteKeys.Left, true) ' clamped at the left end
             m.assertEqual(m.Snap().nudgeCount, 1)
-            m.top.callFunc("TestKey", RemoteKeys.Right, true) ' -> minimize (rightmost)
+            ' YourTube: minimize, comments, like, dislike, save -> save is rightmost
+            for i = 1 to 5
+                m.top.callFunc("TestKey", RemoteKeys.Right, true)
+            end for
             m.top.callFunc("TestKey", RemoteKeys.Right, true) ' clamped at the right end
             snap = m.Snap()
             m.assertEqual(snap.nudgeCount, 2)
-            m.assertEqual(snap.focusedButton, 1, "the clamp held the highlight at the end")
+            m.assertEqual(snap.focusedButton, 5, "the clamp held the highlight at the end")
         end function
 
         ' Down at the bar tier (the bottom, and the default on reveal) is a no-op: consumed, no nudge.

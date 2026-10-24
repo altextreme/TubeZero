@@ -1,0 +1,42 @@
+import "pkg:/components/ContentNode/ProfileContentAuthTokenUtils.bs"
+import "pkg:/components/YourTube/Account/YourTubeAccount.bs"
+import "pkg:/source/services/HttpClient.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: like / dislike / Watch Later for the signed-in YouTube profile (InnerTube TV client + OAuth token).
+' Input: { action, videoId, profile }. action is one of:
+'   "like", "dislike", "removelike" (clears a like or dislike), "save" / "unsave" (Watch Later).
+' Output: { action, videoId } on success.
+@job("YourTubeAccountActionJob")
+function ExecuteJob() as void
+    input = JobGetInput()
+    action = ValidString(input.action)
+    videoId = ValidString(input.videoId)
+    profile = input.profile
+
+    if profile = invalid or profile.type <> "youtube"
+        JobError("Needs a YouTube profile")
+        return
+    end if
+
+    auth = ProfileContentAuthTokenUtils.EnsureFreshAccessToken(profile)
+    if auth.state <> ProfileContentAuthTokenUtils.AccessTokenState.Ok
+        JobError("No usable access token: " + auth.state)
+        return
+    end if
+
+    request = YourTubeAccount.CreateActionRequest(action, videoId)
+    if request = invalid
+        JobError("Unknown action: " + action)
+        return
+    end if
+    request.Header("Authorization", "Bearer " + auth.token)
+    request.Cancellation(JobGetCancellation())
+
+    response = request.Await()
+    if not response.IsSuccess()
+        JobError(response.ErrorMessage())
+        return
+    end if
+    JobSuccessData({ action: action, videoId: videoId })
+end function

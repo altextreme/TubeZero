@@ -23,6 +23,10 @@
         <field id="nudge" type="boolean" alwaysNotify="true" />
         <!-- YourTube: live videos show chat instead of comments -->
         <field id="chatMode" type="boolean" value="false" onChange="OnChatModeChange" />
+        <!-- YourTube: account action states (filled icons) -->
+        <field id="liked" type="boolean" value="false" />
+        <field id="disliked" type="boolean" value="false" />
+        <field id="saved" type="boolean" value="false" />
     </interface>
     <children>
         <!-- play/pause, centered on screen (x=640). -->
@@ -38,6 +42,16 @@
             <!-- YourTube: opens the comments panel -->
             <VideoPlayerButton id="CommentsButton"
                 iconUri="pkg:/images/icons/ms/comment.png" />
+            <!-- YourTube: account actions; iconUri (filled) shows while toggled on -->
+            <VideoPlayerButton id="LikeButton"
+                iconUri="pkg:/images/icons/ms/like_fill.png"
+                iconUri2="pkg:/images/icons/ms/like.png" />
+            <VideoPlayerButton id="DislikeButton"
+                iconUri="pkg:/images/icons/ms/dislike_fill.png"
+                iconUri2="pkg:/images/icons/ms/dislike.png" />
+            <VideoPlayerButton id="SaveButton"
+                iconUri="pkg:/images/icons/ms/save_done.png"
+                iconUri2="pkg:/images/icons/ms/save.png" />
         </Group>
     </children>
 </component>

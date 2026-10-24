@@ -1,0 +1,31 @@
+import "pkg:/components/Services/Innertube/Context.bs"
+import "pkg:/source/services/HttpClient.bs"
+
+' YourTube: InnerTube requests for account actions (see YourTubeAccountActionJob).
+namespace YourTubeAccount
+
+    ' { endpoint, body } for an action, or invalid for an unknown one. The body has no context yet.
+    function ActionPayload(action as string, videoId as string) as dynamic
+        if action = "like" or action = "dislike" or action = "removelike"
+            return { endpoint: "like/" + action, body: { "target": { "videoId": videoId } } }
+        else if action = "save"
+            return { endpoint: "browse/edit_playlist", body: { "playlistId": "WL", "actions": [{ "action": "ACTION_ADD_VIDEO", "addedVideoId": videoId }] } }
+        else if action = "unsave"
+            return { endpoint: "browse/edit_playlist", body: { "playlistId": "WL", "actions": [{ "action": "ACTION_REMOVE_VIDEO_BY_VIDEO_ID", "removedVideoId": videoId }] } }
+        end if
+        return invalid
+    end function
+
+    function CreateActionRequest(action as string, videoId as string) as dynamic
+        payload = ActionPayload(action, videoId)
+        if payload = invalid
+            return invalid
+        end if
+        body = payload.body
+        body["context"] = Innertube.CreateContext(Innertube.ClientType.Tv, CreateObject("roDeviceInfo"))
+        request = HttpClient.Post(`https://www.youtube.com/youtubei/v1/${payload.endpoint}?prettyPrint=false&alt=json`).JsonBody(body)
+        request.Headers(Innertube.CreateHeaders(Innertube.ClientType.Tv))
+        return request
+    end function
+
+end namespace

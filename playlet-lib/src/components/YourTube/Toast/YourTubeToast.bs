@@ -1,0 +1,29 @@
+import "pkg:/source/utils/Types.bs"
+
+const SCREEN_CENTER_X = 640
+const TOP_Y = 40
+
+function Init()
+    m.toast = m.top.findNode("Toast")
+    m.pill = m.top.findNode("Pill")
+    m.message = m.top.findNode("Message")
+    m.fadeIn = m.top.findNode("FadeIn")
+    m.fadeOut = m.top.findNode("FadeOut")
+    m.timer = m.top.findNode("HideTimer")
+    m.timer.ObserveField("fire", FuncName(OnHide))
+end function
+
+function OnTextChange() as void
+    m.message.text = m.top.text
+    width = m.message.localBoundingRect().width + 48
+    m.pill.width = width
+    m.toast.translation = [SCREEN_CENTER_X - width / 2, TOP_Y]
+    m.fadeOut.control = "stop"
+    m.fadeIn.control = "start"
+    m.timer.control = "stop"
+    m.timer.control = "start"
+end function
+
+function OnHide() as void
+    m.fadeOut.control = "start"
+end function

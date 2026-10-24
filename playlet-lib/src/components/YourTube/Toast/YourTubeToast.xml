@@ -1,0 +1,32 @@
+<!--
+    YourTube: short message in a dark pill, top center, that fades out after a few seconds
+    ("Saved to Watch Later", "Sign in to like videos"). Set `text` to show it.
+-->
+<component name="YourTubeToast" extends="Group">
+    <interface>
+        <field id="text" type="string" onChange="OnTextChange" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Group id="Toast" opacity="0">
+            <Poster
+                id="Pill"
+                uri="pkg:/images/yt-pill-dark.$$RES$$.9.png"
+                height="48" />
+            <Label
+                id="Message"
+                height="48"
+                vertAlign="center"
+                color="0xF1F1F1FF"
+                translation="[24,0]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="18" />
+            </Label>
+        </Group>
+        <Timer id="HideTimer" duration="3" />
+        <Animation id="FadeIn" duration="0.15">
+            <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[0.0, 1.0]" fieldToInterp="Toast.opacity" />
+        </Animation>
+        <Animation id="FadeOut" duration="0.3">
+            <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[1.0, 0.0]" fieldToInterp="Toast.opacity" />
+        </Animation>
+    </children>
+</component>

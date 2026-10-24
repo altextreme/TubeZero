@@ -82,7 +82,8 @@ Parsing for 2–4 runs in Job/Task threads; parsers are pure functions over JSON
 Done and verified on the TV: Phase 0, Phase 1 restyle, Phase 3 comments panel, Phase 4 live chat, Phase 6 Live tab.
 Phase 5 tested and closed: the TV's DASH demuxer won't read YouTube's WebM, and it has no AV1, so 1080p60 AVC is
 the ceiling (details in docs/device-capabilities.md).
-Next: Phase 2 account actions (need a signed-in account to test).
+Phase 2: like/dislike/Watch Later buttons built and checked signed out; the signed-in calls still need a test with
+a YouTube account. Next: verify those once signed in; read the current like/saved state from /next.
 
 ## Build order
 

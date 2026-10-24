@@ -134,5 +134,8 @@
         <!-- YourTube: comments side panel (opened from the button row) -->
         <YourTubeCommentsPanel id="commentsPanel" visible="false" />
 
+        <!-- YourTube: feedback for like/dislike/save -->
+        <YourTubeToast id="toast" />
+
     </children>
 </component>

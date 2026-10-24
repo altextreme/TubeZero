@@ -100,6 +100,7 @@ function Initialize()
     m.commentsPanel = m.top.findNode("commentsPanel")
     m.commentsPanel.ObserveField("closed", FuncName(OnCommentsClosed))
     m.liveChatPanel = m.top.findNode("liveChatPanel")
+    m.toast = m.top.findNode("toast")
     m.fullScreenHint = m.top.findNode("fullScreenHint")
 
     m.autoHide = m.top.findNode("autoHide")
@@ -567,6 +568,8 @@ function ActivateButton(index as integer) as void
             OpenComments()
             return
         end if
+    else if index = PlayerCoordinatorLogic.PlayerButton.Like or index = PlayerCoordinatorLogic.PlayerButton.Dislike or index = PlayerCoordinatorLogic.PlayerButton.Save
+        AccountAction(index)
     end if
     SyncFocus()
 end function
@@ -581,6 +584,77 @@ function OpenComments() as void
     m.commentsPanel.visible = true
     m.commentsPanel.jobQueue = m.top.jobQueue
     m.commentsPanel.videoId = content.videoId
+end function
+
+' YourTube: like / dislike / Watch Later. The icon flips right away and flips back if the request fails.
+' Signed out (or on an Invidious profile) it says how to sign in instead.
+function AccountAction(index as integer) as void
+    content = m.top.content
+    if content = invalid or StringUtils.IsNullOrEmpty(content.videoId)
+        return
+    end if
+    profile = m.top.profilesService.currentProfile
+    if profile = invalid or profile.type <> "youtube"
+        m.toast.text = "Sign in with a YouTube account from Profile to like and save videos"
+        return
+    end if
+
+    previous = { liked: m.buttonRow.liked, disliked: m.buttonRow.disliked, saved: m.buttonRow.saved }
+    if index = PlayerCoordinatorLogic.PlayerButton.Like
+        if m.buttonRow.liked
+            action = "removelike"
+            message = "Like removed"
+        else
+            action = "like"
+            message = "Liked"
+        end if
+        m.buttonRow.liked = not m.buttonRow.liked
+        m.buttonRow.disliked = false
+    else if index = PlayerCoordinatorLogic.PlayerButton.Dislike
+        if m.buttonRow.disliked
+            action = "removelike"
+            message = "Dislike removed"
+        else
+            action = "dislike"
+            message = "Disliked"
+        end if
+        m.buttonRow.disliked = not m.buttonRow.disliked
+        m.buttonRow.liked = false
+    else
+        if m.buttonRow.saved
+            action = "unsave"
+            message = "Removed from Watch Later"
+        else
+            action = "save"
+            message = "Saved to Watch Later"
+        end if
+        m.buttonRow.saved = not m.buttonRow.saved
+    end if
+    m.toast.text = message
+
+    m.accountActionPrevious = previous
+    callback = JobSystem.CreateCallback(OnAccountActionDone)
+    JobSystem.QueueJob(m.top.jobQueue, Jobs.YourTubeAccountActionJob, { action: action, videoId: content.videoId, profile: profile }, callback)
+end function
+
+function OnAccountActionDone(event as object) as void
+    JobSystem.UnobserveCallback(event.getRoSGNode())
+    if event.getInfo().success
+        return
+    end if
+    previous = m.accountActionPrevious
+    if previous <> invalid
+        m.buttonRow.liked = previous.liked
+        m.buttonRow.disliked = previous.disliked
+        m.buttonRow.saved = previous.saved
+    end if
+    m.toast.text = "Couldn't update your account. Try again."
+end function
+
+function ResetAccountActions() as void
+    m.buttonRow.liked = false
+    m.buttonRow.disliked = false
+    m.buttonRow.saved = false
 end function
 
 ' YourTube: show/hide the live chat overlay. Hidden chat stops polling.
@@ -1142,6 +1216,7 @@ end function
 function PlayWithContent(contentNode as object)
     LogInfo("PlayWithContent videoId=", contentNode.videoId, " title=", contentNode.title)
     StopLiveChat() ' YourTube: chat belongs to the previous video
+    ResetAccountActions() ' YourTube
     videoContentNode = CreateObject("roSGNode", "ContentNode")
 
     if not StringUtils.IsNullOrEmpty(contentNode.videoId)

@@ -14,13 +14,16 @@ function Init()
         m.top.findNode("PlayPauseButton")
         m.top.findNode("MinimizeButton")
         m.top.findNode("CommentsButton") ' YourTube
+        m.top.findNode("LikeButton") ' YourTube
+        m.top.findNode("DislikeButton") ' YourTube
+        m.top.findNode("SaveButton") ' YourTube
     ]
     m.centerCluster = m.top.findNode("CenterCluster")
     m.rightCluster = m.top.findNode("RightCluster")
     LayoutClusters()
     m.top.buttonCount = m.buttons.Count() ' coordinator reads this to clamp focus
 
-    for each field in ["transportMode", "rowFocused", "focusedIndex", "playing"]
+    for each field in ["transportMode", "rowFocused", "focusedIndex", "playing", "liked", "disliked", "saved"]
         m.top.ObserveField(field, FuncName(Repaint))
     end for
     m.top.ObserveField("nudge", FuncName(OnNudge))
@@ -74,6 +77,10 @@ function Repaint() as void
     m.top.visible = (m.top.transportMode = TransportController.Mode.Idle)
 
     m.buttons[0].toggleState = not m.top.playing ' toggleState false = play icon, true = pause icon
+    ' YourTube: filled like/dislike/save icons when active
+    m.buttons[3].toggleState = m.top.liked
+    m.buttons[4].toggleState = m.top.disliked
+    m.buttons[5].toggleState = m.top.saved
 
     for i = 0 to m.buttons.Count() - 1
         m.buttons[i].focused = m.top.rowFocused and i = m.top.focusedIndex
