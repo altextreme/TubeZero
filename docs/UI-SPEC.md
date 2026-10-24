@@ -113,8 +113,8 @@ How the restyle is applied:
 | Player: bottom-left title, right action row, thin red→pink scrubber, bottom scrim | Done (only Play/Pause and Minimize exist until Phase 2 adds actions) |
 | Dialogs (`#212121` surface), context menu, settings categories, buttons | Done |
 | Info screen: YourTube labels, Playlet AGPL credit | Done |
-| Large first shelf (480 × 270) | Not yet |
-| CC / 4K chips on cards | Not yet (needs format data per video) |
+| Large first shelf (480 × 270) | Done (card reads its row size; check on TV) |
+| CC / 4K / HDR chips on cards | Done (badges parsed from YouTube's renderers) |
 | Related shelf under the player scrubber | Not yet |
-| Nav items match YouTube's (Shorts, Subscriptions, Library, Live) | Not yet (Live arrives in Phase 6) |
+| Nav items: Subscriptions and You added, 52px pitch | Done (Shorts not planned; Live arrives in Phase 6) |
 | Voice search via the mic button on Home | Opens Search; the remote's voice key dictates there (needs a TV check) |

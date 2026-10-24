@@ -23,5 +23,12 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 - New video card, Home top bar, nav rail colors, search screen and keyboard, player overlay, dialogs,
   settings categories, context menu.
 
+### Since the first restyle pass
+- Telemetry hard-disabled and its settings switch hidden (TV and phone remote).
+- Home: large first shelf (480×270); 4K/CC/HDR chips on cards; Subscriptions and You nav sections.
+- Comments and live chat parsers with real InnerTube fixtures and Rooibos specs (not yet wired to UI).
+- `tools/smoke.sh` (ECP + console), `docs/PLAN.md`, `tools/yourtube/capture-fixtures.mjs`.
+- Reference photos of the official app kept out of git (Google's images).
+
 ### Temporary
 - `CodecProbe.bs` prints device codec/HDR support to the debug console at launch (Phase 0; to be removed).

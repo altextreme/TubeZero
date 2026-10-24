@@ -22,8 +22,8 @@ CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 BG = "#0F0F0F"
 RAIL_W = 62                 # NavBar Background width
 LIST_X, LIST_Y = 13, 150    # NavBar ItemsList translation
-ITEM_H, ITEM_GAP = 50, 16   # ItemsList itemSize[1], itemSpacing[1]
-ITEM_W = 195                # itemSize[0] after ResizeNavBar (widest label + padding)
+ITEM_H, ITEM_GAP = 50, 2    # ItemsList itemSize[1], itemSpacing[1]
+ITEM_W = 222                # itemSize[0] after ResizeNavBar (widest label "Subscriptions" + padding)
 SCREEN_OFFSET = ITEM_W - RAIL_W + 30
 ROWS_Y = 120                # HomeScreen rowList translation (below the top bar)
 ROW_X = 90                  # rowLabelOffset / focusXOffset
@@ -35,6 +35,8 @@ NAV = [
     ("Profile", None),
     ("Search", "search.png"),
     ("Home", "home.png"),
+    ("Subscriptions", "yt-subscriptions.png"),
+    ("You", "yt-you.png"),
     ("Bookmarks", "star.png"),
     ("Settings", "settings.png"),
     ("Remote", "phone.png"),
@@ -113,7 +115,8 @@ def nav(expanded, focus_index, current_index=2):
             f'{version}{"".join(items)}')
 
 
-def card(v, x, y, thumbs, focused, age, progress=0):
+def card(v, x, y, thumbs, focused, age, progress=0, size=(None, None), chips=()):
+    card_w, card_h = size[0] or CARD_W, size[1] or CARD_H
     thumb = (thumbs / f"{v['id']}.jpg").as_uri()
     ring = ('<div style="position:absolute;left:-2px;top:-2px;right:-2px;bottom:-2px;border:5px solid #FFF;'
             'border-radius:12px"></div>') if focused else ""
@@ -121,11 +124,14 @@ def card(v, x, y, thumbs, focused, age, progress=0):
     if progress:
         bar = (f'<div style="position:absolute;left:0;bottom:0;width:100%;height:4px;background:#717171"></div>'
                f'<div style="position:absolute;left:0;bottom:0;width:{progress}%;height:4px;background:#F00"></div>')
+    chip_html = "".join(f'<span style="display:inline-block;height:20px;line-height:20px;padding:0 5px;margin-right:6px;'
+                        f'border-radius:4px;background:#3F3F3F;color:#AAAAAA;font-size:12px;font-weight:500;'
+                        f'vertical-align:2px">{c}</span>' for c in chips)
     stats = " · ".join(p for p in (fmt_views(v.get("view_count")), age) if p)
     return f'''
-<div style="position:absolute;left:{x}px;top:{y}px;width:{CARD_W}px">
- <div style="position:relative;width:{CARD_W}px;height:{CARD_H}px">
-  <div style="position:relative;width:{CARD_W}px;height:{CARD_H}px;border-radius:10px;overflow:hidden;
+<div style="position:absolute;left:{x}px;top:{y}px;width:{card_w}px">
+ <div style="position:relative;width:{card_w}px;height:{card_h}px">
+  <div style="position:relative;width:{card_w}px;height:{card_h}px;border-radius:10px;overflow:hidden;
               background:#222 url({thumb}) center/cover">
     {bar}
     <div style="position:absolute;right:6px;bottom:6px;height:24px;line-height:24px;padding:0 7px;
@@ -139,7 +145,7 @@ def card(v, x, y, thumbs, focused, age, progress=0):
     {html.escape(v["title"])}</div>
   <div style="margin-top:6px;font-size:16px;color:#AAAAAA;white-space:nowrap;overflow:hidden;
               text-overflow:ellipsis">{html.escape(v.get("channel") or "")}</div>
-  <div style="margin-top:2px;font-size:16px;color:#AAAAAA;white-space:nowrap">{stats}</div>
+  <div style="margin-top:2px;font-size:16px;color:#AAAAAA;white-space:nowrap">{chip_html}{stats}</div>
 </div>'''
 
 
@@ -161,15 +167,19 @@ def top_bar(shift, focused=False):
 def home(rows, thumbs, nav_expanded):
     shift = SCREEN_OFFSET if nav_expanded else 0
     parts = [top_bar(shift)]
+    first_row_h = 400  # rowHeights[0] in HomeScreen.xml
     for r, (title, videos) in enumerate(rows):
-        top = ROWS_Y + r * ROW_PITCH
+        top = ROWS_Y if r == 0 else ROWS_Y + first_row_h + 65 + (r - 1) * ROW_PITCH
+        size = (480, 270) if r == 0 else (CARD_W, CARD_H)
+        gap = 24 if r == 0 else CARD_GAP
         parts.append(f'<div style="position:absolute;left:{ROW_X + shift}px;top:{top}px;font-size:20px;'
                      f'font-weight:700;color:#EBEBEB;line-height:24px">{html.escape(title)}</div>')
         for i, v in enumerate(videos):
-            x = ROW_X + shift + i * (CARD_W + CARD_GAP)
+            x = ROW_X + shift + i * (size[0] + gap)
             focused = (not nav_expanded) and r == 0 and i == 0
             progress = 62 if (r == 1 and i == 1) else 0
-            parts.append(card(v, x, top + 24 + 20, thumbs, focused, AGES[(i + r) % len(AGES)], progress))
+            chips = [("4K",), ("CC",), (), ("4K", "CC"), (), ("CC",)][(i + r) % 6]
+            parts.append(card(v, x, top + 24 + 20, thumbs, focused, AGES[(i + r) % len(AGES)], progress, size, chips))
     return "".join(parts) + nav(nav_expanded, focus_index=2)
 
 
