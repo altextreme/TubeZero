@@ -46,6 +46,7 @@ star_fill1 star 24
 subscriptions empty_subscriptions 96 #717171
 video_library empty_you 96 #717171
 home empty_home 96 #717171
+bookmark empty_bookmarks 96 #717171
 star_fill1 star_dark 24 #0F0F0F
 account_circle_fill1 account_circle 64
 account_circle_fill1 account_circle_200 200

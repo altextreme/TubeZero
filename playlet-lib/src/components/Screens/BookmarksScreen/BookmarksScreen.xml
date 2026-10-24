@@ -6,27 +6,13 @@
         <function name="Refresh" />
     </interface>
     <children>
+        <!-- YourTube: the app-wide empty state instead of three lines of text -->
         <Group id="noBookmarks" visible="false">
-            <LayoutGroup vertAlignment="center" itemSpacings="[25,25]" translation="[145,360]">
-                <Label
-                    width="920"
-                    horizAlign="center"
-                    font="font:SmallSystemFont"
-                    text="You currently have no bookmarks."
-                    wrap="true" />
-                <Label
-                    width="920"
-                    horizAlign="center"
-                    font="font:SmallSystemFont"
-                    text="To add bookmarks, long-press 'OK' on a video, playlist or channel."
-                    wrap="true" />
-                <Label
-                    width="920"
-                    horizAlign="center"
-                    font="font:SmallSystemFont"
-                    text="Please note that Bookmarks is an experimental feature."
-                    wrap="true" />
-            </LayoutGroup>
+            <YourTubeEmptyState
+                iconUri="pkg:/images/icons/ms/empty_bookmarks.png"
+                title="No bookmarks yet"
+                message="Long-press OK on any video, playlist or channel to bookmark it."
+                focusable="false" />
         </Group>
         <Group id="yesBookmarks" visible="false">
             <VideoRowList
