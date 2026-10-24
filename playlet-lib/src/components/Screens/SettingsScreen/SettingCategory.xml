@@ -17,15 +17,16 @@
             id="BackgroundFocused"
             uri="pkg:/images/white.$$RES$$.9.png"
             visible="false" />
+        <!-- YourTube: no outline box around resting categories (was white-border) -->
         <Poster
             id="Background"
-            uri="pkg:/images/white-border.$$RES$$.9.png" />
+            uri="" />
         <LayoutGroup id="Container" itemSpacings="[5]">
             <Label id="DisplayTextLabel">
-                <Font role="font" uri="font:SystemFontFile" size="34" />
+                <Font role="font" uri="font:SystemFontFile" size="24" /> <!-- YourTube: was 34 -->
             </Label>
             <Label id="DescriptionLabel" wrap="true">
-                <Font role="font" uri="font:SystemFontFile" size="18" />
+                <Font role="font" uri="font:SystemFontFile" size="16" /> <!-- YourTube: was 18 -->
             </Label>
         </LayoutGroup>
     </children>

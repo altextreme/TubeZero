@@ -2,31 +2,37 @@ import "pkg:/source/utils/Types.bs"
 
 function Init()
     ' TODO:P2 Add tooltip to each field with description of what it means
+    ' YourTube: YourTube labels; the "latest Playlet version" row is gone (no update checks against Playlet)
     m.displayNames = [{
         key: "app_version"
-        displayText: "Playlet App Version"
+        displayText: "YourTube Version"
     }, {
         key: "lib_version"
-        displayText: "Playlet Library Version"
-    }, {
-        key: "lib_version_latest"
-        displayText: "Playlet Library Latest Version"
+        displayText: "Library Version"
     }, {
         key: "lib_url"
-        displayText: "Playlet Library URL"
+        displayText: "Library URL"
     }, {
         key: "lib_url_type"
-        displayText: "Playlet Library URL Type"
+        displayText: "Library URL Type"
     }, {
         key: "app_git_commit_hash"
-        displayText: "Playlet App Git Commit Hash"
+        displayText: "App Git Commit Hash"
     }, {
         key: "lib_git_commit_hash"
-        displayText: "Playlet Library Git Commit Hash"
+        displayText: "Library Git Commit Hash"
     }, {
         key: "id"
         displayText: "App ID"
     }]
+
+    ' YourTube: AGPL-3.0 attribution
+    m.credits = [
+        ""
+        "YourTube is a personal fork of Playlet by Brahim Hadriche."
+        "Playlet: github.com/iBicha/playlet. Licensed under the GNU AGPL-3.0."
+        "YourTube source: github.com/altextreme/playlet"
+    ]
 
     m.keyValueList = m.top.findNode("KeyValueListContent")
 end function
@@ -55,5 +61,11 @@ function UpdateKeyValueList()
         value = `${item.displayText}: ${m.appInfo[item.key]}`
         contentNode = m.keyValueList.createChild("ContentNode")
         contentNode.title = value
+    end for
+
+    ' YourTube: credits under the version info
+    for each line in m.credits
+        contentNode = m.keyValueList.createChild("ContentNode")
+        contentNode.title = line
     end for
 end function

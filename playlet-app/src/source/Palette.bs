@@ -1,7 +1,7 @@
 function SetScenePalette(scene as object)
     palette = CreateObject("roSGNode", "RSGPalette")
     palette.colors = {
-        DialogBackgroundColor: "#242424FF"
+        DialogBackgroundColor: "#212121FF" ' YourTube: dialog surface (was #242424)
         DialogFocusColor: "#CECECEFF"
         DialogFocusItemColor: "#202020FF"
         DialogSecondaryTextColor: "#EBEBEBFF"

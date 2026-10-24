@@ -23,6 +23,11 @@ function GetLocalIpAddress(_unused as dynamic) as dynamic
 end function
 
 function GetLatestPlayletLibVersion(_unused as dynamic) as dynamic
+    ' YourTube: no update checks against Playlet's GitHub releases
+    if true
+        return "N/A"
+    end if
+
     lib_version_latest = m.top.lib_version_latest
     if not StringUtils.IsNullOrEmpty(lib_version_latest)
         return lib_version_latest

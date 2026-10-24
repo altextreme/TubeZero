@@ -101,6 +101,17 @@ for res in 480p:0.667 720p:1 1080p:1.5; do
     done
 done
 
+# ButtonEx background: white, tinted in code. Radius 24 at 720p.
+for res in 480p:0.667 720p:1 1080p:1.5; do
+    name="${res%%:*}"
+    k="${res##*:}"
+    r=$(printf "%.0f" "$(echo "24 * $k" | bc -l)"); size=$((r * 2 + 4))
+    magick -size "${size}x${size}" xc:none -fill white \
+        -draw "roundrectangle 0,0 $((size - 1)),$((size - 1)) $r,$r" "$TMP/pill.png"
+    mid=$((size / 2))
+    ninepatch "$TMP/pill.png" $((mid - 1)) $((mid + 1)) 0 $((size - 1)) "$LIB_IMG/yt-button-pill.$name.9.png"
+done
+
 # Icons: white for resting, dark for on a light focus pill.
 render "$BRAND/icon-history.svg" 64 64 "$LIB_IMG/icons/yt-history.png"
 magick "$LIB_IMG/icons/yt-history.png" -channel RGB -fill "#0F0F0F" -colorize 100 +channel "$LIB_IMG/icons/yt-history-dark.png"
