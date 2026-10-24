@@ -13,6 +13,7 @@ function Init()
     m.buttons = [
         m.top.findNode("PlayPauseButton")
         m.top.findNode("MinimizeButton")
+        m.top.findNode("CommentsButton") ' YourTube
     ]
     m.centerCluster = m.top.findNode("CenterCluster")
     m.rightCluster = m.top.findNode("RightCluster")

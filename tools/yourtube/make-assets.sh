@@ -136,6 +136,12 @@ for res in 480p:0.667 720p:1 1080p:1.5; do
     ninepatch "$TMP/pill.png" $((mid - 1)) $((mid + 1)) 0 $((size - 1)) "$LIB_IMG/yt-button-pill.$name.9.png"
 done
 
+# Comment avatars: background-colored corners around a transparent circle (panel and focused card colors).
+for c in 212121 3F3F3F; do
+    magick -size 160x160 "xc:#$c" \( -size 160x160 xc:black -fill white -draw "circle 80,80 80,1" \) -alpha off \
+        -compose CopyOpacity -composite -channel A -negate +channel -resize 80x80 "PNG32:$LIB_IMG/yt-avatar-ring-$c.png"
+done
+
 # Transparent 1px image (hides Roku-drawn key backgrounds)
 magick -size 1x1 xc:none "PNG32:$LIB_IMG/yt-transparent.png"
 

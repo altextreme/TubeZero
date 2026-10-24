@@ -24,6 +24,14 @@ namespace YourTubeText
         return { text: cleaned.Trim(), needsSystemFont: needsSystemFont }
     end function
 
+    ' Regular system font at the given size (same trick as SystemBoldFont below).
+    function SystemFont(size as integer) as object
+        font = CreateObject("roSGNode", "Font")
+        font.uri = "font:" + "SystemFontFile"
+        font.size = size
+        return font
+    end function
+
     ' Bold system font at the given size. The URI is built from two strings so the theme plugin
     ' (which maps system font files to Roboto) leaves it alone.
     function SystemBoldFont(size as integer) as object

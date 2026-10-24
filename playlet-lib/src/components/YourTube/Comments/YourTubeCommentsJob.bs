@@ -1,0 +1,64 @@
+import "pkg:/components/Services/Innertube/NextEndpoint.bs"
+import "pkg:/components/YourTube/Comments/CommentsParser.bs"
+import "pkg:/components/YourTube/YourTubeText.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: fetches one page of comments over InnerTube /next (WEB client).
+' Input: { videoId } for the first page, or { continuation } for the next one.
+' Output: { comments, continuation, countText }.
+@job("YourTubeCommentsJob")
+function ExecuteJob() as void
+    input = JobGetInput()
+    cancellation = JobGetCancellation()
+
+    continuation = ValidString(input.continuation)
+    countText = ""
+    if continuation = ""
+        entry = FetchNext({ "videoId": ValidString(input.videoId) }, cancellation)
+        if entry.error <> invalid
+            JobError(entry.error)
+            return
+        end if
+        parsedEntry = YourTubeComments.ParseEntry(entry.json)
+        continuation = parsedEntry.continuation
+        countText = parsedEntry.countText
+        if continuation = ""
+            ' comments are turned off, or the video has none
+            JobSuccessData({ comments: [], continuation: "", countText: countText })
+            return
+        end if
+    end if
+
+    page = FetchNext({ "continuation": continuation }, cancellation)
+    if page.error <> invalid
+        JobError(page.error)
+        return
+    end if
+    if JobIsCancelled()
+        JobCancel()
+        return
+    end if
+
+    parsed = YourTubeComments.ParsePage(page.json, 20)
+    for each comment in parsed.comments
+        text = YourTubeText.Clean(comment.text)
+        author = YourTubeText.Clean(comment.author)
+        comment.text = YourTubeComments.CleanText(text.text)
+        comment.author = author.text
+        comment.needsSystemFont = text.needsSystemFont or author.needsSystemFont
+    end for
+    if parsed.countText <> ""
+        countText = parsed.countText
+    end if
+    JobSuccessData({ comments: parsed.comments, continuation: parsed.continuation, countText: countText })
+end function
+
+function FetchNext(args as object, cancellation as dynamic) as object
+    request = Innertube.CreateNextRequest(args)
+    request.Cancellation(cancellation)
+    response = request.Await()
+    if not response.IsSuccess()
+        return { error: response.ErrorMessage() }
+    end if
+    return { json: response.Json() }
+end function

@@ -49,6 +49,7 @@ namespace PlayerCoordinatorLogic
     enum PlayerButton
         PlayPause = 0
         Minimize = 1
+        Comments = 2 ' YourTube
     end enum
 
     ' The two focus targets above/at the trackbar: the bar itself (Left/Right scrub, the cursor grows) and the

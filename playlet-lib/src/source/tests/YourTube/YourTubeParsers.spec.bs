@@ -171,6 +171,12 @@ namespace Tests
             m.assertEqual(YourTubeLiveChat.ParseResponse({ continuationContents: { liveChatContinuation: { actions: [1, {}] } } }).messages.Count(), 0)
         end function
 
+        @it("drops emoji shortcodes and blank lines but keeps timestamps")
+        function _()
+            text = "Wow :face-blue-smiling:" + Chr(13) + Chr(10) + Chr(10) + Chr(10) + "at 1:23:45"
+            m.assertEqual(YourTubeComments.CleanText(text), "Wow " + Chr(10) + "at 1:23:45")
+        end function
+
         @describe("YourTubeText.Clean")
 
         @it("drops emoji and the double space they leave")

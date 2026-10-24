@@ -128,5 +128,8 @@
         <!-- Coordinator pulses `trigger` only on an explicit pause-from-playing, `cancel` on resume. Not chrome-gated. -->
         <LargePause id="largePause" />
 
+        <!-- YourTube: comments side panel (opened from the button row) -->
+        <YourTubeCommentsPanel id="commentsPanel" visible="false" />
+
     </children>
 </component>

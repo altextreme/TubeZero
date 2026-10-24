@@ -12,6 +12,7 @@ import "pkg:/components/VideoPlayerDev/TransportController.bs"
 import "pkg:/components/VideoPlayerDev/VideoNode.bs"
 import "pkg:/components/VideoQueue/VideoQueueUtils.bs"
 import "pkg:/components/YourTube/YourTubeText.bs"
+import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/Locale.bs"
 import "pkg:/source/utils/Logging.bs"
 import "pkg:/source/utils/RemoteKeys.bs"
@@ -95,6 +96,9 @@ function Initialize()
     m.spinner = m.top.findNode("spinner")
     m.largePause = m.top.findNode("largePause")
     m.buttonRow = m.top.findNode("buttonRow")
+    ' YourTube: comments panel
+    m.commentsPanel = m.top.findNode("commentsPanel")
+    m.commentsPanel.ObserveField("closed", FuncName(OnCommentsClosed))
     m.fullScreenHint = m.top.findNode("fullScreenHint")
 
     m.autoHide = m.top.findNode("autoHide")
@@ -554,7 +558,28 @@ function ActivateButton(index as integer) as void
     else if index = PlayerCoordinatorLogic.PlayerButton.Minimize
         MinimizeReset()
         VideoQueueUtils.ToggleVideoPictureInPicture(m.videoQueue)
+    else if index = PlayerCoordinatorLogic.PlayerButton.Comments
+        OpenComments()
+        return
     end if
+    SyncFocus()
+end function
+
+' YourTube: the comments panel takes real focus; the video keeps playing behind it.
+function OpenComments() as void
+    content = m.top.content
+    if content = invalid or StringUtils.IsNullOrEmpty(content.videoId)
+        return
+    end if
+    HideChrome()
+    m.commentsPanel.visible = true
+    m.commentsPanel.jobQueue = m.top.jobQueue
+    m.commentsPanel.videoId = content.videoId
+end function
+
+function OnCommentsClosed() as void
+    m.commentsPanel.visible = false
+    NodeSetFocus(m.top, true)
     SyncFocus()
 end function
 

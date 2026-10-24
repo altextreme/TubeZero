@@ -1,0 +1,72 @@
+<!--
+    YourTube: one comment in the comments panel (MarkupList item). Round avatar, author and time,
+    up to four lines of text, likes and reply count. Fixed height; long comments end in "...".
+-->
+<component name="YourTubeCommentCell" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="OnContentSet" />
+        <field id="itemHasFocus" type="boolean" onChange="OnFocusChange" />
+    </interface>
+    <children>
+        <!-- round avatar: square image under background-colored corners (MaskGroup doesn't follow list scrolling) -->
+        <Group translation="[16,18]">
+            <Poster
+                id="Avatar"
+                width="40"
+                height="40"
+                loadWidth="80"
+                loadHeight="80"
+                loadDisplayMode="scaleToZoom"
+                uri="pkg:/images/icons/ms/account_circle.png" />
+            <Poster
+                id="AvatarRing"
+                width="40"
+                height="40"
+                uri="pkg:/images/yt-avatar-ring-212121.png" />
+        </Group>
+        <Label
+            id="Author"
+            color="0xF1F1F1FF"
+            translation="[72,16]">
+            <Font role="font" uri="font:MediumSystemFontFile" size="16" />
+        </Label>
+        <Label
+            id="Time"
+            color="0xAAAAAAFF"
+            translation="[72,17]">
+            <Font role="font" uri="font:SystemFontFile" size="15" />
+        </Label>
+        <Label
+            id="Text"
+            width="424"
+            wrap="true"
+            maxLines="4"
+            lineSpacing="2"
+            color="0xF1F1F1FF"
+            translation="[72,42]">
+            <Font role="font" uri="font:SystemFontFile" size="18" />
+        </Label>
+        <Group id="Footer" translation="[72,146]">
+            <Poster
+                uri="pkg:/images/icons/ms/thumb_up.png"
+                width="20"
+                height="20" />
+            <Label
+                id="Likes"
+                color="0xAAAAAAFF"
+                height="20"
+                vertAlign="center"
+                translation="[26,0]">
+                <Font role="font" uri="font:SystemFontFile" size="15" />
+            </Label>
+            <Label
+                id="Replies"
+                color="0x3EA6FFFF"
+                height="20"
+                vertAlign="center"
+                translation="[100,0]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="15" />
+            </Label>
+        </Group>
+    </children>
+</component>

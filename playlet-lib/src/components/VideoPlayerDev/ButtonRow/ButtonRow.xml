@@ -33,6 +33,9 @@
         <Group id="RightCluster">
             <VideoPlayerButton id="MinimizeButton"
                 iconUri="pkg:/images/icons/player/minimize.png" />
+            <!-- YourTube: opens the comments panel -->
+            <VideoPlayerButton id="CommentsButton"
+                iconUri="pkg:/images/icons/ms/comment.png" />
         </Group>
     </children>
 </component>

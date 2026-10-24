@@ -1,0 +1,118 @@
+import "pkg:/components/JobSystem/Jobs.bs"
+import "pkg:/components/JobSystem/JobSystem.bs"
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+' Start fetching the next page when focus gets this close to the end of the list.
+const LOAD_MORE_DISTANCE = 4
+
+function Init()
+    m.panel = m.top.findNode("Panel")
+    m.list = m.top.findNode("List")
+    m.status = m.top.findNode("StatusLabel")
+    m.count = m.top.findNode("Count")
+    m.slideIn = m.top.findNode("SlideIn")
+    m.continuation = ""
+    m.job = invalid
+    m.list.ObserveField("itemFocused", FuncName(OnItemFocused))
+end function
+
+function OnVideoIdChange() as void
+    CancelJob()
+    m.list.content = CreateObject("roSGNode", "ContentNode")
+    m.continuation = ""
+    m.count.text = ""
+    m.status.text = "Loading comments..."
+    m.status.visible = true
+
+    m.panel.translation = [1280, 0]
+    m.slideIn.control = "start"
+    NodeSetFocus(m.list, true)
+
+    if m.top.videoId <> ""
+        QueueJob({ videoId: m.top.videoId })
+    end if
+end function
+
+function OnItemFocused() as void
+    content = m.list.content
+    if content = invalid or m.job <> invalid or m.continuation = ""
+        return
+    end if
+    if m.list.itemFocused >= content.getChildCount() - LOAD_MORE_DISTANCE
+        QueueJob({ continuation: m.continuation })
+    end if
+end function
+
+function QueueJob(input as object) as void
+    m.job = JobSystem.CreateCallback(OnJobDone)
+    JobSystem.QueueJob(m.top.jobQueue, Jobs.YourTubeCommentsJob, input, m.job)
+end function
+
+function CancelJob() as void
+    if m.job <> invalid
+        JobSystem.UnobserveCallback(m.job)
+        m.job.cancel = true
+        m.job = invalid
+    end if
+end function
+
+function OnJobDone(event as object) as void
+    callback = event.getRoSGNode()
+    JobSystem.UnobserveCallback(callback)
+    m.job = invalid
+    info = event.getInfo()
+    content = m.list.content
+
+    if not info.success
+        if content.getChildCount() = 0
+            m.status.text = "Couldn't load comments. " + ValidString(info.error)
+        end if
+        return
+    end if
+
+    data = info.data
+    m.continuation = ValidString(data.continuation)
+    if ValidString(data.countText) <> ""
+        ' "30,007 Comments" -> "30,007" (the heading already says Comments)
+        m.count.text = data.countText.Replace(" Comments", "").Replace(" comments", "")
+    end if
+
+    for each comment in data.comments
+        item = content.CreateChild("ContentNode")
+        item.AddFields({
+            ytAuthor: ValidString(comment.author)
+            ytAvatar: ValidString(comment.avatar)
+            ytText: ValidString(comment.text)
+            ytPublished: ValidString(comment.publishedText)
+            ytLikes: ValidString(comment.likeCount)
+            ytReplies: ValidString(comment.replyCount)
+            ytPinned: comment.isPinned = true
+            ytSystemFont: comment.needsSystemFont = true
+        })
+    end for
+
+    if content.getChildCount() = 0
+        m.status.text = "No comments yet, or comments are turned off for this video."
+    else
+        m.status.visible = false
+    end if
+end function
+
+function Close() as void
+    CancelJob()
+    m.top.closed = true
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if not press
+        return true
+    end if
+    if key = RemoteKeys.Back or key = RemoteKeys.Left
+        Close()
+        return true
+    end if
+    ' The player underneath must not see list keys (OK, Up past the top, Down past the end, ...)
+    return true
+end function

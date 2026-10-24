@@ -191,4 +191,15 @@ namespace YourTubeComments
         return map
     end function
 
+    ' Drops channel emoji shortcodes (":face-blue-smiling:") and blank lines, which waste the few lines a card has.
+    function CleanText(text as string) as string
+        text = CreateObject("roRegex", ":[a-z][a-z0-9_-]*:", "i").ReplaceAll(text, "")
+        newline = Chr(10)
+        text = text.Replace(Chr(13), "")
+        while text.InStr(newline + newline) >= 0
+            text = text.Replace(newline + newline, newline)
+        end while
+        return text.Trim()
+    end function
+
 end namespace

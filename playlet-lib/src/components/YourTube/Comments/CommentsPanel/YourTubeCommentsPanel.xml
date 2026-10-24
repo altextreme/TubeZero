@@ -1,0 +1,65 @@
+<!--
+    YourTube: comments side panel over the player. Set `jobQueue`, then `videoId` to load; the panel takes focus, pages in
+    more comments as you scroll, and raises `closed` on Back or Left.
+-->
+<component name="YourTubeCommentsPanel" extends="Group">
+    <interface>
+        <field id="videoId" type="string" onChange="OnVideoIdChange" alwaysNotify="true" />
+        <field id="closed" type="boolean" alwaysNotify="true" />
+        <field id="jobQueue" type="node" /> <!-- set by the player before videoId -->
+    </interface>
+    <children>
+        <Group id="Panel" translation="[1280,0]">
+            <Rectangle
+                width="560"
+                height="720"
+                color="0x212121FF" />
+            <Label
+                id="Heading"
+                text="Comments"
+                color="0xF1F1F1FF"
+                translation="[32,34]">
+                <Font role="font" uri="font:BoldSystemFontFile" size="26" />
+            </Label>
+            <Label
+                id="Count"
+                color="0xAAAAAAFF"
+                translation="[170,40]">
+                <Font role="font" uri="font:SystemFontFile" size="18" />
+            </Label>
+            <Label
+                id="StatusLabel"
+                width="496"
+                wrap="true"
+                color="0xAAAAAAFF"
+                translation="[32,110]">
+                <Font role="font" uri="font:SystemFontFile" size="18" />
+            </Label>
+            <MarkupList
+                id="List"
+                translation="[16,92]"
+                itemComponentName="YourTubeCommentCell"
+                itemSize="[528,184]"
+                itemSpacing="[0,8]"
+                numRows="3"
+                focusBitmapUri="pkg:/images/yt-rounded.$$RES$$.9.png"
+                focusBitmapBlendColor="0x3F3F3FFF"
+                focusFootprintBitmapUri="pkg:/images/yt-transparent.png"
+                vertFocusAnimationStyle="floatingFocus" />
+            <Label
+                id="Hint"
+                text="Back to close"
+                color="0x717171FF"
+                translation="[32,684]">
+                <Font role="font" uri="font:SystemFontFile" size="14" />
+            </Label>
+        </Group>
+
+        <Animation id="SlideIn" duration="0.22" easeFunction="outCubic">
+            <Vector2DFieldInterpolator
+                key="[0.0, 1.0]"
+                keyValue="[[1280,0], [720,0]]"
+                fieldToInterp="Panel.translation" />
+        </Animation>
+    </children>
+</component>

@@ -1,0 +1,63 @@
+import "pkg:/components/YourTube/YourTubeText.bs"
+
+function Init()
+    m.avatar = m.top.findNode("Avatar")
+    m.author = m.top.findNode("Author")
+    m.time = m.top.findNode("Time")
+    m.text = m.top.findNode("Text")
+    m.likes = m.top.findNode("Likes")
+    m.replies = m.top.findNode("Replies")
+    m.avatarRing = m.top.findNode("AvatarRing")
+    m.footer = m.top.findNode("Footer")
+end function
+
+' The ring's corners match the card color behind them.
+function OnFocusChange() as void
+    if m.top.itemHasFocus
+        m.avatarRing.uri = "pkg:/images/yt-avatar-ring-3F3F3F.png"
+    else
+        m.avatarRing.uri = "pkg:/images/yt-avatar-ring-212121.png"
+    end if
+end function
+
+function OnContentSet() as void
+    content = m.top.itemContent
+    if content = invalid
+        return
+    end if
+
+    if content.ytAvatar <> ""
+        m.avatar.uri = content.ytAvatar
+    end if
+    m.author.text = content.ytAuthor
+    m.text.text = content.ytText
+    if content.ytSystemFont
+        ' Roboto has no CJK/Arabic/Hebrew/Indic glyphs
+        m.text.font = YourTubeText.SystemFont(18)
+        m.author.font = YourTubeText.SystemBoldFont(16)
+    end if
+
+    meta = content.ytPublished
+    if content.ytPinned
+        meta = meta + " • Pinned"
+    end if
+    m.time.text = meta
+    m.time.translation = [72 + m.author.localBoundingRect().width + 10, 17]
+
+    ' likes and replies sit right under the text, however many lines it took
+    m.footer.translation = [72, 42 + m.text.localBoundingRect().height + 12]
+
+    m.likes.text = content.ytLikes
+    likesWidth = 0
+    if content.ytLikes <> ""
+        likesWidth = m.likes.localBoundingRect().width
+    end if
+    m.replies.translation = [26 + likesWidth + 24, 0]
+    if content.ytReplies = "" or content.ytReplies = "0"
+        m.replies.text = ""
+    else if content.ytReplies = "1"
+        m.replies.text = "1 reply"
+    else
+        m.replies.text = content.ytReplies + " replies"
+    end if
+end function
