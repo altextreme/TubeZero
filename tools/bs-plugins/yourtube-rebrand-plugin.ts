@@ -43,6 +43,7 @@ export class YourTubeRebrandPlugin implements CompilerPlugin {
             return;
         }
         const stagingDir = builder.options.stagingDir!;
+        const listComponents = findListComponents(stagingDir);
         // Only the lib ships Roboto; the launcher keeps the system font.
         const hasRoboto = fs.existsSync(path.join(stagingDir, 'fonts/roboto'));
         for (const filePath of walk(stagingDir)) {
@@ -57,6 +58,7 @@ export class YourTubeRebrandPlugin implements CompilerPlugin {
             if (hasRoboto) {
                 if (filePath.toLowerCase().endsWith('.xml')) {
                     rewritten = rewritePresetFontAttributes(rewritten);
+                    rewritten = styleLists(rewritten, listComponents);
                 }
                 for (const [from, to] of THEME_FONTS) {
                     rewritten = rewritten.split(from).join(to);
@@ -101,6 +103,16 @@ const THEME_IMAGES: [string, string][] = [
     ['focus-glow-padding-30.$$RES$$.9.png', 'yt-focus-ring.$$RES$$.9.png'],
     ['focus-glow-padding-42.$$RES$$.9.png', 'yt-focus-ring.$$RES$$.9.png'],
     ['button-ex.$$RES$$.9.png', 'yt-button-pill.$$RES$$.9.png'],
+    // Google Material Symbols (Rounded), rendered by tools/yourtube/material-icons.sh
+    ...([
+        ['home', 'home'], ['search', 'search'], ['settings', 'settings'], ['info', 'info'],
+        ['phone', 'smartphone'], ['star', 'bookmark'], ['user', 'account_circle'],
+        ['user-200', 'account_circle_200'], ['filters', 'tune'], ['globe-white', 'language'],
+        ['globe-black', 'language_dark'], ['edit', 'edit'], ['crown', 'workspace_premium'],
+        ['test-passed', 'check_circle'], ['test-failed', 'cancel'],
+        ['player/play', 'play_arrow'], ['player/pause', 'pause'], ['player/minimize', 'picture_in_picture_alt'],
+        ['player/next', 'skip_next'], ['player/previous', 'skip_previous'],
+    ] as [string, string][]).map(([from, to]) => [`images/icons/${from}.png`, `images/icons/ms/${to}.png`] as [string, string]),
 ];
 
 // Roku system font files -> bundled Roboto (OFL, playlet-lib/src/fonts/roboto).
@@ -141,6 +153,58 @@ function rewritePresetFontAttributes(xml: string): string {
                 : `<${tag}${before}${after}>${font}`;
         },
     );
+}
+
+// Roku's label lists (settings, dialogs, pickers) default to gray gradient bars. Give them the YouTube TV
+// look: white pill focus, nothing behind resting rows, light text that turns dark on focus, Roboto.
+const LIST_BASES = new Set(['LabelList', 'CheckList', 'RadioButtonList']);
+const LIST_DEFAULTS: [string, string][] = [
+    ['focusBitmapUri', 'pkg:/images/yt-pill-light.$$RES$$.9.png'],
+    ['focusFootprintBitmapUri', 'pkg:/images/yt-transparent.png'],
+    ['color', '0xF1F1F1FF'],
+    ['focusedColor', '0x0F0F0FFF'],
+];
+const LIST_FONTS = '<Font role="font" uri="pkg:/fonts/roboto/Roboto-Regular.ttf" size="22" />'
+    + '<Font role="focusedFont" uri="pkg:/fonts/roboto/Roboto-Medium.ttf" size="22" />';
+
+// Component names in this build that extend (directly or not) one of the list bases.
+function findListComponents(stagingDir: string): Set<string> {
+    const parents = new Map<string, string>();
+    for (const file of walk(stagingDir)) {
+        if (!file.toLowerCase().endsWith('.xml')) continue;
+        const head = fs.readFileSync(file, 'utf8').match(/<component\s[^>]*>/);
+        const name = head?.[0].match(/\bname="([^"]+)"/)?.[1];
+        const ext = head?.[0].match(/\bextends="([^"]+)"/)?.[1];
+        if (name && ext) parents.set(name, ext);
+    }
+    const result = new Set(LIST_BASES);
+    for (const name of parents.keys()) {
+        let current: string | undefined = name;
+        for (let i = 0; current && i < 20; i++) {
+            if (LIST_BASES.has(current)) { result.add(name); break; }
+            current = parents.get(current);
+        }
+    }
+    return result;
+}
+
+function styleLists(xml: string, lists: Set<string>): string {
+    return xml.replace(/<([A-Za-z][\w:]*)(\s[^<>]*?)?(\/?)>/g, (match, tag, attrs = '', selfClosing, offset) => {
+        if (!lists.has(tag) || match.startsWith('<component')) {
+            return match;
+        }
+        let added = '';
+        for (const [name, value] of LIST_DEFAULTS) {
+            if (!new RegExp(`\\s${name}=`).test(attrs)) {
+                added += ` ${name}="${value}"`;
+            }
+        }
+        const hasFont = /\sfont=/.test(attrs) || (!selfClosing && /role="font"/.test(xml.slice(offset, xml.indexOf(`</${tag}>`, offset))));
+        if (selfClosing) {
+            return hasFont ? `<${tag}${attrs}${added} />` : `<${tag}${attrs}${added}>${LIST_FONTS}</${tag}>`;
+        }
+        return `<${tag}${attrs}${added}>${hasFont ? '' : LIST_FONTS}`;
+    });
 }
 
 function* walk(dir: string): Generator<string> {

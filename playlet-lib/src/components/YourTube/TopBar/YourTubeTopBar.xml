@@ -16,7 +16,7 @@
             translation="[104,46]">
             <Poster
                 id="MicIcon"
-                uri="pkg:/images/icons/yt-mic.png"
+                uri="pkg:/images/icons/ms/mic.png"
                 width="26"
                 height="26"
                 translation="[11,11]" />

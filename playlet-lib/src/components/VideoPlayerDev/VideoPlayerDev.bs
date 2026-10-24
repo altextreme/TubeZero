@@ -1380,6 +1380,8 @@ function UpdateOverlayMeta() as void
         m.titleLabel.font = YourTubeText.SystemBoldFont(22)
     end if
     m.titleLabel.text = title
+    ' YourTube: "Channel   1M views   2 days ago" -> "Channel • 1M views • 2 days ago"
+    secondaryTitle = CreateObject("roRegex", "\s{2,}", "").ReplaceAll(secondaryTitle.Trim(), " • ")
     m.secondaryTitleLabel.text = secondaryTitle
     ' the loading overlay shows the same title + secondary title while loading.
     m.spinner.title = title

@@ -17,12 +17,12 @@ function OnFocusedChildChange() as void
         m.pill.uri = "pkg:/images/yt-pill-light.$$RES$$.9.png"
         m.pillLabel.color = "#161616FF"
         m.micDisc.blendColor = "#EBEBEBFF"
-        m.micIcon.uri = "pkg:/images/icons/yt-mic-dark.png"
+        m.micIcon.uri = "pkg:/images/icons/ms/mic_dark.png"
     else
         m.pill.uri = "pkg:/images/yt-pill-dark.$$RES$$.9.png"
         m.pillLabel.color = "#EBEBEBFF"
         m.micDisc.blendColor = "#282828FF"
-        m.micIcon.uri = "pkg:/images/icons/yt-mic.png"
+        m.micIcon.uri = "pkg:/images/icons/ms/mic.png"
     end if
 end function
 

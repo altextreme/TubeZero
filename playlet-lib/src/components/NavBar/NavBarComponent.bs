@@ -44,6 +44,15 @@ end function
 ' Collapsed rail: current section white, the rest gray, no pill.
 function UpdateIconColor() as void
     iconPoster = m.top.findNode("IconPoster")
+    ' Material Symbols: filled glyph for the current/focused section, outlined for the rest
+    content = m.top.itemContent
+    if content <> invalid and not content.isProfile
+        icon = content.icon
+        if m.top.itemHasFocus and icon.InStr("/icons/ms/") <> -1
+            icon = icon.Replace(".png", "_fill.png")
+        end if
+        iconPoster.uri = icon
+    end if
     if m.top.itemHasFocus and m.top.listHasFocus
         iconPoster.blendColor = "#161616FF"
     else if m.top.itemHasFocus

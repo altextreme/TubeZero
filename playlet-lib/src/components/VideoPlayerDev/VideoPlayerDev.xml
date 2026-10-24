@@ -107,7 +107,8 @@
                         <Font role="font" uri="font:SystemFontFile" size="15" />
                     </Label>
                 </LayoutGroup>
-                <Clock id="clock" />
+                <!-- YourTube: no clock in the player (YouTube TV shows none) -->
+                <Clock id="clock" visible="false" />
             </Group>
 
             <!-- YourTube: scrubber raised to the YouTube TV position -->

@@ -115,9 +115,6 @@ done
 # Transparent 1px image (hides Roku-drawn key backgrounds)
 magick -size 1x1 xc:none "PNG32:$LIB_IMG/yt-transparent.png"
 
-# Icons: white for resting, dark for on a light focus pill. History icon is small: ButtonGroup draws it at size.
-render "$BRAND/icon-history.svg" 36 36 "$LIB_IMG/icons/yt-history.png"
-magick "$LIB_IMG/icons/yt-history.png" -channel RGB -fill "#0F0F0F" -colorize 100 +channel "$LIB_IMG/icons/yt-history-dark.png"
 
 # Player: scrubber fill (red -> pink, sized to the 1144px trackbar) and the bottom scrim.
 for res in 480p:0.667 720p:1 1080p:1.5; do
@@ -128,10 +125,8 @@ for res in 480p:0.667 720p:1 1080p:1.5; do
 done
 magick -size 8x256 gradient:"rgba(0,0,0,0)"-"rgba(0,0,0,0.88)" -depth 8 "PNG32:$LIB_IMG/yt-player-scrim.png"
 
-render "$BRAND/icon-mic.svg" 64 64 "$LIB_IMG/icons/yt-mic.png"
-magick "$LIB_IMG/icons/yt-mic.png" -channel RGB -fill "#0F0F0F" -colorize 100 +channel "$LIB_IMG/icons/yt-mic-dark.png"
 
-render "$BRAND/icon-subscriptions.svg" 48 48 "$LIB_IMG/icons/yt-subscriptions.png"
-render "$BRAND/icon-you.svg" 48 48 "$LIB_IMG/icons/yt-you.png"
+
+"$ROOT/tools/yourtube/material-icons.sh"
 
 echo "YourTube assets written."

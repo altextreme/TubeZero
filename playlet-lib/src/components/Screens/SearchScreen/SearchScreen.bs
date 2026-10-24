@@ -80,7 +80,8 @@ function OnNodeReady()
     SetNavigation(m.suggestions, RemoteKeys.Up, m.filtersButton)
     SetNavigation(m.keyboard, RemoteKeys.Up, m.filtersButton)
 
-    m.currentNavigtionNode = m.suggestions
+    ' YourTube: start on the keyboard, like the YouTube TV app (Playlet started on suggestions)
+    m.currentNavigtionNode = m.keyboard
     ' Trigger suggestions
     OnTextChange()
 end function
@@ -100,6 +101,7 @@ function OnFocusChange() as void
 end function
 
 function OnTextChange() as void
+    YourTubePadSearchField(m.keyboard) ' YourTube: the text box re-lays out its label on edits
     if m.suggestions.isInFocusChain()
         return
     end if
@@ -342,7 +344,8 @@ function OnKeyEvent(key as string, press as boolean) as boolean
     if navigation.handled
         m.currentNavigtionNode = navigation.node
         if m.currentNavigtionNode.isSameNode(m.navBar)
-            m.currentNavigtionNode = m.suggestions
+            ' YourTube: start on the keyboard, like the YouTube TV app (Playlet started on suggestions)
+    m.currentNavigtionNode = m.keyboard
         end if
         if m.currentNavigtionNode.isSameNode(m.suggestions)
             OnSearchButtonFocused()

@@ -32,11 +32,11 @@
                             <NavBarItemContent
                                 screen="YourTubeSubscriptionsScreen"
                                 text="Subscriptions"
-                                icon="pkg:/images/icons/yt-subscriptions.png" />
+                                icon="pkg:/images/icons/ms/subscriptions.png" />
                             <NavBarItemContent
                                 screen="YourTubeYouScreen"
                                 text="You"
-                                icon="pkg:/images/icons/yt-you.png" />
+                                icon="pkg:/images/icons/ms/video_library.png" />
                             <NavBarItemContent
                                 screen="BookmarksScreen"
                                 text="Bookmarks"
