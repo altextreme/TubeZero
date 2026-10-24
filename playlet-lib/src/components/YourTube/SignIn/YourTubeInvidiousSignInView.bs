@@ -1,0 +1,73 @@
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/Locale.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+import "pkg:/source/utils/UrlUtils.bs"
+
+' Same flow as InvidiousLoginDialog: the user signs in on the TV's /invidious/login page; the new profile becoming
+' current closes this page.
+function Init()
+    m.urlLabel = m.top.findNode("UrlLabel")
+    m.qrCode = m.top.findNode("QrCodePoster")
+    m.closed = false
+    m.top.focusable = true
+end function
+
+function OnNodeReady()
+    address = m.top.webServer@.GetServerAddress()
+    if not StringUtils.IsNullOrEmpty(address)
+        url = `${address}/invidious/login`
+        profileId = m.top.profileId
+        if not StringUtils.IsNullOrEmpty(profileId)
+            url = UrlUtils.AppendQueryParams(url, { profile: profileId })
+        end if
+        m.top.url = url
+    else
+        m.urlLabel.text = Tr(Locale.Dialogs.IpAddressNotAvailable)
+    end if
+    m.top.profilesService.observeFieldScoped("currentProfileChanged", FuncName(OnCurrentProfileChanged))
+end function
+
+' callFunc target (DialogUtils.ShowYourTubeDialog), hence the unused parameter
+function FocusButtons(_unused as dynamic) as void
+    NodeSetFocus(m.top, true)
+end function
+
+function OnUrlSet() as void
+    m.urlLabel.text = m.top.url
+    m.qrCode.text = m.top.url
+end function
+
+function OnCurrentProfileChanged() as void
+    m.top.close = true
+end function
+
+function OnClose() as void
+    if m.closed or not m.top.close
+        return
+    end if
+    m.closed = true
+    if m.top.profilesService <> invalid
+        m.top.profilesService.unobserveFieldScoped("currentProfileChanged")
+    end if
+    hadFocus = m.top.isInFocusChain()
+    parent = m.top.getParent()
+    if parent <> invalid
+        parent.removeChild(m.top)
+        if parent.hasField("currentDialog") and parent.currentDialog <> invalid and parent.currentDialog.isSameNode(m.top)
+            parent.currentDialog = invalid
+        end if
+    end if
+    if hadFocus and m.top.returnFocus <> invalid
+        NodeSetFocus(m.top.returnFocus, true)
+    end if
+    m.top.wasClosed = true
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press and (key = RemoteKeys.Back or key = RemoteKeys.Ok)
+        m.top.close = true
+    end if
+    return true
+end function

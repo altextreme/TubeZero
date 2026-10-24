@@ -5,10 +5,11 @@ import "pkg:/source/utils/Types.bs"
 namespace LoginUtils
 
     function ShowInvidiousLoginDialog(profileId = "" as string) as void
-        dialog = CreateObject("roSGNode", "InvidiousLoginDialog")
+        ' YourTube: full-screen page in the app's style (was the InvidiousLoginDialog dialog)
+        dialog = CreateObject("roSGNode", "YourTubeInvidiousSignInView")
         dialog.profileId = profileId
         dialog@.BindNode()
-        m.top.getScene().dialog = dialog
+        DialogUtils.ShowYourTubeDialog(dialog)
     end function
 
     function ShowLoginWithYouTubeDisclaimerDialog() as void

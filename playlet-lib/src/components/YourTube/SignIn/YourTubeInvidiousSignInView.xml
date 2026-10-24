@@ -1,0 +1,93 @@
+<!--
+    YourTube: full-screen "Sign in to Invidious" page (replaces InvidiousLoginDialog's look). Same logic: show the
+    TV's /invidious/login address and QR, close when the new profile becomes current. Shown through
+    YourTubeDialogHost like YourTubeSignInView.
+-->
+<component name="YourTubeInvidiousSignInView" extends="Group" includes="AutoBind">
+    <interface>
+        <field id="webServer" type="node" bind="/WebServer" />
+        <field id="profilesService" type="node" bind="/ProfilesService" />
+        <field id="url" type="string" onChange="OnUrlSet" />
+        <field id="profileId" type="string" />
+        <field id="alwaysOnTop" type="boolean" />
+        <field id="wasClosed" type="boolean" alwaysNotify="true" />
+        <field id="close" type="boolean" alwaysNotify="true" onChange="OnClose" />
+        <field id="returnFocus" type="node" />
+        <function name="FocusButtons" />
+    </interface>
+    <children>
+        <Rectangle width="1280" height="720" color="0x0F0F0FFF" />
+        <Poster uri="pkg:/images/logo-dark.png" width="160" height="63" translation="[56,36]" />
+
+        <Label text="Sign in to Invidious" color="0xF1F1F1FF" translation="[96,150]">
+            <Font role="font" uri="font:BoldSystemFontFile" size="40" />
+        </Label>
+        <Label
+            text="Signing in to Invidious gives you its subscriptions, playlists and watch history. An Invidious account is separate from a YouTube account."
+            width="600"
+            wrap="true"
+            color="0xAAAAAAFF"
+            translation="[96,208]">
+            <Font role="font" uri="font:SystemFontFile" size="20" />
+        </Label>
+
+        <Group translation="[96,320]">
+            <Poster uri="pkg:/images/yt-pill-dark.$$RES$$.9.png" width="40" height="40" />
+            <Label text="1" width="40" height="40" horizAlign="center" vertAlign="center" color="0xF1F1F1FF">
+                <Font role="font" uri="font:MediumSystemFontFile" size="20" />
+            </Label>
+            <Label text="On a phone or computer on the same Wi-Fi, open" color="0xAAAAAAFF" translation="[60,0]">
+                <Font role="font" uri="font:SystemFontFile" size="20" />
+            </Label>
+            <Label id="UrlLabel" text="Finding the TV's address..." width="560" color="0x3EA6FFFF" translation="[60,28]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="28" />
+            </Label>
+        </Group>
+
+        <Group translation="[96,420]">
+            <Poster uri="pkg:/images/yt-pill-dark.$$RES$$.9.png" width="40" height="40" />
+            <Label text="2" width="40" height="40" horizAlign="center" vertAlign="center" color="0xF1F1F1FF">
+                <Font role="font" uri="font:MediumSystemFontFile" size="20" />
+            </Label>
+            <Label text="Sign in to your Invidious instance there" color="0xAAAAAAFF" translation="[60,8]">
+                <Font role="font" uri="font:SystemFontFile" size="20" />
+            </Label>
+        </Group>
+
+        <Label
+            text="This screen closes by itself once you're signed in."
+            color="0x717171FF"
+            translation="[96,566]">
+            <Font role="font" uri="font:SystemFontFile" size="16" />
+        </Label>
+
+        <Poster
+            uri="pkg:/images/yt-pill-light.$$RES$$.9.png"
+            height="48"
+            width="140"
+            translation="[96,604]">
+            <Label
+                text="Cancel"
+                width="140"
+                height="48"
+                horizAlign="center"
+                vertAlign="center"
+                color="0x0F0F0FFF">
+                <Font role="font" uri="font:MediumSystemFontFile" size="18" />
+            </Label>
+        </Poster>
+
+        <Rectangle width="1" height="420" color="0x3F3F3FFF" translation="[786,170]" />
+        <Label text="Or scan with your phone" width="340" horizAlign="center" color="0xF1F1F1FF" translation="[836,176]">
+            <Font role="font" uri="font:MediumSystemFontFile" size="20" />
+        </Label>
+        <QrCodePoster
+            id="QrCodePoster"
+            width="300"
+            height="300"
+            loadWidth="300"
+            loadHeight="300"
+            padding="16"
+            translation="[856,222]" />
+    </children>
+</component>
