@@ -4,20 +4,20 @@ namespace YourTubeText
 
     ' { text: cleaned text, needsSystemFont: true when Roboto can't draw it }
     function Clean(text as string) as object
-        clean = ""
+        cleaned = ""
         needsSystemFont = false
         for i = 0 to text.Len() - 1
             ch = text.Mid(i, 1)
             code = Asc(ch)
             isEmoji = code >= &h1F000 or (code >= &h2600 and code <= &h27BF) or code = &hFE0F or code = &h200D
             if not isEmoji
-                clean += ch
+                cleaned += ch
                 if code >= &h0590 and (code < &h2000 or code > &h2BFF)
                     needsSystemFont = true
                 end if
             end if
         end for
-        return { text: clean.Trim(), needsSystemFont: needsSystemFont }
+        return { text: cleaned.Trim(), needsSystemFont: needsSystemFont }
     end function
 
     ' Bold system font at the given size. The URI is built from two strings so the theme plugin
