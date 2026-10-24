@@ -73,12 +73,8 @@
                 color="#AAAAAA">
                 <Font role="font" uri="font:SystemFontFile" size="16" />
             </Label>
-            <!-- chips ("4K", "CC") then "views · age", like the YouTube TV card -->
-            <LayoutGroup
-                id="StatsRow"
-                layoutDirection="horiz"
-                vertAlignment="center"
-                itemSpacings="[6]">
+            <!-- chips ("4K", "CC") then "views · age", like the YouTube TV card; placed in code -->
+            <Group id="StatsRow">
                 <RoundedRect id="Chip0" height="20" color="#3F3F3F" visible="false">
                     <Label id="ChipLabel0" height="20" color="#AAAAAA" vertAlign="center" translation="[5,0]">
                         <Font role="font" uri="font:MediumSystemFontFile" size="12" />
@@ -100,7 +96,7 @@
                     color="#AAAAAA">
                     <Font role="font" uri="font:SystemFontFile" size="16" />
                 </Label>
-            </LayoutGroup>
+            </Group>
         </LayoutGroup>
     </children>
 </component>

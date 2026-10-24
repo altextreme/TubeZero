@@ -58,7 +58,9 @@
                 </AppRoot>
             </Group>
 
-            <Clock />
+            <!-- YourTube: no clock on browse screens (YouTube TV has none; it overlapped the top bar logo).
+                 The player keeps its own clock. -->
+            <Clock visible="false" />
             <VideoContainer id="VideoContainer" />
             <Group id="Notifications" />
 

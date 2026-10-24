@@ -39,10 +39,12 @@ key Right 1.5
 shot 04-search 1
 for c in l o f i; do key "Lit_$c" 0.4; done
 shot 05-search-typed 3
-key Down 1.5
-shot 06-search-results 3
+key Left 1.5          # suggestions
+key Select 6          # search the first suggestion
+key Down 1.5          # results row
+shot 06-search-results 2
 
-key Left 1; key Left 1.5
+key Left 1.5
 key Down 1.5          # Home
 key Down 3            # Subscriptions
 shot 07-subscriptions 2
