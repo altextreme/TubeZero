@@ -310,6 +310,7 @@ function ScrollUp() as void
 
     m.scrollAnimationInterpolator.reverse = true
     m.scrollAnimation.control = "start"
+    SetSearchControlsVisible(true) ' YourTube
 end function
 
 function ScrollDown() as void
@@ -325,6 +326,15 @@ function ScrollDown() as void
 
     m.scrollAnimationInterpolator.reverse = false
     m.scrollAnimation.control = "start"
+    SetSearchControlsVisible(false) ' YourTube
+end function
+
+' YourTube: the results row sits higher than in Playlet, so the controls above it would overlap it
+' once it scrolls up; hide them while the results have focus.
+function SetSearchControlsVisible(visible as boolean) as void
+    m.suggestions.visible = visible
+    m.keyboard.visible = visible
+    m.filtersButton.visible = visible
 end function
 
 function OnKeyEvent(key as string, press as boolean) as boolean

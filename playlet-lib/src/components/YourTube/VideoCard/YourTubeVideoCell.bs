@@ -1,3 +1,4 @@
+import "pkg:/components/YourTube/YourTubeText.bs"
 import "pkg:/source/utils/Locale.bs"
 import "pkg:/source/utils/MathUtils.bs"
 import "pkg:/source/utils/Types.bs"
@@ -18,10 +19,7 @@ function Init()
     m.textGroup = m.top.findNode("TextGroup")
     m.size = [350, 196]
     m.robotoTitleFont = m.titleLabel.font
-    m.systemTitleFont = CreateObject("roSGNode", "Font")
-    ' Built from two strings so the theme plugin doesn't swap it for Roboto.
-    m.systemTitleFont.uri = "font:" + "BoldSystemFontFile"
-    m.systemTitleFont.size = 20
+    m.systemTitleFont = YourTubeText.SystemBoldFont(20)
 end function
 
 ' Rows can ask for bigger cards (Home's first shelf is 480x270). The row list stamps its rowItemSize on
@@ -154,28 +152,14 @@ function ShowChips(badges as dynamic) as void
     m.statsLabel.width = MathUtils.Max(m.size[0] - x, 0)
 end function
 
-' Roboto has no emoji and no CJK/Arabic/Hebrew/Indic glyphs. Emoji are dropped (no font on the TV draws
-' them), and titles in other scripts fall back to the Roku system font instead of showing empty boxes.
 function SetTitle(text as string) as void
-    clean = ""
-    needsSystemFont = false
-    for i = 0 to text.Len() - 1
-        ch = text.Mid(i, 1)
-        code = Asc(ch)
-        isEmoji = code >= &h1F000 or (code >= &h2600 and code <= &h27BF) or code = &hFE0F or code = &h200D
-        if not isEmoji
-            clean += ch
-            if code >= &h0590 and (code < &h2000 or code > &h2BFF)
-                needsSystemFont = true
-            end if
-        end if
-    end for
-    if needsSystemFont
+    cleaned = YourTubeText.Clean(text)
+    if cleaned.needsSystemFont
         m.titleLabel.font = m.systemTitleFont
     else
         m.titleLabel.font = m.robotoTitleFont
     end if
-    m.titleLabel.text = clean.Trim()
+    m.titleLabel.text = cleaned.text
 end function
 
 function ShowBadge(text as string, color as string, opacity as float) as void

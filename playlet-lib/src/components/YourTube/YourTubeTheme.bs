@@ -46,6 +46,13 @@ function YourTubeStyleKeyboard(keyboard as object) as void
     textEditBox.textColor = "#EBEBEBFF"
     ' White pill: the keyboard tints it with InputFieldColor (a dark pill came out black on the TV).
     textEditBox.backgroundUri = "pkg:/images/yt-pill-light.$$RES$$.9.png"
+    ' The Roku text box draws its text at x=0; nudge its internal label in from the pill's edge.
+    for each child in textEditBox.getChildren(-1, 0)
+        if child.subtype() = "Label"
+            child.translation = [18, child.translation[1]]
+            exit for
+        end if
+    end for
 
     ' No key backgrounds or separators; rounded white focus like the YouTube TV keyboard.
     keyGrid = keyboard.keyGrid

@@ -11,6 +11,7 @@ import "pkg:/components/VideoPlayerDev/SponsorBlockController.bs"
 import "pkg:/components/VideoPlayerDev/TransportController.bs"
 import "pkg:/components/VideoPlayerDev/VideoNode.bs"
 import "pkg:/components/VideoQueue/VideoQueueUtils.bs"
+import "pkg:/components/YourTube/YourTubeText.bs"
 import "pkg:/source/utils/Locale.bs"
 import "pkg:/source/utils/Logging.bs"
 import "pkg:/source/utils/RemoteKeys.bs"
@@ -1372,6 +1373,12 @@ function UpdateOverlayMeta() as void
     end if
     title = ValidString(content.title)
     secondaryTitle = ValidString(content.secondaryTitle)
+    ' YourTube: no emoji boxes; system font for scripts Roboto lacks
+    cleaned = YourTubeText.Clean(title)
+    title = cleaned.text
+    if cleaned.needsSystemFont
+        m.titleLabel.font = YourTubeText.SystemBoldFont(22)
+    end if
     m.titleLabel.text = title
     m.secondaryTitleLabel.text = secondaryTitle
     ' the loading overlay shows the same title + secondary title while loading.
