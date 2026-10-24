@@ -31,7 +31,7 @@ function Init()
         ""
         "YourTube is a personal fork of Playlet by Brahim Hadriche."
         "Playlet: github.com/iBicha/playlet. Licensed under the GNU AGPL-3.0."
-        "YourTube source: github.com/altextreme/playlet"
+        "YourTube source: github.com/altextreme/YourTube"
     ]
 
     m.keyValueList = m.top.findNode("KeyValueListContent")

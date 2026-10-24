@@ -8,7 +8,7 @@ import "pkg:/source/utils/Types.bs"
 ' once per tile-set.
 
 function Init()
-    m.top.translation = [0, 430]
+    m.top.translation = [0, 327] ' YourTube: strip ends above the raised scrubber (was 430)
 
     m.tiles = [
         m.top.findNode("bifTileL2")

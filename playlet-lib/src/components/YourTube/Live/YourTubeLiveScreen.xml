@@ -53,7 +53,8 @@
             <Font role="font" uri="font:SystemFontFile" size="16" />
         </Label>
 
-        <Group id="PhoneCard" translation="[820,140]">
+        <!-- x leaves room for the rail to expand (+172) without clipping -->
+        <Group id="PhoneCard" translation="[740,140]">
             <Label
                 text="Send a link from your phone"
                 width="360"

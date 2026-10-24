@@ -152,6 +152,10 @@ function OnSearchSuggestions(event as object) as void
             unique.Push(suggestion)
         end if
     end for
+    ' YourTube: at most 5, like YouTube; more would run into the results row
+    while unique.Count() > 5
+        unique.Pop()
+    end while
     suggestions = unique
 
     ' Capture current focused button and restore it after resetting the buttons

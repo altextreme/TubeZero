@@ -15,7 +15,7 @@
              frame would otherwise stay visible behind the filmstrip. Living inside this component ties its
              visibility to the filmstrip's transportMode rule; the translation cancels the component's
              [0, 430] offset. The title/bar stay readable because they paint after BifDisplay in the Chrome. -->
-        <Rectangle id="bifBackdrop" translation="[0, -430]" width="1280" height="720" color="0x000000FF" />
+        <Rectangle id="bifBackdrop" translation="[0, -327]" width="1280" height="720" color="0x000000FF" />
         <!-- Dim side panels paint first (behind the tiles): VOD storyboard tiles cover them; on live (empty
              tiles) they show through as the filmstrip structure. -->
         <Poster id="bifSideL2" translation="[-36, 42]" width="250" height="141" opacity="0.15"

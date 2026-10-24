@@ -5,7 +5,7 @@ function SetScenePalette(scene as object)
         DialogFocusColor: "#CECECEFF"
         DialogFocusItemColor: "#202020FF"
         DialogSecondaryTextColor: "#EBEBEBFF"
-        DialogSecondaryItemColor: "#FF1C30FF"
+        DialogSecondaryItemColor: "#3F3F3FFF" ' YourTube: neutral divider (was red)
         DialogTextColor: "#EBEBEBFF"
     }
     scene.palette = palette

@@ -87,6 +87,8 @@ function Initialize()
     m.chrome = m.top.findNode("Chrome")
     m.titleLabel = m.top.findNode("titleLabel")
     m.secondaryTitleLabel = m.top.findNode("secondaryTitleLabel")
+    ' YourTube: the title sits where the scrub previews go; hide it while they show
+    m.top.findNode("bifDisplay").ObserveField("visible", FuncName(OnBifVisibleChange))
     m.clock = m.top.findNode("clock")
     m.bifDisplay = m.top.findNode("bifDisplay")
     m.trickPlayBar = m.top.findNode("trickPlayBar")
@@ -1567,4 +1569,9 @@ function OnClose() as void
     end try
 
     m.top.content = invalid
+end function
+
+' YourTube: hide title/meta while the scrub preview strip is up (they would overlap)
+function OnBifVisibleChange(event as object) as void
+    m.top.findNode("titleArea").visible = not event.getData()
 end function
