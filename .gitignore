@@ -9,3 +9,11 @@ playlet-lib/src/www
 playlet-app/src/lib/playlet-lib.zip
 release/
 playlet-web/stats.html
+
+# YourTube: never commit secrets, packages or tokens
+.env*
+*.zip
+*.pkg
+*.squashfs*
+*token*.json
+*cookies*.txt

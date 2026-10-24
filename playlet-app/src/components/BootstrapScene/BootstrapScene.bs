@@ -33,6 +33,12 @@ function GetPlayletLibUrls() as object
             return [debug]
         #end if
     #else
+        ' YourTube: always load the library bundled in this zip. Never fetch Playlet's
+        ' hosted builds from GitHub, and ignore lib URLs saved in the registry.
+        if true
+            return [{ type: "embedded-zip", link: Manifest.ReadValue("playlet_lib_zip_embedded_url") }]
+        end if
+
         savedUrls = Registry.GetPlayletLibUrlsFromRegistry()
         if savedUrls <> invalid
             m.shouldClearRegistryOnLoadFail = true

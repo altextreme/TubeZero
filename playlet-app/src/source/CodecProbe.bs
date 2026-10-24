@@ -1,0 +1,116 @@
+' YourTube: temporary Phase 0 codec/display probe. Prints one JSON line per check to the
+' debug console (port 8085), each prefixed with YT_PROBE. Remove after docs/device-capabilities.md is written.
+namespace CodecProbe
+
+    function DumpAll() as void
+        di = CreateObject("roDeviceInfo")
+
+        Emit("model", SafeCall(di, "GetModel"))
+        Emit("modelDetails", SafeCall(di, "GetModelDetails"))
+        Emit("osVersion", SafeCall(di, "GetOSVersion"))
+        Emit("displayType", SafeCall(di, "GetDisplayType"))
+        Emit("displayMode", SafeCall(di, "GetDisplayMode"))
+        Emit("videoMode", SafeCall(di, "GetVideoMode"))
+        Emit("uiResolution", SafeCall(di, "GetUIResolution"))
+        Emit("displaySize", SafeCall(di, "GetDisplaySize"))
+        Emit("displayProperties", SafeCall(di, "GetDisplayProperties"))
+        Emit("displayCapabilities", SafeCall(di, "GetDisplayCapabilities"))
+        Emit("supportedGraphicsResolutions", SafeCall(di, "GetSupportedGraphicsResolutions"))
+        Emit("graphicsPlatform", SafeCall(di, "GetGraphicsPlatform"))
+
+        ' Level picks the resolution tier: 4.1/4.2 ~ 1080p, 5.1/5.2 ~ 2160p
+        videoChecks = [
+            { label: "avc high 4.1 (1080p30)", f: { Codec: "mpeg4 avc", Profile: "high", Level: "4.1", Container: "mp4" } }
+            { label: "avc high 4.2 (1080p60)", f: { Codec: "mpeg4 avc", Profile: "high", Level: "4.2", Container: "mp4" } }
+            { label: "avc high 5.1 (2160p30)", f: { Codec: "mpeg4 avc", Profile: "high", Level: "5.1", Container: "mp4" } }
+            { label: "avc high 5.2 (2160p60)", f: { Codec: "mpeg4 avc", Profile: "high", Level: "5.2", Container: "mp4" } }
+            { label: "hevc main 4.1 (1080p)", f: { Codec: "hevc", Profile: "main", Level: "4.1", Container: "mp4" } }
+            { label: "hevc main 5.1 (2160p60)", f: { Codec: "hevc", Profile: "main", Level: "5.1", Container: "mp4" } }
+            { label: "hevc main10 4.1 (1080p)", f: { Codec: "hevc", Profile: "main 10", Level: "4.1", Container: "mp4" } }
+            { label: "hevc main10 5.1 (2160p60)", f: { Codec: "hevc", Profile: "main 10", Level: "5.1", Container: "mp4" } }
+            { label: "vp9 p0 4.1 (1080p) mp4", f: { Codec: "vp9", Profile: "profile 0", Level: "4.1", Container: "mp4" } }
+            { label: "vp9 p0 5.1 (2160p60) mp4", f: { Codec: "vp9", Profile: "profile 0", Level: "5.1", Container: "mp4" } }
+            { label: "vp9 p0 5.1 (2160p60) webm", f: { Codec: "vp9", Profile: "profile 0", Level: "5.1", Container: "webm" } }
+            { label: "vp9 p2 4.1 (1080p HDR)", f: { Codec: "vp9", Profile: "profile 2", Level: "4.1", Container: "mp4" } }
+            { label: "vp9 p2 5.1 (2160p60 HDR) mp4", f: { Codec: "vp9", Profile: "profile 2", Level: "5.1", Container: "mp4" } }
+            { label: "vp9 p2 5.1 (2160p60 HDR) webm", f: { Codec: "vp9", Profile: "profile 2", Level: "5.1", Container: "webm" } }
+            { label: "vp9 no profile", f: { Codec: "vp9", Container: "webm" } }
+            { label: "av1 main 4.1 (1080p)", f: { Codec: "av1", Profile: "main", Level: "4.1", Container: "mp4" } }
+            { label: "av1 main 5.1 (2160p60)", f: { Codec: "av1", Profile: "main", Level: "5.1", Container: "mp4" } }
+            { label: "av1 no profile", f: { Codec: "av1", Container: "mp4" } }
+        ]
+        for each check in videoChecks
+            Emit("video: " + check.label, SafeCanDecode(di, "CanDecodeVideo", check.f))
+        end for
+
+        audioChecks = [
+            { label: "aac", f: { Codec: "aac" } }
+            { label: "opus", f: { Codec: "opus" } }
+            { label: "ac3", f: { Codec: "ac3" } }
+            { label: "eac3", f: { Codec: "eac3" } }
+        ]
+        for each check in audioChecks
+            Emit("audio: " + check.label, SafeCanDecode(di, "CanDecodeAudio", check.f))
+        end for
+    end function
+
+    function SafeCall(obj as object, method as string) as dynamic
+        try
+            if method = "GetModel"
+                return obj.GetModel()
+            end if
+            if method = "GetModelDetails"
+                return obj.GetModelDetails()
+            end if
+            if method = "GetOSVersion"
+                return obj.GetOSVersion()
+            end if
+            if method = "GetDisplayType"
+                return obj.GetDisplayType()
+            end if
+            if method = "GetDisplayMode"
+                return obj.GetDisplayMode()
+            end if
+            if method = "GetVideoMode"
+                return obj.GetVideoMode()
+            end if
+            if method = "GetUIResolution"
+                return obj.GetUIResolution()
+            end if
+            if method = "GetDisplaySize"
+                return obj.GetDisplaySize()
+            end if
+            if method = "GetDisplayProperties"
+                return obj.GetDisplayProperties()
+            end if
+            if method = "GetDisplayCapabilities"
+                return obj.GetDisplayCapabilities()
+            end if
+            if method = "GetSupportedGraphicsResolutions"
+                return obj.GetSupportedGraphicsResolutions()
+            end if
+            if method = "GetGraphicsPlatform"
+                return obj.GetGraphicsPlatform()
+            end if
+        catch e
+            return { error: e.message }
+        end try
+        return invalid
+    end function
+
+    function SafeCanDecode(obj as object, method as string, format as object) as dynamic
+        try
+            if method = "CanDecodeVideo"
+                return obj.CanDecodeVideo(format)
+            end if
+            return obj.CanDecodeAudio(format)
+        catch e
+            return { error: e.message }
+        end try
+    end function
+
+    function Emit(key as string, value as dynamic) as void
+        print "YT_PROBE " + FormatJson({ k: key, v: value })
+    end function
+
+end namespace

@@ -27,6 +27,8 @@ function Main(args as object) as void
 
     scene = screen.CreateScene("BootstrapScene")
     screen.show()
+    ' YourTube: temporary Phase 0 codec probe
+    CodecProbe.DumpAll()
     scene.ObserveField("libSceneCreated", port)
 
     AppManager.CaptureLastExitInfo(scene)

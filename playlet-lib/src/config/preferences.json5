@@ -338,7 +338,8 @@
         key: "dev.diagnostics.enabled",
         description: "Help improve Playlet by enabling diagnostics. This will send anonymous diagnotics data to the developer.",
         type: "boolean",
-        defaultValue: true,
+        // YourTube: diagnostics off by default (never report to Playlet under the YourTube identity)
+        defaultValue: false,
       },
     ],
   },
