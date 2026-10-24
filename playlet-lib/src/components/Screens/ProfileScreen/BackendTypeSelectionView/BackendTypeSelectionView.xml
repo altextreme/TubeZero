@@ -15,7 +15,7 @@
             width="720"
             height="420"
             translation="[280,150]"
-            color="#242424">
+            color="#212121"> <!-- YourTube: dialog surface -->
             <Label
                 width="720"
                 horizAlign="center"
@@ -33,7 +33,9 @@
                 itemSize="[500,500]"
                 itemComponentName="BackendTypeRowListCell"
                 rowFocusAnimationStyle="floatingfocus"
-                focusBitmapUri="pkg:/images/focus-glow-padding-30.$$RES$$.9.png">
+                focusBitmapUri="pkg:/images/yt-rounded.$$RES$$.9.png"
+                focusBitmapBlendColor="#3F3F3FFF"
+                drawFocusFeedbackOnTop="false"> <!-- YourTube: filled card highlight behind the logo, like the comment cards -->
                 <ContentNode role="content">
                     <ContentNode>
                         <!-- bs:disable-next-line LOCALE_MISSING_TRANSLATIONS -->

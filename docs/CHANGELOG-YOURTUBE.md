@@ -20,6 +20,7 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 - Bookmarks uses the app's empty state when there are no bookmarks.
 - Search Filters panel uses the `#212121` dialog surface so it stands off the page.
 - `capture-all.sh` covers the channel page and the Filters dialog.
+- Sign-in service picker: `#212121` surface and a filled card highlight behind the logo instead of a square frame.
 
 ### Account actions (Phase 2, signed-in path not yet tested)
 - Like, Dislike and Save (Watch Later) buttons in the player row; icons fill in when active. They call InnerTube
