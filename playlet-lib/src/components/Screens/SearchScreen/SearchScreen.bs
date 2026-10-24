@@ -334,6 +334,7 @@ end function
 ' YourTube: the results row sits higher than in Playlet, so the controls above it would overlap it
 ' once it scrolls up; hide them while the results have focus.
 function SetSearchControlsVisible(visible as boolean) as void
+    m.top.findNode("searchFieldPill").visible = visible
     m.suggestions.visible = visible
     m.keyboard.visible = visible
     m.filtersButton.visible = visible
@@ -345,7 +346,7 @@ function OnKeyEvent(key as string, press as boolean) as boolean
         m.currentNavigtionNode = navigation.node
         if m.currentNavigtionNode.isSameNode(m.navBar)
             ' YourTube: start on the keyboard, like the YouTube TV app (Playlet started on suggestions)
-    m.currentNavigtionNode = m.keyboard
+            m.currentNavigtionNode = m.keyboard
         end if
         if m.currentNavigtionNode.isSameNode(m.suggestions)
             OnSearchButtonFocused()

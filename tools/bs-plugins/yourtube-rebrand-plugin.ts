@@ -28,6 +28,12 @@ export class YourTubeRebrandPlugin implements CompilerPlugin {
                     (_m, open, text, close) => open + text.replace(FROM, TO) + close,
                 );
                 fs.writeFileSync(filePath, rewritten);
+            } else if (/(^|\/)config\/preferences\.json5$/.test(dest)) {
+                // user-visible labels only; keys and values stay as they are
+                const contents = fs.readFileSync(filePath, 'utf8');
+                // (the JSON plugin has already turned it into minified JSON by now)
+                fs.writeFileSync(filePath, contents.replace(/"(displayText|description)":"((?:[^"\\]|\\.)*)"/g,
+                    (_m, key, value) => `"${key}":"${value.replace(/\bPlaylet\b(?! Lib)/g, TO)}"`));
             } else if (/(^|\/)loading-messages\.json5?$/.test(dest)) {
                 const contents = fs.readFileSync(filePath, 'utf8');
                 fs.writeFileSync(filePath, contents.replace(FROM, TO));
@@ -43,7 +49,7 @@ export class YourTubeRebrandPlugin implements CompilerPlugin {
             return;
         }
         const stagingDir = builder.options.stagingDir!;
-        const listComponents = findListComponents(stagingDir);
+        const widgetTags = WIDGET_STYLES.map((style) => findDerived(stagingDir, style.bases));
         // Only the lib ships Roboto; the launcher keeps the system font.
         const hasRoboto = fs.existsSync(path.join(stagingDir, 'fonts/roboto'));
         for (const filePath of walk(stagingDir)) {
@@ -58,7 +64,7 @@ export class YourTubeRebrandPlugin implements CompilerPlugin {
             if (hasRoboto) {
                 if (filePath.toLowerCase().endsWith('.xml')) {
                     rewritten = rewritePresetFontAttributes(rewritten);
-                    rewritten = styleLists(rewritten, listComponents);
+                    WIDGET_STYLES.forEach((style, i) => { rewritten = styleWidgets(rewritten, widgetTags[i], style); });
                 }
                 for (const [from, to] of THEME_FONTS) {
                     rewritten = rewritten.split(from).join(to);
@@ -155,20 +161,38 @@ function rewritePresetFontAttributes(xml: string): string {
     );
 }
 
-// Roku's label lists (settings, dialogs, pickers) default to gray gradient bars. Give them the YouTube TV
-// look: white pill focus, nothing behind resting rows, light text that turns dark on focus, Roboto.
-const LIST_BASES = new Set(['LabelList', 'CheckList', 'RadioButtonList']);
-const LIST_DEFAULTS: [string, string][] = [
-    ['focusBitmapUri', 'pkg:/images/yt-pill-light.$$RES$$.9.png'],
-    ['focusFootprintBitmapUri', 'pkg:/images/yt-transparent.png'],
-    ['color', '0xF1F1F1FF'],
-    ['focusedColor', '0x0F0F0FFF'],
+// Roku's built-in widgets default to gray gradient bars. Give them the YouTube TV look (white pill focus,
+// light text that turns dark on focus, Roboto), only where Playlet didn't set its own values.
+type WidgetStyle = { bases: Set<string>; defaults: [string, string][]; fonts: string };
+const roboto = (role: string, weight: string, size: number) =>
+    `<Font role="${role}" uri="pkg:/fonts/roboto/Roboto-${weight}.ttf" size="${size}" />`;
+const WIDGET_STYLES: WidgetStyle[] = [
+    {
+        // settings lists, dialogs, pickers: nothing behind resting rows
+        bases: new Set(['LabelList', 'CheckList', 'RadioButtonList']),
+        defaults: [
+            ['focusBitmapUri', 'pkg:/images/yt-pill-light.$$RES$$.9.png'],
+            ['focusFootprintBitmapUri', 'pkg:/images/yt-transparent.png'],
+            ['color', '0xF1F1F1FF'],
+            ['focusedColor', '0x0F0F0FFF'],
+        ],
+        fonts: roboto('font', 'Regular', 22) + roboto('focusedFont', 'Medium', 22),
+    },
+    {
+        // standalone buttons: dark pill at rest, white pill on focus
+        bases: new Set(['Button']),
+        defaults: [
+            ['focusBitmapUri', 'pkg:/images/yt-pill-light.$$RES$$.9.png'],
+            ['focusFootprintBitmapUri', 'pkg:/images/yt-pill-dark.$$RES$$.9.png'],
+            ['textColor', '0xF1F1F1FF'],
+            ['focusedTextColor', '0x0F0F0FFF'],
+        ],
+        fonts: roboto('textFont', 'Regular', 22) + roboto('focusedTextFont', 'Medium', 22),
+    },
 ];
-const LIST_FONTS = '<Font role="font" uri="pkg:/fonts/roboto/Roboto-Regular.ttf" size="22" />'
-    + '<Font role="focusedFont" uri="pkg:/fonts/roboto/Roboto-Medium.ttf" size="22" />';
 
-// Component names in this build that extend (directly or not) one of the list bases.
-function findListComponents(stagingDir: string): Set<string> {
+// Component names in this build that extend (directly or not) one of the given base widgets.
+function findDerived(stagingDir: string, bases: Set<string>): Set<string> {
     const parents = new Map<string, string>();
     for (const file of walk(stagingDir)) {
         if (!file.toLowerCase().endsWith('.xml')) continue;
@@ -177,33 +201,35 @@ function findListComponents(stagingDir: string): Set<string> {
         const ext = head?.[0].match(/\bextends="([^"]+)"/)?.[1];
         if (name && ext) parents.set(name, ext);
     }
-    const result = new Set(LIST_BASES);
+    const result = new Set(bases);
     for (const name of parents.keys()) {
         let current: string | undefined = name;
         for (let i = 0; current && i < 20; i++) {
-            if (LIST_BASES.has(current)) { result.add(name); break; }
+            if (bases.has(current)) { result.add(name); break; }
             current = parents.get(current);
         }
     }
     return result;
 }
 
-function styleLists(xml: string, lists: Set<string>): string {
+function styleWidgets(xml: string, tags: Set<string>, style: WidgetStyle): string {
     return xml.replace(/<([A-Za-z][\w:]*)(\s[^<>]*?)?(\/?)>/g, (match, tag, attrs = '', selfClosing, offset) => {
-        if (!lists.has(tag) || match.startsWith('<component')) {
+        if (!tags.has(tag) || match.startsWith('<component')) {
             return match;
         }
         let added = '';
-        for (const [name, value] of LIST_DEFAULTS) {
+        for (const [name, value] of style.defaults) {
             if (!new RegExp(`\\s${name}=`).test(attrs)) {
                 added += ` ${name}="${value}"`;
             }
         }
-        const hasFont = /\sfont=/.test(attrs) || (!selfClosing && /role="font"/.test(xml.slice(offset, xml.indexOf(`</${tag}>`, offset))));
+        const inner = selfClosing ? '' : xml.slice(offset, xml.indexOf(`</${tag}>`, offset));
+        const hasFont = /\s\w*[fF]ont=/.test(attrs) || /role="\w*[fF]ont"/.test(inner);
+        const fonts = hasFont ? '' : style.fonts;
         if (selfClosing) {
-            return hasFont ? `<${tag}${attrs}${added} />` : `<${tag}${attrs}${added}>${LIST_FONTS}</${tag}>`;
+            return fonts ? `<${tag}${attrs}${added}>${fonts}</${tag}>` : `<${tag}${attrs}${added} />`;
         }
-        return `<${tag}${attrs}${added}>${hasFont ? '' : LIST_FONTS}`;
+        return `<${tag}${attrs}${added}>${fonts}`;
     });
 }
 

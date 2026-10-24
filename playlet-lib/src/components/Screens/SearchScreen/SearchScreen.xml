@@ -19,6 +19,13 @@
                 padding="[30,30]"
                 text="Filters" />
 
+            <!-- YourTube: the search field's pill, drawn behind the keyboard so the text can sit inset -->
+            <RoundedRect
+                id="searchFieldPill"
+                translation="[480,40]"
+                width="352"
+                height="48"
+                color="0x282828FF" />
             <SearchKeyboard
                 id="keyboard"
                 translation="[480,40]" />

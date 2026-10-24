@@ -13,9 +13,10 @@
         <field id="focusedTextColor2" type="Color" value="0x262626ff" />
     </interface>
     <children>
+        <!-- YourTube: rounded pill focus (was white.9) -->
         <Poster
             id="BackgroundFocused"
-            uri="pkg:/images/white.$$RES$$.9.png"
+            uri="pkg:/images/yt-pill-light.$$RES$$.9.png"
             visible="false" />
         <!-- YourTube: no outline box around resting categories (was white-border) -->
         <Poster
