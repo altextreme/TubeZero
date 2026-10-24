@@ -172,7 +172,7 @@ const WIDGET_STYLES: WidgetStyle[] = [
         bases: new Set(['LabelList', 'CheckList', 'RadioButtonList']),
         defaults: [
             ['focusBitmapUri', 'pkg:/images/yt-pill-light-padded.$$RES$$.9.png'],
-            ['focusFootprintBitmapUri', 'pkg:/images/yt-transparent.png'],
+            ['focusFootprintBitmapUri', 'pkg:/images/yt-transparent-padded.$$RES$$.9.png'],
             ['color', '0xF1F1F1FF'],
             ['focusedColor', '0x0F0F0FFF'],
         ],

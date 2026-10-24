@@ -9,10 +9,12 @@
         <field id="focusPercent" type="float" onChange="OnFocusPercent" />
     </interface>
     <children>
+        <!-- YourTube: text inset inside the focus pill -->
         <ScrollingLabel
             id="label"
-            maxWidth="420"
-            height="50"
+            maxWidth="368"
+            height="48"
+            translation="[16,0]"
             vertAlign="center"
             font="font:SmallestSystemFont" />
     </children>

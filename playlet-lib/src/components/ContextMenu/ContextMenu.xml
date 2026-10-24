@@ -43,10 +43,14 @@
                     wrap="true" />
             </LayoutGroup>
 
+            <!-- YourTube: rounded white focus pill inset from the panel edges -->
             <MarkupList
                 id="optionsList"
-                itemSize="[420,50]"
-                translation="[25,310]"
+                itemSize="[400,48]"
+                itemSpacing="[0,4]"
+                focusBitmapUri="pkg:/images/yt-pill-light.$$RES$$.9.png"
+                focusFootprintBitmapUri="pkg:/images/yt-transparent.png"
+                translation="[34,310]"
                 itemComponentName="ContextMenuRow"
                 vertFocusAnimationStyle="floatingFocus"
                 numRows="8" />

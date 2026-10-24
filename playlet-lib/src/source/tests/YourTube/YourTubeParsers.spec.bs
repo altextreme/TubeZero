@@ -3,6 +3,7 @@
 import "pkg:/components/YourTube/Comments/CommentsParser.bs"
 import "pkg:/components/YourTube/LiveChat/LiveChatParser.bs"
 import "pkg:/components/YourTube/YourTubeJson.bs"
+import "pkg:/components/YourTube/YourTubeText.bs"
 import "pkg:/source/utils/StringUtils.bs"
 
 namespace Tests
@@ -168,6 +169,16 @@ namespace Tests
         function _()
             m.assertEqual(YourTubeLiveChat.ParseResponse(invalid).messages.Count(), 0)
             m.assertEqual(YourTubeLiveChat.ParseResponse({ continuationContents: { liveChatContinuation: { actions: [1, {}] } } }).messages.Count(), 0)
+        end function
+
+        @describe("YourTubeText.Clean")
+
+        @it("drops emoji and the double space they leave")
+        function _()
+            red = Chr(&h1F534)
+            m.assertEqual(YourTubeText.Clean(red + "LIVE | radio " + red + " beats").text, "LIVE | radio beats")
+            m.assertFalse(YourTubeText.Clean("plain").needsSystemFont)
+            m.assertTrue(YourTubeText.Clean("日本語").needsSystemFont)
         end function
 
     end class

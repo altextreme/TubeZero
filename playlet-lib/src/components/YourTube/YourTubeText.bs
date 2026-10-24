@@ -17,6 +17,10 @@ namespace YourTubeText
                 end if
             end if
         end for
+        ' a dropped emoji between words leaves a double space
+        while cleaned.InStr("  ") >= 0
+            cleaned = cleaned.Replace("  ", " ")
+        end while
         return { text: cleaned.Trim(), needsSystemFont: needsSystemFont }
     end function
 

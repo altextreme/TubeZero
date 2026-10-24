@@ -116,6 +116,13 @@ for res in 480p:0.667 720p:1 1080p:1.5; do
         -draw "line $((p + 1)),$((h + 1)) $((w - p)),$((h + 1))" \
         -draw "line $((w + 1)),1 $((w + 1)),$h" \
         "PNG32:$LIB_IMG/yt-pill-light-padded.$name.9.png"
+    # Same padding, invisible: the list footprint, so rows don't shift sideways when focus leaves the list.
+    magick "$TMP/pill.png" -channel A -evaluate set 0 +channel -background none -gravity center -extent "$((w + 2))x$((h + 2))" -fill black \
+        -draw "line $((midx)),0 $((midx + 2)),0" \
+        -draw "line 0,$((mid)) 0,$((mid + 2))" \
+        -draw "line $((p + 1)),$((h + 1)) $((w - p)),$((h + 1))" \
+        -draw "line $((w + 1)),1 $((w + 1)),$h" \
+        "PNG32:$LIB_IMG/yt-transparent-padded.$name.9.png"
 done
 
 # ButtonEx background: white, tinted in code. Radius 24 at 720p.
