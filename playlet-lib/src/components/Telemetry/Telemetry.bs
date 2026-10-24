@@ -29,8 +29,9 @@ function OnNodeReady() as void
     })
 end function
 
-function OnPreferencesChanged(event as object) as void
-    m.top.enabled = event.getData()
+function OnPreferencesChanged(_event as object) as void
+    ' YourTube: telemetry never runs. Playlet's Sentry/support endpoints must not receive YourTube data.
+    m.top.enabled = false
 end function
 
 function OnEnabledChanged(event as object) as void

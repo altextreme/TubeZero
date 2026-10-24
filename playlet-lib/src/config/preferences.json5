@@ -338,8 +338,9 @@
         key: "dev.diagnostics.enabled",
         description: "Help improve Playlet by enabling diagnostics. This will send anonymous diagnotics data to the developer.",
         type: "boolean",
-        // YourTube: diagnostics off by default (never report to Playlet under the YourTube identity)
+        // YourTube: diagnostics are hard-disabled (Telemetry.bs) and the switch is hidden
         defaultValue: false,
+        visibility: "off",
       },
     ],
   },
