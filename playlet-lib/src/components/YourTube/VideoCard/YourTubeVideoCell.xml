@@ -56,6 +56,7 @@
         </Group>
 
         <LayoutGroup
+            id="TextGroup"
             translation="[0,218]"
             itemSpacings="[6,2]">
             <Label

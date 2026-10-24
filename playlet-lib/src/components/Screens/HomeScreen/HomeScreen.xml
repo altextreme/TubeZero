@@ -8,15 +8,16 @@
         <field id="feedFile" type="string" value="libpkg:/config/default_home_layout.yaml" />
     </interface>
     <children>
-        <!-- YourTube: YouTube TV top bar; rows start below it (were at y=50) -->
+        <!-- YourTube: YouTube TV top bar; rows start below it (were at y=50). First shelf uses big 480x270 cards. -->
         <YourTubeTopBar id="topBar" />
         <VideoRowList
             itemComponentName="RowCell"
             id="rowList"
             translation="[0,120]"
             numRows="2"
-            rowitemSize="[[350,196]]"
-            rowItemSpacing="[[25,0]]"
+            rowitemSize="[[480,270],[350,196]]"
+            rowItemSpacing="[[24,0],[25,0]]"
+            rowHeights="[400,326]"
             itemSize="[1280,326]"
             itemSpacing="[0,65]"
             rowLabelOffset="[[90,20]]"

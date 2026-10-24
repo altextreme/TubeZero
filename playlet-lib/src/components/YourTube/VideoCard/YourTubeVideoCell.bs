@@ -14,6 +14,64 @@ function Init()
     m.durationLabel.font = m.top.findNode("BadgeFont")
     m.progressBar = m.top.findNode("ProgressBar")
     m.progressTrack = m.top.findNode("ProgressTrack")
+    m.cornerMask = m.top.findNode("CornerMask")
+    m.textGroup = m.top.findNode("TextGroup")
+    m.size = [350, 196]
+end function
+
+' Rows can ask for bigger cards (Home's first shelf is 480x270): take the size from the
+' parent RowList's rowItemSize for this card's row.
+function ApplyRowSize(content as object) as void
+    if m.rowList = invalid
+        node = m.top.getParent()
+        while node <> invalid and node.subtype() <> "VideoRowList"
+            node = node.getParent()
+        end while
+        if node = invalid
+            return
+        end if
+        m.rowList = node
+    end if
+
+    sizes = m.rowList.rowItemSize
+    if not IsArray(sizes) or sizes.Count() = 0
+        return
+    end if
+    rowIndex = 0
+    row = content.getParent()
+    root = m.rowList.content
+    if row <> invalid and root <> invalid
+        for i = 0 to root.getChildCount() - 1
+            if root.getChild(i).isSameNode(row)
+                rowIndex = i
+                exit for
+            end if
+        end for
+    end if
+    size = sizes[MathUtils.Min(rowIndex, sizes.Count() - 1)]
+    if not IsArray(size) or size.Count() < 2
+        return
+    end if
+    SetSize(size[0], size[1])
+end function
+
+function SetSize(width as float, height as float) as void
+    if m.size[0] = width and m.size[1] = height
+        return
+    end if
+    m.size = [width, height]
+    m.thumbnail.width = width
+    m.thumbnail.height = height
+    m.cornerMask.width = width
+    m.cornerMask.height = height
+    m.progressTrack.width = width
+    m.progressBar.width = width
+    m.progressTrack.translation = [0, height - 4]
+    m.progressBar.translation = [0, height - 4]
+    m.titleLabel.width = width
+    m.channelLabel.width = width
+    m.statsLabel.width = width
+    m.textGroup.translation = [0, height + 22]
 end function
 
 function OnContentSet() as void
@@ -21,6 +79,8 @@ function OnContentSet() as void
     if content = invalid
         return
     end if
+
+    ApplyRowSize(content)
 
     lines = content.lines
     if not IsArray(lines)
