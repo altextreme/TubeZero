@@ -17,7 +17,7 @@ ROBOTO_BOLD="data:font/ttf;base64,$(base64 < "$ROOT/playlet-lib/src/fonts/roboto
 # render <svg> <width> <height> <out.png>  (inlines Roboto Bold for the wordmark)
 render() {
     local svg="$TMP/$(basename "$1")"
-    python3 -c 'import sys; open(sys.argv[3],"w").write(open(sys.argv[1]).read().replace("__ROBOTO_BOLD__", sys.argv[2]))' "$1" "$ROBOTO_BOLD" "$svg"
+    python3 -c 'import sys; open(sys.argv[3],"w").write(open(sys.argv[1]).read().replace("../playlet-lib/src/fonts/roboto/Roboto-Bold.ttf", sys.argv[2]))' "$1" "$ROBOTO_BOLD" "$svg"
     set -- "$svg" "$2" "$3" "$4"
     "$CHROME" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
         --default-background-color=00000000 --window-size="$2,$3" \
