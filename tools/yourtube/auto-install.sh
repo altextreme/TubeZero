@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# YourTube: run this yourself in a terminal and leave it open. Whenever a new YourTube-*.zip appears in out/
+# YourTube: run this yourself in a terminal and leave it open. Whenever a new TubeZero-*.zip appears in out/
 # (e.g. after tools/yourtube-build.sh), it installs it on the TV with tools/yourtube/install-zip.js.
 # With --capture it also runs tools/yourtube/capture-screens.sh after each install.
 # Credentials come from .env; nothing else touches them. Stop with Ctrl-C.
@@ -9,9 +9,9 @@ cd "$(dirname "$0")/../.."
 capture=false
 [ "${1:-}" = "--capture" ] && capture=true
 
-newest() { ls -t out/YourTube-*.zip 2>/dev/null | head -1; }
+newest() { ls -t out/TubeZero-*.zip 2>/dev/null | head -1; }
 last="$(newest)"
-echo "Watching out/ for new YourTube builds (current: ${last:-none}). Ctrl-C to stop."
+echo "Watching out/ for new TubeZero builds (current: ${last:-none}). Ctrl-C to stop."
 
 while true; do
     sleep 3

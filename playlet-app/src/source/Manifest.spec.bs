@@ -6,7 +6,7 @@ namespace Tests
         @describe("Manifest")
 
         @it("Reads values from manifest")
-        @params("title", "YourTube") ' YourTube: renamed
+        @params("title", "TubeZero") ' YourTube: renamed (TubeZero)
         @params("supports_input_launch", "1")
         @params("playlet_lib_squashfs_remote_url", "https://github.com/iBicha/playlet/releases/latest/download/playlet-lib.squashfs.pkg")
         @params("playlet_lib_zip_remote_url", "https://github.com/iBicha/playlet/releases/latest/download/playlet-lib.zip")

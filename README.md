@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="branding/mark.svg" alt="YourTube mark" width="120"/>
+  <img src="branding/tubezero-mark.svg" alt="TubeZero mark" width="140"/>
 </p>
 
-# YourTube
+# TubeZero
 
-A personal, ad-free YouTube client for Roku TVs, styled after the YouTube TV app. YourTube is a fork of
+A personal, ad-free YouTube client for Roku TVs, styled after the YouTube TV app. TubeZero is a fork of
 [Playlet](https://github.com/iBicha/playlet) by Brahim Hadriche and is licensed under the same
 [AGPL-3.0](LICENSE). It is not affiliated with YouTube or Google, and it uses none of their logos or brand assets.
 
@@ -37,7 +37,7 @@ npm install
 tools/yourtube-build.sh
 ```
 
-That writes `out/YourTube-<version>-<commit>.zip`. Upload it from the Roku's developer page
+That writes `out/TubeZero-<version>-<commit>.zip`. Upload it from the Roku's developer page
 (`http://<roku-ip>`), or let the installer do it. The installer reads `ROKU_DEV_TARGET` and the developer
 password from a git-ignored `.env`:
 
@@ -55,7 +55,7 @@ tools/yourtube/capture-all.sh
 
 Most of the restyle happens at build time in `tools/bs-plugins/yourtube-rebrand-plugin.ts` (palette, fonts, focus
 images, widget defaults). New features live in `playlet-lib/src/components/YourTube/`. Upstream files that do change
-carry a `' YourTube:` (or `<!-- YourTube: -->`) comment at each edit.
+carry a `' TubeZero:` (or `<!-- TubeZero: -->`) comment at each edit.
 
 ## Credits
 
@@ -64,5 +64,5 @@ carry a `' YourTube:` (or `<!-- YourTube: -->`) comment at each edit.
 - [Roboto](https://fonts.google.com/specimen/Roboto) (SIL Open Font License) and
   [Material Symbols](https://fonts.google.com/icons) (Apache 2.0) by Google.
 
-The source for this build is at [github.com/altextreme/YourTube](https://github.com/altextreme/YourTube), as the
+The source for this build is at [github.com/altextreme/TubeZero](https://github.com/altextreme/TubeZero), as the
 AGPL requires.

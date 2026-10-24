@@ -5,7 +5,7 @@ function Init()
     ' YourTube: YourTube labels; the "latest Playlet version" row is gone (no update checks against Playlet)
     m.displayNames = [{
         key: "app_version"
-        displayText: "YourTube Version"
+        displayText: "TubeZero Version"
     }, {
         key: "lib_version"
         displayText: "Library Version"
@@ -29,9 +29,9 @@ function Init()
     ' YourTube: AGPL-3.0 attribution
     m.credits = [
         ""
-        "YourTube is a personal fork of Playlet by Brahim Hadriche."
+        "TubeZero is a personal fork of Playlet by Brahim Hadriche."
         "Playlet: github.com/iBicha/playlet. Licensed under the GNU AGPL-3.0."
-        "YourTube source: github.com/altextreme/YourTube"
+        "TubeZero source: github.com/altextreme/TubeZero"
     ]
 
     m.keyValueList = m.top.findNode("KeyValueListContent")

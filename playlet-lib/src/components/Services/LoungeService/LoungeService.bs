@@ -12,7 +12,7 @@ function Init()
     if StringUtils.IsNullOrEmpty(deviceFriendlyName)
         deviceFriendlyName = "TV"
     end if
-    m.top.deviceName = "YourTube on " + deviceFriendlyName ' YourTube: was "Playlet on "
+    m.top.deviceName = "TubeZero on " + deviceFriendlyName ' YourTube: was "Playlet on "
 end function
 
 function StartService(_unused as dynamic) as boolean

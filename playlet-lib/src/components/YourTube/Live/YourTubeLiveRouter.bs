@@ -68,14 +68,14 @@ namespace Http
 
     function LIVE_PAGE_HTML() as string
         return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>YourTube Live</title><style>
+<title>TubeZero Live</title><style>
 :root{color-scheme:dark}body{margin:0;font:16px/1.4 system-ui,-apple-system,Roboto,sans-serif;background:#0f0f0f;color:#f1f1f1}
 main{max-width:560px;margin:0 auto;padding:24px 16px}h1{font-size:24px;margin:0 0 4px}p{color:#aaa;margin:0 0 20px}
 label{display:block;font-size:14px;color:#aaa;margin:16px 0 6px}input,select{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #3f3f3f;background:#212121;color:#f1f1f1;font-size:16px}
 button{margin-top:20px;width:100%;padding:14px;border:0;border-radius:999px;background:#f1f1f1;color:#0f0f0f;font-size:16px;font-weight:600}
 #status{margin-top:14px;min-height:20px;color:#aaa}ul{list-style:none;padding:0;margin:24px 0 0}li{padding:12px 0;border-top:1px solid #272727}
 li a{color:#f1f1f1;text-decoration:none;display:block}li small{color:#aaa;word-break:break-all}</style></head><body><main>
-<h1>YourTube Live</h1><p>Paste a stream link and it plays on the TV.</p>
+<h1>TubeZero Live</h1><p>Paste a stream link and it plays on the TV.</p>
 <form id="f"><label for="url">Stream URL</label><input id="url" type="url" required placeholder="https://.../playlist.m3u8" autocomplete="off">
 <label for="title">Title (optional)</label><input id="title" type="text" placeholder="My stream">
 <label for="format">Format</label><select id="format"><option value="">Detect from URL</option><option value="hls">HLS (.m3u8)</option><option value="dash">DASH (.mpd)</option><option value="mp4">MP4</option></select>

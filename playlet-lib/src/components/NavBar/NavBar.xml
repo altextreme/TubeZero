@@ -74,6 +74,12 @@
                 key="[0.0, 0.5, 1.0]"
                 keyValue="[0.0, 0.5, 1.0]"
                 fieldToInterp="Logo.opacity" />
+            <!-- YourTube: the collapsed mark fades out as the wordmark fades in (they share a spot) -->
+            <FloatFieldInterpolator
+                id="LogoFavFadeInterpolator"
+                key="[0.0, 0.5, 1.0]"
+                keyValue="[1.0, 0.5, 0.0]"
+                fieldToInterp="LogoFav.opacity" />
             <FloatFieldInterpolator
                 id="BackgroundFadeInterpolator"
                 key="[0.0, 0.5, 1.0]"

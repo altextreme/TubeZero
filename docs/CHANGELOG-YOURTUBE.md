@@ -1,8 +1,22 @@
-# YourTube changelog
+# TubeZero changelog
+
+(Called YourTube until 2026-10-24; file and code names keep the old name to avoid churn.)
 
 Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newest first.
 
-## Unreleased: Phase 3 comments, interaction pass
+## Unreleased: TubeZero
+
+### Rebrand to TubeZero
+- New name everywhere people see it: TV title, launcher, Info screen, cast name ("TubeZero on ..."), phone pages,
+  build zip (`out/TubeZero-*.zip`). The build-time rename now maps Playlet to TubeZero.
+- New mark (cleaned up from the provided concept): blue rounded player with a snow cap, layered frozen mountains and
+  a white play triangle. Wordmark "Tube" Ice White + "Zero" TubeZero Blue on the charcoal UI; navy "Tube" on light.
+  `tools/yourtube/brand-svgs.py` builds every branding SVG from `branding/tubezero-mark.svg`; `make-brand.sh`
+  renders the Roku tile, splash and logos (the UI 9-patches stay in `make-assets.sh`).
+- Phone web app: a Vite plugin swaps in the TubeZero logos and renames "Playlet" in visible text at build time.
+- Backgrounds stay charcoal; blue is only the brand color. Progress bars and LIVE badges stay YouTube red.
+
+## Phase 3 comments, interaction pass
 
 ### Comments (Phase 3)
 - Comments button in the player action row opens a side panel over the video. It pages comments in as you

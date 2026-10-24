@@ -11,7 +11,7 @@ import fs from 'fs-extra'
 import { exitOnCriticalErrors } from './critical-exit';
 
 const FROM = /\bPlaylet\b/g;
-const TO = 'YourTube';
+const TO = 'TubeZero';
 
 export class YourTubeRebrandPlugin implements CompilerPlugin {
     public name = 'YourTubeRebrandPlugin';

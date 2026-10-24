@@ -1,1 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="405" viewBox="0 0 540 405"><style>@font-face{font-family:YTRoboto;font-weight:700;src:url("../playlet-lib/src/fonts/roboto/Roboto-Bold.ttf")}text{font-family:YTRoboto,Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:700;fill:#F1F1F1;letter-spacing:-1.5px}</style><rect width="540" height="405" fill="#0F0F0F"/><g transform="translate(195,82) scale(1.5)"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7A3D"/><stop offset="1" stop-color="#E0115F"/></linearGradient></defs><rect x="2" y="15" width="96" height="70" rx="20" fill="url(#g)"/><path d="M41 35 L41 65 L66 50 Z" fill="#fff" stroke="#fff" stroke-width="7" stroke-linejoin="round"/></g><text x="270" y="305" text-anchor="middle" font-size="66">YourTube</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="405" viewBox="0 0 540 405"><style>@font-face{font-family:YTRoboto;font-weight:700;src:url("../playlet-lib/src/fonts/roboto/Roboto-Bold.ttf")}text{font-family:YTRoboto,Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:700;letter-spacing:-1px}</style><rect width="540" height="405" fill="#0F0F0F"/><g transform="translate(143.68 24.68) scale(0.49342)"><defs>
+    <clipPath id="m"><rect x="32" y="104" width="448" height="304" rx="84"/></clipPath>
+  </defs>
+  <g clip-path="url(#m)">
+    <!-- sky -->
+    <rect x="32" y="104" width="448" height="304" fill="#1E90FF"/>
+    <!-- back ridge -->
+    <path d="M32 350 L120 292 Q124 289 128 292 L222 354 L300 318 Q303 316 306 318 L388 362 L450 314 Q454 311 458 314 L480 332 V408 H32 Z" fill="#3DA4FA"/>
+    <!-- front ridge -->
+    <path d="M32 386 L118 334 Q122 331 126 334 L236 404 L348 344 Q352 342 356 344 L480 408 H32 Z" fill="#0B75D7"/>
+    <!-- snow cap: small drip left, medium and long drips right -->
+    <path d="M32 104 H480 V160 C472 160 468 166 467 176 L464 216 C463 228 459 234 454 234 C449 234 445 228 444 216 L442 186 C441 172 434 166 424 166 C414 166 409 172 408 182 L406 194 C405 200 402 204 398 204 C394 204 391 200 390 194 L388 180 C386 166 376 160 360 160 C330 160 310 170 280 170 C246 170 226 156 194 156 C164 156 150 168 128 168 C120 168 116 172 115 178 L114 182 C113 188 110 192 106 192 C102 192 99 188 98 182 L96 172 C94 162 86 156 72 154 C56 152 44 156 32 160 Z" fill="#E4F5FF"/>
+    <!-- play -->
+    <path d="M214 196 L318 258 L214 320 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="30" stroke-linejoin="round"/>
+  </g>
+</g><text x="270.0" y="312" font-size="64" text-anchor="middle"><tspan fill="#E4F5FF">Tube</tspan><tspan fill="#1E90FF">Zero</tspan></text></svg>

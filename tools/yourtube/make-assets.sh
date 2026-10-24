@@ -24,19 +24,7 @@ render() {
         --screenshot="$4" "file://$1" >/dev/null 2>&1
 }
 
-render "$BRAND/mark.svg" 100 100 "$LIB_IMG/logo-fav.png"
-render "$BRAND/logo-wordmark.svg" 254 100 "$LIB_IMG/logo-dark.png"
-render "$BRAND/account-backend.svg" 256 256 "$LIB_IMG/youtube-logo.png"
-
-render "$BRAND/poster.svg" 540 405 "$TMP/poster.png"
-magick "$TMP/poster.png" "$APP_IMG/channel-poster_fhd.png"
-magick "$TMP/poster.png" -resize 290x218! "$APP_IMG/channel-poster_hd.png"
-magick "$TMP/poster.png" -resize 246x140! "$APP_IMG/channel-poster_sd.png"
-
-render "$BRAND/splash.svg" 1920 1080 "$TMP/splash.png"
-magick "$TMP/splash.png" -background "#0F0F0F" -flatten -quality 92 "$APP_IMG/splash-screen_fhd.jpg"
-magick "$TMP/splash.png" -background "#0F0F0F" -flatten -resize 1280x720 -quality 92 "$APP_IMG/splash-screen_hd.jpg"
-magick "$TMP/splash.png" -background "#0F0F0F" -flatten -resize 720x480! -quality 92 "$APP_IMG/splash-screen_sd.jpg"
+"$ROOT/tools/yourtube/make-brand.sh"
 
 # Roku 9-patch: 1px border. Top/left black pixels = stretch region,
 # bottom/right black pixels = content area (anything outside is padding).

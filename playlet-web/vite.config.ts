@@ -1,5 +1,5 @@
 import { visualizer } from 'rollup-plugin-visualizer';
-import { defineConfig, UserConfig } from 'vite'
+import { defineConfig, Plugin, UserConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import viteCompression from 'vite-plugin-compression';
 import ip from 'ip';
@@ -10,8 +10,34 @@ import legacy from '@vitejs/plugin-legacy'
 
 const PORT = 5173
 
+// TubeZero: build-time rebrand, so upstream Playlet sources stay untouched (mergeable). Swaps the nav logos for
+// branding/web/*.svg.svelte and renames the word "Playlet" in visible text. The lookarounds skip identifiers and
+// header names like PlayletApi or X-Playlet.
+const PLAYLET_WORD = /(?<![\w-])Playlet(?![\w-])/g
+function tubeZeroRebrand(): Plugin {
+  const brandDir = joinPath(import.meta.dirname, '../branding/web')
+  return {
+    name: 'tubezero-rebrand',
+    enforce: 'pre',
+    load(id) {
+      const logo = id.match(/assets\/(logo-(dark|light)\.svg\.svelte)$/)
+      return logo ? readFileSync(joinPath(brandDir, logo[1]), 'utf8') : null
+    },
+    transform(code, id) {
+      if (id.includes('node_modules') || !/\/src\/.*\.(svelte|ts)$/.test(id)) {
+        return null
+      }
+      return code.replace(PLAYLET_WORD, 'TubeZero')
+    },
+    transformIndexHtml(html) {
+      return html.replace(PLAYLET_WORD, 'TubeZero')
+    },
+  }
+}
+
 const config: UserConfig = {
   plugins: [
+    tubeZeroRebrand(),
     svelte(),
     legacy({
       targets: ['defaults', 'not IE 11'],
