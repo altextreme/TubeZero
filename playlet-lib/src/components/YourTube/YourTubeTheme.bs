@@ -1,0 +1,10 @@
+' YourTube: shared look for Playlet's row lists (white focus ring, row titles).
+function YourTubeStyleRowList(rowList as object) as void
+    rowList.focusBitmapUri = "pkg:/images/yt-focus-ring.$$RES$$.9.png"
+    rowList.rowLabelColor = "#EBEBEBFF"
+
+    font = CreateObject("roSGNode", "Font")
+    font.uri = "font:MediumSystemFontFile"
+    font.size = 24
+    rowList.rowLabelFont = font
+end function

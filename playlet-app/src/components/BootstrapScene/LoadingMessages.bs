@@ -2,7 +2,7 @@ function GetLoadingMessage() as string
     messages = GetLoadingMessagesFromCache()
     if messages = invalid or messages.count() = 0
         messages = [
-            "Now loading Playlet...",
+            "Now loading YourTube...", ' YourTube: renamed
             "One moment please...",
             "Downloading the internet...",
             "Unclogging the tubes...",

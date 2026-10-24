@@ -1,3 +1,4 @@
+<!-- YourTube: dark label on the white focus pill -->
 <component name="NavBarComponent" extends="Group">
     <interface>
         <field id="itemContent" type="node" onChange="OnContentSet" />
@@ -37,6 +38,7 @@
         <Label
             id="TitleLabelFocused"
             height="32"
+            color="0x0F0F0FFF"
             vertAlign="center"
             translation="[55,8]"
             visible="false">

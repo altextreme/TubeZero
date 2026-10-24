@@ -6,6 +6,7 @@ import "pkg:/components/Navigation/LongPress.bs"
 import "pkg:/components/PlaylistView/PlaylistUtils.bs"
 import "pkg:/components/Services/Invidious/InvidiousToContentNode.bs"
 import "pkg:/components/VideoFeed/FeedLoadState.bs"
+import "pkg:/components/YourTube/YourTubeTheme.bs"
 import "pkg:/source/utils/DisposableObserve.bs"
 import "pkg:/source/utils/ErrorUtils.bs"
 import "pkg:/source/utils/Logging.bs"
@@ -19,6 +20,9 @@ function Init()
 end function
 
 function OnNodeReady()
+    ' YourTube: YouTube TV-style rows. Set here (not Init) so it wins over each screen's XML attributes.
+    YourTubeStyleRowList(m.top)
+
     DisposableObserveField(m.top, "itemFocused", FuncName(OnItemFocused))
     DisposableObserveField(m.top, "rowItemFocused", FuncName(OnRowItemFocused))
     DisposableObserveField(m.top, "rowItemSelected", FuncName(OnRealRowItemSelected))

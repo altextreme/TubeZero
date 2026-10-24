@@ -15,9 +15,14 @@
         <field id="loadingRowCellItemContent" type="node" alias="LoadingRowCell.itemContent" />
 
         <field id="loadingRowCellIndex" type="integer" alias="LoadingRowCell.index" />
+
+        <!-- YourTube: RowList focus fields, used by the video card's focus scale -->
+        <field id="focusPercent" type="float" alias="VideoRowCell.focusPercent" />
+        <field id="rowListHasFocus" type="boolean" alias="VideoRowCell.rowListHasFocus" />
     </interface>
     <children>
-        <VideoRowCell id="VideoRowCell" />
+        <!-- YourTube: YouTube-style card replaces Playlet's VideoRowCell -->
+        <YourTubeVideoCell id="VideoRowCell" />
         <PlaylistRowCell id="PlaylistRowCell" />
         <ChannelRowCell id="ChannelRowCell" />
         <LoadingRowCell id="LoadingRowCell" />

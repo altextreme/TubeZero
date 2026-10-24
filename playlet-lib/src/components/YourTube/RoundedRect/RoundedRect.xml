@@ -1,0 +1,13 @@
+<!-- YourTube: Rectangle look-alike with rounded corners (9-patch tinted by color) -->
+<component name="RoundedRect" extends="Group">
+    <interface>
+        <field id="width" type="float" alias="Fill.width" />
+        <field id="height" type="float" alias="Fill.height" />
+        <field id="color" type="color" alias="Fill.blendColor" />
+    </interface>
+    <children>
+        <Poster
+            id="Fill"
+            uri="pkg:/images/yt-rounded.$$RES$$.9.png" />
+    </children>
+</component>

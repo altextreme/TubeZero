@@ -1,0 +1,79 @@
+<!--
+    YourTube: video card styled after the YouTube TV app. Drop-in replacement for
+    VideoRowCell inside RowCell (same itemContent contract), plus RowList focus fields.
+-->
+<component name="YourTubeVideoCell" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="OnContentSet" />
+        <field id="type" type="string" value="video" />
+        <field id="focusPercent" type="float" onChange="OnFocusChange" />
+        <field id="rowListHasFocus" type="boolean" onChange="OnFocusChange" />
+        <field id="percentDurationWatched" type="float" onChange="OnPercentDurationWatched" />
+    </interface>
+    <children>
+        <Font id="BadgeFont" uri="font:MediumSystemFontFile" size="16" />
+
+        <Group
+            id="Card"
+            scaleRotateCenter="[175,98]">
+            <Poster
+                id="Thumbnail"
+                width="350"
+                height="196"
+                loadDisplayMode="scaleToZoom"
+                failedBitmapUri="pkg:/images/thumbnail-missing.jpg" />
+            <Rectangle
+                id="ProgressTrack"
+                width="350"
+                height="4"
+                color="#717171"
+                translation="[0,192]"
+                visible="false" />
+            <Rectangle
+                id="ProgressBar"
+                width="350"
+                height="4"
+                color="#FF0000"
+                translation="[0,192]"
+                scale="[0,1]" />
+            <Poster
+                id="CornerMask"
+                width="350"
+                height="196"
+                uri="pkg:/images/yt-card-mask.$$RES$$.9.png" />
+            <RoundedRect
+                id="DurationBadge"
+                height="24"
+                color="#000000"
+                opacity="0.8"
+                visible="false">
+                <Label
+                    id="DurationLabel"
+                    height="24"
+                    color="#FFFFFF"
+                    vertAlign="center"
+                    translation="[7,0]" />
+            </RoundedRect>
+        </Group>
+
+        <LayoutGroup
+            id="TextGroup"
+            translation="[0,208]"
+            itemSpacings="[4]">
+            <Label
+                id="TitleLabel"
+                width="350"
+                color="#F1F1F1"
+                maxLines="2"
+                wrap="true">
+                <Font role="font" uri="font:MediumSystemFontFile" size="20" />
+            </Label>
+            <Label
+                id="MetaLabel"
+                width="350"
+                color="#AAAAAA">
+                <Font role="font" uri="font:SystemFontFile" size="17" />
+            </Label>
+        </LayoutGroup>
+    </children>
+</component>

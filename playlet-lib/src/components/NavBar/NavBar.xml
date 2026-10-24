@@ -1,3 +1,4 @@
+<!-- YourTube: white focus pill (was Playlet red) and gray current-section marker -->
 <component name="NavBar" extends="Group" includes="AutoBind,Focus">
     <interface>
         <field id="screensContainer" type="node" />
@@ -49,9 +50,10 @@
                 id="ItemsList"
                 itemSize="[190,50]"
                 itemComponentName="NavBarComponent"
-                focusFootprintBitmapUri=""
                 focusBitmapUri="pkg:/images/white.$$RES$$.9.png"
-                focusBitmapBlendColor="0xFF1C30FF"
+                focusBitmapBlendColor="0xF1F1F1FF"
+                focusFootprintBitmapUri="pkg:/images/white.$$RES$$.9.png"
+                focusFootprintBlendColor="0x3F3F3FFF"
                 vertFocusAnimationStyle="floatingFocus"
                 numRows="7"
                 scrollSpeed="99999"

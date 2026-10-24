@@ -24,6 +24,7 @@ function OnItemHasFocusChange() as void
     itemHasFocus = m.top.itemHasFocus
     m.top.titleLabelFocusedVisible = itemHasFocus
     m.top.titleLabelVisible = not itemHasFocus
+    UpdateIconColor()
 end function
 
 function OnListHasFocusChange()
@@ -32,8 +33,19 @@ function OnListHasFocusChange()
         m.top.titleLabelFocusedVisible = false
         m.top.titleLabelVisible = false
         m.top.opacity = 0.8
+        UpdateIconColor()
     else
         OnItemHasFocusChange()
         m.top.opacity = 1
+    end if
+end function
+
+' YourTube: icon turns dark while it sits on the white focus pill
+function UpdateIconColor() as void
+    iconPoster = m.top.findNode("IconPoster")
+    if m.top.itemHasFocus and m.top.listHasFocus
+        iconPoster.blendColor = "#161616FF"
+    else
+        iconPoster.blendColor = "#EBEBEBFF"
     end if
 end function

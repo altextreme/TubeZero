@@ -1,0 +1,105 @@
+import "pkg:/source/utils/Locale.bs"
+import "pkg:/source/utils/MathUtils.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+' Focused card grows by this much (the focus ring leaves room for it)
+const FOCUS_SCALE = 0.03
+const BADGE_INSET = 6
+
+function Init()
+    m.card = m.top.findNode("Card")
+    m.thumbnail = m.top.findNode("Thumbnail")
+    m.titleLabel = m.top.findNode("TitleLabel")
+    m.metaLabel = m.top.findNode("MetaLabel")
+    m.textGroup = m.top.findNode("TextGroup")
+    m.durationBadge = m.top.findNode("DurationBadge")
+    m.durationLabel = m.top.findNode("DurationLabel")
+    m.badgeFont = m.top.findNode("BadgeFont")
+    m.durationLabel.font = m.badgeFont
+    m.progressBar = m.top.findNode("ProgressBar")
+    m.progressTrack = m.top.findNode("ProgressTrack")
+end function
+
+function OnContentSet() as void
+    content = m.top.itemContent
+    if content = invalid
+        return
+    end if
+
+    m.titleLabel.text = ValidString(content.title)
+    m.metaLabel.text = BuildMetaLine(content)
+    m.thumbnail.uri = ValidString(content.thumbnail)
+    m.top.percentDurationWatched = ValidFloat(content.percentDurationWatched)
+
+    lengthText = ValidString(content.lengthText)
+    if lengthText <> ""
+        ShowBadge(lengthText, "#161616FF", 0.8)
+    else if content.isUpcoming = true
+        ShowBadge(Tr(Locale.RowCell.Upcoming), "#161616FF", 0.8)
+    else if content.liveNow = true
+        ShowBadge(Tr(Locale.RowCell.Live), "#CC0000FF", 1.0)
+    else
+        m.durationBadge.visible = false
+    end if
+end function
+
+' "Channel • 1.2M views • 3 days ago", falling back to the feed's raw lines.
+function BuildMetaLine(content as object) as string
+    parts = []
+    ' NOTE: "_author" not "author". See PlaylistContentNode.xml for explanation.
+    author = ValidString(content._author)
+    lines = content.lines
+    if author = "" and IsArray(lines) and lines.Count() > 0
+        author = ValidString(lines[0])
+    end if
+    AddPart(parts, author)
+
+    if content.isUpcoming = true
+        AddPart(parts, content.premiereTimestampText)
+    else
+        AddPart(parts, content.viewCountText)
+        AddPart(parts, content.publishedText)
+    end if
+
+    if parts.Count() <= 1 and IsArray(lines) and lines.Count() > 1
+        AddPart(parts, lines[1])
+    end if
+
+    return parts.Join(" • ")
+end function
+
+function AddPart(parts as object, value as dynamic) as void
+    text = ValidString(value)
+    if text <> ""
+        parts.push(text)
+    end if
+end function
+
+function ShowBadge(text as string, color as string, opacity as float) as void
+    m.durationLabel.text = text
+    width = m.durationLabel.localBoundingRect().width + 14
+    height = m.durationBadge.height
+    m.durationBadge.width = width
+    m.durationBadge.color = color
+    m.durationBadge.opacity = opacity
+    m.durationBadge.translation = [m.thumbnail.width - width - BADGE_INSET, m.thumbnail.height - height - BADGE_INSET]
+    m.durationBadge.visible = true
+end function
+
+function OnPercentDurationWatched() as void
+    percent = MathUtils.Clamp(m.top.percentDurationWatched, 0, 100) / 100.0
+    m.progressBar.scale = [percent, 1]
+    m.progressTrack.visible = percent > 0
+end function
+
+function OnFocusChange() as void
+    focus = 0.0
+    if m.top.rowListHasFocus
+        focus = m.top.focusPercent
+    end if
+    scale = 1 + FOCUS_SCALE * focus
+    m.card.scale = [scale, scale]
+    ' Keep the text clear of the grown thumbnail
+    m.textGroup.translation = [0, 208 + 196 * FOCUS_SCALE * focus / 2]
+end function

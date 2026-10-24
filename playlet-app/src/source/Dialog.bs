@@ -4,7 +4,7 @@ function DialogShowError(message as object, bulletText as object, bottomMessage 
     msgDialog.message = message
     msgDialog.bulletText = bulletText
     msgDialog.bottomMessage = bottomMessage
-    msgDialog.title = "Error loading Playlet"
+    msgDialog.title = "Error loading YourTube" ' YourTube: renamed
     msgDialog.buttons = ["Exit"]
 
     ' bs:disable-next-line NO_OBSERVE_STRING_CALLBACK
