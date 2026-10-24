@@ -33,9 +33,8 @@
                 itemSize="[500,500]"
                 itemComponentName="BackendTypeRowListCell"
                 rowFocusAnimationStyle="floatingfocus"
-                focusBitmapUri="pkg:/images/yt-rounded.$$RES$$.9.png"
-                focusBitmapBlendColor="#3F3F3FFF"
-                drawFocusFeedbackOnTop="false"> <!-- YourTube: filled card highlight behind the logo, like the comment cards -->
+                drawFocusFeedback="false"
+                focusBitmapUri="pkg:/images/focus-glow-padding-30.$$RES$$.9.png"> <!-- YourTube: each card draws its own centered highlight -->
                 <ContentNode role="content">
                     <ContentNode>
                         <!-- bs:disable-next-line LOCALE_MISSING_TRANSLATIONS -->

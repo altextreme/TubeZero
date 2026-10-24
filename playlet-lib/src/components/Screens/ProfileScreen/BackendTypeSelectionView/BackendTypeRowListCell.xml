@@ -3,22 +3,31 @@
         <field id="itemContent" type="node" onChange="OnContentSet" />
         <field id="backendName" type="string" alias="BackendNameLabel.text" />
         <field id="backendLogoUri" type="uri" alias="BackendLogoPoster.uri" />
+        <!-- YourTube: the card draws its own highlight so logo and name are centered in it -->
+        <field id="itemHasFocus" type="boolean" alias="CardHighlight.visible" />
     </interface>
 
     <children>
-        <Group translation="[20,20]">
-            <Poster
-                id="BackendLogoPoster"
-                width="160"
-                height="160"
-                translation="[20,20]">
-            </Poster>
-            <Label
-                id="BackendNameLabel"
-                width="200"
-                horizAlign="center"
-                translation="[0,240]">
-            </Label>
-        </Group>
+        <!-- YourTube: everything sits inside the 240x240 card (the name used to hang below it) -->
+        <Poster
+            id="CardHighlight"
+            uri="pkg:/images/yt-rounded.$$RES$$.9.png"
+            blendColor="0x3F3F3FFF"
+            width="240"
+            height="240"
+            visible="false" />
+        <Poster
+            id="BackendLogoPoster"
+            width="128"
+            height="128"
+            translation="[56,36]">
+        </Poster>
+        <Label
+            id="BackendNameLabel"
+            width="240"
+            horizAlign="center"
+            color="0xF1F1F1FF"
+            translation="[0,184]">
+        </Label>
     </children>
 </component>
