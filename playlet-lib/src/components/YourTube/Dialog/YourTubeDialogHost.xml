@@ -1,0 +1,6 @@
+<!-- YourTube: top-most layer that shows YourTubeDialog (the scene's last child). -->
+<component name="YourTubeDialogHost" extends="Group">
+    <interface>
+        <field id="currentDialog" type="node" />
+    </interface>
+</component>

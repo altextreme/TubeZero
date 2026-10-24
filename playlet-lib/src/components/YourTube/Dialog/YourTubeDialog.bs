@@ -1,0 +1,135 @@
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+const SCREEN_W = 1280
+const SCREEN_H = 720
+const PADDING = 32
+const MAX_WIDTH = 1180
+
+function Init()
+    m.panel = m.top.findNode("Panel")
+    m.titleLabel = m.top.findNode("TitleLabel")
+    m.divider = m.top.findNode("Divider")
+    m.body = m.top.findNode("Body")
+    m.buttonList = m.top.findNode("ButtonList")
+    m.buttonList.observeField("itemSelected", FuncName(OnItemSelected))
+    m.buttonList.observeField("itemFocused", FuncName(OnItemFocused))
+    m.closed = false
+    m.focusTimer = m.top.findNode("FocusTimer")
+    m.focusTimer.observeField("fire", FuncName(TakeFocus))
+    Layout()
+end function
+
+' Stacks title, divider, message, bullets, bottom message and buttons, then centers the panel.
+function Layout() as void
+    width = m.top.width
+    if width <= 0 or width > MAX_WIDTH
+        width = MAX_WIDTH
+    end if
+    if width < 480
+        width = 480
+    end if
+    textWidth = width - PADDING * 2
+
+    m.titleLabel.text = m.top.title
+    m.titleLabel.width = textWidth
+    m.divider.width = textWidth
+    hasTitle = m.top.title <> ""
+    m.titleLabel.visible = hasTitle
+    m.divider.visible = hasTitle
+
+    m.body.removeChildrenIndex(m.body.getChildCount(), 0)
+    y = 0
+    y = AddLines(ValidArray(m.top.message), "", textWidth, y, "#EBEBEBFF")
+    y = AddLines(ValidArray(m.top.bulletText), "•  ", textWidth, y, "#EBEBEBFF")
+    y = AddLines(ValidArray(m.top.bottomMessage), "", textWidth, y, "#B4B4B4FF")
+
+    bodyTop = PADDING
+    if hasTitle
+        bodyTop = 92
+    end if
+    m.body.translation = [PADDING, bodyTop]
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each text in ValidArray(m.top.buttons)
+        item = content.createChild("ContentNode")
+        item.title = text
+    end for
+    m.buttonList.content = content
+    m.buttonList.itemSize = [textWidth, 48]
+    m.buttonList.numRows = content.getChildCount()
+    buttonsTop = bodyTop + y + 12
+    m.buttonList.translation = [PADDING, buttonsTop]
+
+    height = buttonsTop + content.getChildCount() * 52 + PADDING - 4
+    m.panel.width = width
+    m.panel.height = height
+    m.panel.translation = [(SCREEN_W - width) / 2, (SCREEN_H - height) / 2]
+end function
+
+function AddLines(lines as object, prefix as string, textWidth as float, y as float, color as string) as float
+    for each line in lines
+        label = m.body.createChild("Label")
+        label.width = textWidth
+        label.wrap = true
+        label.color = color
+        label.font = "font:SmallSystemFont"
+        label.text = prefix + ValidString(line)
+        label.translation = [0, y]
+        y += label.localBoundingRect().height + 10
+    end for
+    return y
+end function
+
+'' callFunc target (DialogUtils.ShowYourTubeDialog), hence the unused parameter
+function FocusButtons(_unused as dynamic) as void
+    TakeFocus()
+    m.focusTimer.control = "start"
+end function
+
+function TakeFocus() as void
+    if not m.closed
+        NodeSetFocus(m.buttonList, true)
+    end if
+end function
+
+function OnItemSelected() as void
+    m.top.buttonSelected = m.buttonList.itemSelected
+    ' like SimpleDialog: any button closes the dialog
+    m.top.close = true
+end function
+
+function OnItemFocused() as void
+    m.top.buttonFocused = m.buttonList.itemFocused
+end function
+
+function OnClose() as void
+    if m.closed or not m.top.close
+        return
+    end if
+    m.closed = true
+    ' Only hand focus back if the dialog still had it: callers like VideoQueue move focus first, then close.
+    hadFocus = m.top.isInFocusChain()
+    NodeSetFocus(m.buttonList, false)
+    parent = m.top.getParent()
+    if parent <> invalid
+        parent.removeChild(m.top)
+        if parent.hasField("currentDialog") and parent.currentDialog <> invalid and parent.currentDialog.isSameNode(m.top)
+            parent.currentDialog = invalid
+        end if
+    end if
+    returnFocus = m.top.returnFocus
+    if hadFocus and returnFocus <> invalid
+        NodeSetFocus(returnFocus, true)
+    end if
+    m.top.wasClosed = true
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press and key = RemoteKeys.Back
+        m.top.close = true
+    end if
+    ' nothing behind the dialog may react while it is open
+    return true
+end function

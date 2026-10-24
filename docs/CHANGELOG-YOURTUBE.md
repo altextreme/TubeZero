@@ -9,6 +9,11 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   scroll (InnerTube `/next`, `YourTubeCommentsJob`), with round avatars, author and time, likes, reply counts and
   a Pinned marker. Emoji, channel emoji shortcodes and blank lines are dropped. Back or Left closes it.
 
+### App-drawn dialogs
+- Message dialogs (exit, errors, notices) are drawn by the app (`YourTubeDialog` on `YourTubeDialogHost`) with a
+  neutral black dim; Roku's own dialog dims in purple with no setting to change it. Same fields as before for
+  callers. Keyboard, sign-in, timed and on-screen-code dialogs still use Roku's.
+
 ### Loading skeletons
 - Placeholder cards take their row's size (the big first shelf is 480 × 270), so nothing jumps when the
   thumbnails arrive.

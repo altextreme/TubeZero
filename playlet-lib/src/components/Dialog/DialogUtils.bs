@@ -1,3 +1,4 @@
+import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/Locale.bs"
 import "pkg:/source/utils/RegistryUtils.bs"
 import "pkg:/source/utils/StringUtils.bs"
@@ -15,8 +16,39 @@ namespace DialogUtils
         SetPlayletLibUrls = "SetPlayletLibUrls"
     end enum
 
+    ' YourTube: the open dialog, whether ours (YourTubeDialogHost) or Roku's (scene.dialog).
+    function GetCurrentDialog() as dynamic
+        scene = m.top.getScene()
+        host = scene.findNode("YourTubeDialogHost")
+        if host <> invalid and host.currentDialog <> invalid
+            return host.currentDialog
+        end if
+        return scene.dialog
+    end function
+
+    ' YourTube: show a YourTubeDialog on the top-most layer, replacing any open dialog (as scene.dialog does).
+    function ShowYourTubeDialog(dialog as object) as void
+        scene = m.top.getScene()
+        host = scene.findNode("YourTubeDialogHost")
+        if host = invalid
+            ' scenes without one (tests): add it on top
+            host = scene.createChild("YourTubeDialogHost")
+            host.id = "YourTubeDialogHost"
+        end if
+        if host.currentDialog <> invalid
+            host.currentDialog.close = true
+        end if
+        if scene.dialog <> invalid
+            scene.dialog.close = true
+        end if
+        dialog.returnFocus = GetFocusedNode()
+        host.appendChild(dialog)
+        host.currentDialog = dialog
+        dialog@.FocusButtons()
+    end function
+
     function ShowDialogEx(options as object) as object
-        currentDialog = m.top.getScene().dialog
+        currentDialog = GetCurrentDialog() ' YourTube
         alwaysOnTop = false
         if options.DoesExist("alwaysOnTop")
             alwaysOnTop = options.alwaysOnTop
@@ -28,7 +60,7 @@ namespace DialogUtils
             end if
         end if
 
-        dialog = CreateObject("roSGNode", "SimpleDialog")
+        dialog = CreateObject("roSGNode", "YourTubeDialog") ' YourTube: neutral dim (was SimpleDialog)
         dialog.alwaysOnTop = alwaysOnTop
 
         if options.DoesExist("message")
@@ -84,12 +116,12 @@ namespace DialogUtils
             dialog.width = m._deviceDisplayWidth - options.marginWidth
         end if
 
-        m.top.getScene().dialog = dialog
+        ShowYourTubeDialog(dialog) ' YourTube (was m.top.getScene().dialog = dialog)
         return dialog
     end function
 
     function ShowTimedDialogButtons(message as dynamic, title as string, buttons as object, defaultButton as integer, timeoutSeconds as integer, large = false as boolean) as object
-        currentDialog = m.top.getScene().dialog
+        currentDialog = GetCurrentDialog() ' YourTube
         if currentDialog <> invalid and ValidBool(currentDialog.alwaysOnTop)
             return invalid
         end if

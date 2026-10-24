@@ -1,5 +1,6 @@
 #const USE_DEV_PLAYER = true
 
+import "pkg:/components/Dialog/DialogUtils.bs"
 import "pkg:/components/Services/LoungeService/LoungeMessages.bs"
 import "pkg:/components/VideoFeed/FeedLoadState.bs"
 import "pkg:/components/VideoQueue/Notifications/VideoQueueNotificationUtils.bs"
@@ -390,7 +391,7 @@ function CreateVideoPlayer() as object
     if container.fullscreen
         NodeSetFocus(videoPlayer, true)
 
-        dialog = m.top.getScene().dialog
+        dialog = DialogUtils.GetCurrentDialog() ' YourTube: ours or Roku's
         if dialog <> invalid and not ValidBool(dialog.alwaysOnTop)
             dialog.close = true
         end if

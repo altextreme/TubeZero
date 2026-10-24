@@ -124,5 +124,7 @@
                 preferences="bind:../Preferences"
                 applicationInfo="bind:../ApplicationInfo" />
         </AppController>
+        <!-- YourTube: top-most layer for YourTubeDialog -->
+        <YourTubeDialogHost id="YourTubeDialogHost" />
     </children>
 </component>

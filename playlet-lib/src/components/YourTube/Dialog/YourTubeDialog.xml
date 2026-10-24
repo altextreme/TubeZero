@@ -1,0 +1,38 @@
+<!--
+    YourTube: message dialog drawn by the app, so the dim behind it is neutral (Roku's own dialog dims in purple
+    and offers no setting for it). Same fields callers use on StandardMessageDialog: title, message, bulletText,
+    bottomMessage, buttons, width, buttonSelected, buttonFocused, wasClosed, close, plus Playlet's alwaysOnTop.
+    Shown through YourTubeDialogHost (see DialogUtils.ShowDialogEx).
+-->
+<component name="YourTubeDialog" extends="Group">
+    <interface>
+        <field id="title" type="string" onChange="Layout" />
+        <field id="message" type="stringarray" onChange="Layout" />
+        <field id="bulletText" type="stringarray" onChange="Layout" />
+        <field id="bottomMessage" type="stringarray" onChange="Layout" />
+        <field id="buttons" type="stringarray" onChange="Layout" />
+        <field id="width" type="float" value="640" onChange="Layout" />
+        <field id="alwaysOnTop" type="boolean" />
+        <field id="buttonSelected" type="integer" alwaysNotify="true" />
+        <field id="buttonFocused" type="integer" />
+        <field id="wasClosed" type="boolean" alwaysNotify="true" />
+        <field id="close" type="boolean" alwaysNotify="true" onChange="OnClose" />
+        <!-- set by the host: the node that had focus before the dialog opened -->
+        <field id="returnFocus" type="node" />
+        <function name="FocusButtons" />
+    </interface>
+    <children>
+        <Rectangle id="Dim" width="1280" height="720" color="0x000000B3" />
+        <Rectangle id="Panel" color="0x212121FF">
+            <Label id="TitleLabel" color="0xF1F1F1FF" translation="[32,28]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="26" />
+            </Label>
+            <Rectangle id="Divider" height="1" color="0x3F3F3FFF" translation="[32,72]" />
+            <Group id="Body" translation="[32,92]" />
+            <LabelList id="ButtonList" itemSize="[400,48]" itemSpacing="[0,4]" vertFocusAnimationStyle="floatingFocus" />
+        </Rectangle>
+        <!-- takes focus again just after opening: the screen stack can reclaim it while the key that opened us
+             is still being handled -->
+        <Timer id="FocusTimer" duration="0.05" />
+    </children>
+</component>
