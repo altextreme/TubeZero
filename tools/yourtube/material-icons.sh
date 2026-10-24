@@ -40,6 +40,8 @@ smartphone smartphone 48
 smartphone_fill1 smartphone_fill 48
 info info 48
 info_fill1 info_fill 48
+live_tv live_tv 48
+live_tv_fill1 live_tv_fill 48
 account_circle_fill1 account_circle 64
 account_circle_fill1 account_circle_200 200
 tune tune 64

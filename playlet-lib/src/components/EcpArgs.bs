@@ -29,6 +29,12 @@ function ProcessArguments(args as object) as void
         return
     end if
 
+    ' YourTube: Stream Caster links (u=url, f=hls|dash|mp4, t=title) play in the stream player
+    if not StringUtils.IsNullOrEmpty(args.u)
+        m.global.yourtubeLive.playRequest = args
+        return
+    end if
+
     if not StringUtils.IsNullOrEmpty(args.contentId) and StringUtils.IsNullOrEmpty(args.videoId)
         args.videoId = args.contentId
     end if

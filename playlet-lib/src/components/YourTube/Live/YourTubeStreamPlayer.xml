@@ -1,0 +1,47 @@
+<!--
+    YourTube: full-screen player for arbitrary stream URLs (Live tab, deep links). Uses Roku's own video UI,
+    which handles HLS/DASH/MP4 and live streams. Back closes it.
+-->
+<component name="YourTubeStreamPlayer" extends="Group">
+    <interface>
+        <field id="appController" type="node" />
+        <!-- { url, format, title } -->
+        <field id="stream" type="assocarray" onChange="OnStream" />
+    </interface>
+    <children>
+        <Rectangle width="1280" height="720" color="0x000000FF" />
+        <Video
+            id="StreamVideo"
+            width="1280"
+            height="720" />
+        <Group id="ErrorGroup" visible="false">
+            <Label
+                id="ErrorTitle"
+                text="Can't play this stream"
+                width="1280"
+                horizAlign="center"
+                color="0xF1F1F1FF"
+                translation="[0,300]">
+                <Font role="font" uri="font:BoldSystemFontFile" size="28" />
+            </Label>
+            <Label
+                id="ErrorDetail"
+                width="1000"
+                horizAlign="center"
+                wrap="true"
+                maxLines="3"
+                color="0xAAAAAAFF"
+                translation="[140,350]">
+                <Font role="font" uri="font:SystemFontFile" size="18" />
+            </Label>
+            <Label
+                text="Press Back to return"
+                width="1280"
+                horizAlign="center"
+                color="0xAAAAAAFF"
+                translation="[0,430]">
+                <Font role="font" uri="font:SystemFontFile" size="18" />
+            </Label>
+        </Group>
+    </children>
+</component>

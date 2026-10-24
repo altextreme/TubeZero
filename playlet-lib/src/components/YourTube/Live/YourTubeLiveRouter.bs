@@ -1,0 +1,84 @@
+import "pkg:/components/Web/WebServer/Http/HttpRouter.bs"
+import "pkg:/source/utils/Types.bs"
+
+namespace Http
+
+    ' YourTube: phone page for the Live tab. GET /live is a small form; POST /api/yourtube/live plays a URL
+    ' on the TV ({ url, format?, title? } or Stream Caster's { u, f, t }); GET /api/yourtube/live lists
+    ' recent and favorite links. Writes go through CsrfMiddleware, so the page sends the X-Playlet header.
+    class YourTubeLiveRouter extends HttpRouter
+
+        function new(_server as object)
+            super()
+        end function
+
+        @get("/live")
+        function GetLivePage(context as object) as boolean
+            response = context.response
+            response.http_code = 200
+            response.SetBodyDataString(LIVE_PAGE_HTML())
+            response.ContentType("text/html; charset=utf-8")
+            return true
+        end function
+
+        @get("/api/yourtube/live")
+        function GetLive(context as object) as boolean
+            live = m.global.yourtubeLive
+            context.response.Json({
+                recent: ValidArray(live.recent)
+                favorites: ValidArray(live.favorites)
+            })
+            return true
+        end function
+
+        @post("/api/yourtube/live")
+        function PostLive(context as object) as boolean
+            request = context.request
+            response = context.response
+            payload = request.BodyJson()
+            if not IsAssociativeArray(payload)
+                response.Default(400, "Expected JSON: { url, format, title }")
+                return true
+            end if
+            url = ValidString(payload.url)
+            if url = ""
+                url = ValidString(payload.u)
+            end if
+            if not (url.StartsWith("http://") or url.StartsWith("https://"))
+                response.Default(400, "url must start with http:// or https://")
+                return true
+            end if
+            m.global.yourtubeLive.playRequest = payload
+            response.Json({ ok: true })
+            return true
+        end function
+
+    end class
+
+    function LIVE_PAGE_HTML() as string
+        return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>YourTube Live</title><style>
+:root{color-scheme:dark}body{margin:0;font:16px/1.4 system-ui,-apple-system,Roboto,sans-serif;background:#0f0f0f;color:#f1f1f1}
+main{max-width:560px;margin:0 auto;padding:24px 16px}h1{font-size:24px;margin:0 0 4px}p{color:#aaa;margin:0 0 20px}
+label{display:block;font-size:14px;color:#aaa;margin:16px 0 6px}input,select{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #3f3f3f;background:#212121;color:#f1f1f1;font-size:16px}
+button{margin-top:20px;width:100%;padding:14px;border:0;border-radius:999px;background:#f1f1f1;color:#0f0f0f;font-size:16px;font-weight:600}
+#status{margin-top:14px;min-height:20px;color:#aaa}ul{list-style:none;padding:0;margin:24px 0 0}li{padding:12px 0;border-top:1px solid #272727}
+li a{color:#f1f1f1;text-decoration:none;display:block}li small{color:#aaa;word-break:break-all}</style></head><body><main>
+<h1>YourTube Live</h1><p>Paste a stream link and it plays on the TV.</p>
+<form id="f"><label for="url">Stream URL</label><input id="url" type="url" required placeholder="https://.../playlist.m3u8" autocomplete="off">
+<label for="title">Title (optional)</label><input id="title" type="text" placeholder="My stream">
+<label for="format">Format</label><select id="format"><option value="">Detect from URL</option><option value="hls">HLS (.m3u8)</option><option value="dash">DASH (.mpd)</option><option value="mp4">MP4</option></select>
+<button type="submit">Play on TV</button><div id="status" role="status"></div></form><ul id="recent"></ul></main>
+<script>
+const $=id=>document.getElementById(id);
+async function play(body){$('status').textContent='Sending...';
+const r=await fetch('/api/yourtube/live',{method:'POST',headers:{'Content-Type':'application/json','X-Playlet':'1'},body:JSON.stringify(body)});
+$('status').textContent=r.ok?'Playing on the TV.':'Could not play: '+await r.text();load();}
+$('f').onsubmit=e=>{e.preventDefault();play({url:$('url').value.trim(),title:$('title').value.trim(),format:$('format').value});};
+async function load(){const d=await (await fetch('/api/yourtube/live')).json();const items=[...d.favorites,...d.recent.filter(r=>!d.favorites.some(f=>f.url===r.url))];
+$('recent').innerHTML='';for(const it of items){const li=document.createElement('li');const a=document.createElement('a');a.href='#';a.textContent=it.title;
+const s=document.createElement('small');s.textContent=it.url;a.appendChild(document.createElement('br'));a.appendChild(s);a.onclick=e=>{e.preventDefault();play(it);};li.appendChild(a);$('recent').appendChild(li);}}
+load();</script></body></html>`
+    end function
+
+end namespace

@@ -1,0 +1,60 @@
+' YourTube: helpers for the Live tab (arbitrary HLS/DASH/MP4 stream URLs, Stream Caster's job).
+namespace YourTubeLive
+
+    ' Normalizes a request from launch/input args, the web page or the Live screen.
+    ' Accepts { u, f, t } (Stream Caster's keys) or { url, format, title }. Returns invalid if there's no URL.
+    function NormalizeRequest(args as dynamic) as dynamic
+        if GetInterface(args, "ifAssociativeArray") = invalid
+            return invalid
+        end if
+        url = FirstString([args.u, args.url])
+        if url = "" or not (url.StartsWith("http://") or url.StartsWith("https://"))
+            return invalid
+        end if
+        format = InferFormat(url, FirstString([args.f, args.format]))
+        title = FirstString([args.t, args.title])
+        if title = ""
+            title = HostOf(url)
+        end if
+        return { url: url, format: format, title: title }
+    end function
+
+    ' hls | dash | mp4, from the explicit value or the URL's extension.
+    function InferFormat(url as string, format as string) as string
+        format = LCase(format)
+        if format = "hls" or format = "dash" or format = "mp4"
+            return format
+        end if
+        path = LCase(url)
+        queryStart = path.InStr("?")
+        if queryStart <> -1
+            path = path.Left(queryStart)
+        end if
+        if path.EndsWith(".mpd")
+            return "dash"
+        end if
+        if path.EndsWith(".mp4") or path.EndsWith(".m4v") or path.EndsWith(".mov")
+            return "mp4"
+        end if
+        return "hls"
+    end function
+
+    function HostOf(url as string) as string
+        rest = url.Mid(url.InStr("://") + 3)
+        slash = rest.InStr("/")
+        if slash <> -1
+            rest = rest.Left(slash)
+        end if
+        return rest
+    end function
+
+    function FirstString(values as object) as string
+        for each value in values
+            if GetInterface(value, "ifString") <> invalid and value.Trim() <> ""
+                return value.Trim()
+            end if
+        end for
+        return ""
+    end function
+
+end namespace

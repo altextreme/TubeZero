@@ -1,0 +1,49 @@
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+function Init()
+    m.top.focusable = true
+    m.video = m.top.findNode("StreamVideo")
+    m.errorGroup = m.top.findNode("ErrorGroup")
+    m.errorDetail = m.top.findNode("ErrorDetail")
+    m.video.ObserveField("state", FuncName(OnVideoState))
+    m.top.ObserveField("focusedChild", FuncName(OnFocusedChildChange))
+end function
+
+function OnStream() as void
+    stream = m.top.stream
+    content = CreateObject("roSGNode", "ContentNode")
+    content.url = stream.url
+    content.title = stream.title
+    content.streamFormat = stream.format
+    ' Live HLS/DASH: let the player follow the live edge
+    content.live = stream.format <> "mp4"
+    m.errorGroup.visible = false
+    m.video.content = content
+    m.video.control = "play"
+end function
+
+' The screen stack focuses this group; the Video node needs focus for play/pause/seek keys.
+function OnFocusedChildChange() as void
+    if m.top.hasFocus()
+        NodeSetFocus(m.video, true)
+    end if
+end function
+
+function OnVideoState() as void
+    if m.video.state = "error"
+        m.errorDetail.text = `${m.video.errorMsg} (${m.video.errorCode})`
+        m.errorGroup.visible = true
+    end if
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press and key = RemoteKeys.Back
+        m.video.control = "stop"
+        appController = m.global.yourtubeLive.appController
+        appController@.PopScreen()
+        return true
+    end if
+    return false
+end function

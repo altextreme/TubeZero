@@ -1,0 +1,105 @@
+import "pkg:/components/YourTube/Live/YourTubeLive.bs"
+import "pkg:/source/utils/Logging.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+const REGISTRY_SECTION = "YourTube"
+const MAX_RECENT = 20
+
+function Init()
+    m.global.addFields({ yourtubeLive: m.top })
+    m.top.recent = LoadList("live_recent")
+    m.top.favorites = LoadList("live_favorites")
+end function
+
+function OnNodeReady()
+end function
+
+function OnPlayRequest(event as object) as void
+    request = YourTubeLive.NormalizeRequest(event.getData())
+    if request = invalid
+        LogWarn("Live: ignoring play request without a valid http(s) URL")
+        return
+    end if
+
+    m.top.recent = Upsert(m.top.recent, request, MAX_RECENT)
+    SaveList("live_recent", m.top.recent)
+
+    ' Only one video at a time: close YouTube's player (including picture-in-picture) first.
+    if m.top.videoQueue <> invalid
+        m.top.videoQueue.closePlayer = true
+    end if
+
+    player = CreateObject("roSGNode", "YourTubeStreamPlayer")
+    player.stream = request
+    m.top.appController@.PushScreen(player)
+end function
+
+function OnToggleFavorite(event as object) as void
+    data = event.getData()
+    url = ValidString(data.url)
+    if url = ""
+        return
+    end if
+    favorites = m.top.favorites
+    index = IndexOf(favorites, url)
+    if index <> -1
+        favorites.Delete(index)
+    else
+        item = invalid
+        recentIndex = IndexOf(m.top.recent, url)
+        if recentIndex <> -1
+            item = m.top.recent[recentIndex]
+        else
+            item = YourTubeLive.NormalizeRequest(data)
+        end if
+        if item <> invalid
+            favorites.Unshift(item)
+        end if
+    end if
+    m.top.favorites = favorites
+    SaveList("live_favorites", favorites)
+end function
+
+' Moves (or adds) the item to the front, keeping at most `limit` entries.
+function Upsert(list as object, item as object, limit as integer) as object
+    index = IndexOf(list, item.url)
+    if index <> -1
+        list.Delete(index)
+    end if
+    list.Unshift(item)
+    while list.Count() > limit
+        list.Pop()
+    end while
+    return list
+end function
+
+function IndexOf(list as object, url as string) as integer
+    if not IsArray(list)
+        return -1
+    end if
+    for i = 0 to list.Count() - 1
+        if IsAssociativeArray(list[i]) and list[i].url = url
+            return i
+        end if
+    end for
+    return -1
+end function
+
+function LoadList(key as string) as object
+    section = CreateObject("roRegistrySection", REGISTRY_SECTION)
+    if not section.Exists(key)
+        return []
+    end if
+    data = StringUtils.ParseJsonSafe(section.Read(key))
+    if not IsArray(data)
+        return []
+    end if
+    return data
+end function
+
+function SaveList(key as string, list as object) as void
+    section = CreateObject("roRegistrySection", REGISTRY_SECTION)
+    section.Write(key, FormatJson(list))
+    section.Flush()
+end function

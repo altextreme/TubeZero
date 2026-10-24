@@ -1,0 +1,82 @@
+<!--
+    YourTube: Live nav screen. Favorite and recent stream links (OK plays, * toggles favorite), a QR code
+    for the phone page (/live) and an empty state when there's nothing yet.
+-->
+<component name="YourTubeLiveScreen" extends="Group" includes="AutoBind,Focus">
+    <interface>
+        <field id="navBar" type="node" bind="/NavBar" />
+        <field id="webServer" type="node" bind="/WebServer" />
+    </interface>
+    <children>
+        <Label
+            text="Live"
+            color="0xF1F1F1FF"
+            translation="[104,48]">
+            <Font role="font" uri="font:BoldSystemFontFile" size="30" />
+        </Label>
+        <Label
+            text="Play any HLS, DASH or MP4 stream link"
+            color="0xAAAAAAFF"
+            translation="[104,92]">
+            <Font role="font" uri="font:SystemFontFile" size="18" />
+        </Label>
+
+        <LabelList
+            id="StreamList"
+            translation="[96,150]"
+            itemSize="[620,52]"
+            itemSpacing="[0,6]"
+            numRows="8"
+            vertFocusAnimationStyle="floatingFocus" />
+
+        <Group id="EmptyState" visible="false" translation="[104,170]">
+            <Label
+                text="No streams yet"
+                color="0xF1F1F1FF">
+                <Font role="font" uri="font:MediumSystemFontFile" size="24" />
+            </Label>
+            <Label
+                text="Scan the code with your phone and paste a stream link, or send one with ECP (launch/dev?u=...). It will play here and show up in this list."
+                width="560"
+                wrap="true"
+                color="0xAAAAAAFF"
+                translation="[0,40]">
+                <Font role="font" uri="font:SystemFontFile" size="18" />
+            </Label>
+        </Group>
+
+        <Label
+            id="Hint"
+            text="OK  Play        *  Favorite / unfavorite"
+            color="0x717171FF"
+            translation="[104,650]">
+            <Font role="font" uri="font:SystemFontFile" size="16" />
+        </Label>
+
+        <Group id="PhoneCard" translation="[820,140]">
+            <Label
+                text="Send a link from your phone"
+                width="360"
+                horizAlign="center"
+                color="0xF1F1F1FF">
+                <Font role="font" uri="font:MediumSystemFontFile" size="20" />
+            </Label>
+            <QrCodePoster
+                id="QrCode"
+                translation="[30,44]"
+                width="300"
+                height="300"
+                loadWidth="300"
+                loadHeight="300"
+                padding="16" />
+            <Label
+                id="PhoneUrl"
+                width="360"
+                horizAlign="center"
+                color="0xAAAAAAFF"
+                translation="[0,360]">
+                <Font role="font" uri="font:SystemFontFile" size="18" />
+            </Label>
+        </Group>
+    </children>
+</component>

@@ -3,6 +3,8 @@
         <!-- Logger should remain the first child, to make sure it is initialized first in the scene -->
         <Logger id="Logger" />
         <JobQueue id="JobQueue" />
+        <!-- YourTube: Live tab state + stream playback (m.global.yourtubeLive) -->
+        <YourTubeLiveService id="YourTubeLiveService" />
         <AppController id="AppController"
             screensContainer="bind:./AppScreens"
             root="bind:./AppRoot"
@@ -37,6 +39,10 @@
                                 screen="YourTubeYouScreen"
                                 text="You"
                                 icon="pkg:/images/icons/ms/video_library.png" />
+                            <NavBarItemContent
+                                screen="YourTubeLiveScreen"
+                                text="Live"
+                                icon="pkg:/images/icons/ms/live_tv.png" />
                             <NavBarItemContent
                                 screen="BookmarksScreen"
                                 text="Bookmarks"

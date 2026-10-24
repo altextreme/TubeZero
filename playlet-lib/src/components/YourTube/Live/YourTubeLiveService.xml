@@ -1,0 +1,18 @@
+<!--
+    YourTube: owns the Live tab's state and plays stream URLs. Lives in MainScene and registers itself as
+    m.global.yourtubeLive so launch args, the web server (its own thread) and screens can all reach it.
+    Setting playRequest from any thread runs OnPlayRequest on the render thread.
+-->
+<component name="YourTubeLiveService" extends="Node" includes="AutoBind">
+    <interface>
+        <field id="appController" type="node" bind="/AppController" />
+        <field id="videoQueue" type="node" bind="/VideoQueue" />
+        <!-- { u|url, f|format, t|title } -->
+        <field id="playRequest" type="assocarray" alwaysNotify="true" onChange="OnPlayRequest" />
+        <!-- [{ url, format, title }] newest first -->
+        <field id="recent" type="array" />
+        <field id="favorites" type="array" />
+        <!-- { url } -->
+        <field id="toggleFavorite" type="assocarray" alwaysNotify="true" onChange="OnToggleFavorite" />
+    </interface>
+</component>
