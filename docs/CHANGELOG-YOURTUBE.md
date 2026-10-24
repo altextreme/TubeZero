@@ -22,12 +22,15 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 - `capture-all.sh` covers the channel page and the Filters dialog.
 - Sign-in service picker: `#212121` surface and a filled card highlight behind the logo instead of a square frame.
 
-### Account actions (Phase 2, signed-in path not yet tested)
+### Account actions (Phase 2, verified on the TV with a signed-in YouTube account)
 - Like, Dislike and Save (Watch Later) buttons in the player row; icons fill in when active. They call InnerTube
   (`like/like`, `like/dislike`, `like/removelike`, `browse/edit_playlist` on `WL`) with the YouTube profile's token,
   flip right away, and flip back with a message if the request fails.
 - Signed out or on an Invidious profile, they show "Sign in with a YouTube account from Profile...".
 - `YourTubeToast`: a short message pill at the top of the player.
+- Verified 2026-10-24 on a real account: like, remove like, dislike, remove dislike, save, remove from Watch Later,
+  subscribe and unsubscribe all succeed, and reopening a video loads the liked, disliked, saved and subscribed
+  states from YouTube. Each change was undone after the test.
 - Subscribe button in the player too (`subscription/subscribe` / `unsubscribe` for the video's channel).
 - When a video opens on a YouTube profile, the like, dislike and subscribe buttons load your real state from `/next`
   (`YourTubeVideoStateJob`; parser tested against the saved `/next` sample). Save checks the first page of your Watch Later
