@@ -1,0 +1,35 @@
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+function Init()
+    m.top.focusable = true
+    m.pill = m.top.findNode("Pill")
+    m.pillLabel = m.top.findNode("PillLabel")
+    m.micDisc = m.top.findNode("MicDisc")
+    m.micIcon = m.top.findNode("MicIcon")
+    m.top.ObserveField("focusedChild", FuncName(OnFocusedChildChange))
+end function
+
+' Focused: light pill + light mic disc with dark text/icon, like the YouTube TV app.
+function OnFocusedChildChange() as void
+    focused = m.top.hasFocus()
+    if focused
+        m.pill.uri = "pkg:/images/yt-pill-light.$$RES$$.9.png"
+        m.pillLabel.color = "#161616FF"
+        m.micDisc.blendColor = "#EBEBEBFF"
+        m.micIcon.uri = "pkg:/images/icons/yt-mic-dark.png"
+    else
+        m.pill.uri = "pkg:/images/yt-pill-dark.$$RES$$.9.png"
+        m.pillLabel.color = "#EBEBEBFF"
+        m.micDisc.blendColor = "#282828FF"
+        m.micIcon.uri = "pkg:/images/icons/yt-mic.png"
+    end if
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press and key = RemoteKeys.Ok
+        m.top.selected = true
+        return true
+    end if
+    return false
+end function

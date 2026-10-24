@@ -1,0 +1,46 @@
+<!--
+    YourTube: Home top bar from the YouTube TV app (reference/01-home.png): mic button, "Search" pill,
+    logo on the right. Focusable as one unit; OK raises `selected` and the screen opens Search.
+-->
+<component name="YourTubeTopBar" extends="Group">
+    <interface>
+        <field id="selected" type="boolean" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Poster
+            id="MicDisc"
+            uri="pkg:/images/white-circle.png"
+            blendColor="0x282828FF"
+            width="48"
+            height="48"
+            translation="[104,46]">
+            <Poster
+                id="MicIcon"
+                uri="pkg:/images/icons/yt-mic.png"
+                width="26"
+                height="26"
+                translation="[11,11]" />
+        </Poster>
+        <Poster
+            id="Pill"
+            uri="pkg:/images/yt-pill-dark.$$RES$$.9.png"
+            width="420"
+            height="45"
+            translation="[165,47]">
+            <Label
+                id="PillLabel"
+                text="Search"
+                color="0xF1F1F1FF"
+                height="45"
+                vertAlign="center"
+                translation="[22,0]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="19" />
+            </Label>
+        </Poster>
+        <Poster
+            uri="pkg:/images/logo-dark.png"
+            width="76"
+            height="30"
+            translation="[1124,54]" />
+    </children>
+</component>

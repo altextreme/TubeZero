@@ -1,15 +1,19 @@
 <component name="HomeScreen" extends="Group" includes="AutoBind,Focus,ContextMenuProvider">
     <interface>
         <field id="navBar" type="node" bind="/NavBar" />
+        <!-- YourTube: used by the top bar to open Search -->
+        <field id="appController" type="node" bind="/AppController" />
         <field id="invidious" type="node" bind="/Invidious" />
         <field id="preferences" type="node" bind="/Preferences" />
         <field id="feedFile" type="string" value="libpkg:/config/default_home_layout.yaml" />
     </interface>
     <children>
+        <!-- YourTube: YouTube TV top bar; rows start below it (were at y=50) -->
+        <YourTubeTopBar id="topBar" />
         <VideoRowList
             itemComponentName="RowCell"
             id="rowList"
-            translation="[0,50]"
+            translation="[0,120]"
             numRows="2"
             rowitemSize="[[350,196]]"
             rowItemSpacing="[[25,0]]"

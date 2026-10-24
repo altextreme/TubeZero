@@ -125,4 +125,7 @@ for res in 480p:0.667 720p:1 1080p:1.5; do
 done
 magick -size 8x256 gradient:"rgba(0,0,0,0)"-"rgba(0,0,0,0.88)" -depth 8 "PNG32:$LIB_IMG/yt-player-scrim.png"
 
+render "$BRAND/icon-mic.svg" 64 64 "$LIB_IMG/icons/yt-mic.png"
+magick "$LIB_IMG/icons/yt-mic.png" -channel RGB -fill "#0F0F0F" -colorize 100 +channel "$LIB_IMG/icons/yt-mic-dark.png"
+
 echo "YourTube assets written."

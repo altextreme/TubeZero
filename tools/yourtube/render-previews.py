@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""YourTube: renders approximate 1920x1080 previews of the Home screen.
+"""YourTube: renders approximate 1920x1080 previews of Home, Search and the player.
 
 These are NOT device captures. They re-create the SceneGraph layout in HTML from the
 values in the app code (720p units, rendered at 1.5x like the TV does) so the look can
@@ -25,7 +25,7 @@ LIST_X, LIST_Y = 13, 150    # NavBar ItemsList translation
 ITEM_H, ITEM_GAP = 50, 16   # ItemsList itemSize[1], itemSpacing[1]
 ITEM_W = 195                # itemSize[0] after ResizeNavBar (widest label + padding)
 SCREEN_OFFSET = ITEM_W - RAIL_W + 30
-ROWS_Y = 50                 # HomeScreen rowList translation
+ROWS_Y = 120                # HomeScreen rowList translation (below the top bar)
 ROW_X = 90                  # rowLabelOffset / focusXOffset
 CARD_W, CARD_H, CARD_GAP = 350, 196, 25
 ROW_PITCH = 326 + 65        # itemSize[1] + itemSpacing[1]
@@ -143,9 +143,24 @@ def card(v, x, y, thumbs, focused, age, progress=0):
 </div>'''
 
 
+def img(rel):
+    return (LIB / "images" / rel).as_uri()
+
+
+def top_bar(shift, focused=False):
+    pill_bg, text = ("#F1F1F1", "#0F0F0F") if focused else ("#282828", "#F1F1F1")
+    mic = "yt-mic-dark.png" if focused else "yt-mic.png"
+    return f'''
+<div style="position:absolute;left:{104 + shift}px;top:46px;width:48px;height:48px;border-radius:50%;background:{pill_bg}">
+  <img src="{img("icons/" + mic)}" style="position:absolute;left:11px;top:11px;width:26px;height:26px"></div>
+<div style="position:absolute;left:{165 + shift}px;top:47px;width:420px;height:45px;border-radius:18px;background:{pill_bg};
+            color:{text};font-size:19px;font-weight:500;line-height:45px;padding-left:22px;box-sizing:border-box">Search</div>
+<img src="{img("logo-dark.png")}" style="position:absolute;left:{1124 + shift}px;top:54px;width:76px;height:30px">'''
+
+
 def home(rows, thumbs, nav_expanded):
     shift = SCREEN_OFFSET if nav_expanded else 0
-    parts = []
+    parts = [top_bar(shift)]
     for r, (title, videos) in enumerate(rows):
         top = ROWS_Y + r * ROW_PITCH
         parts.append(f'<div style="position:absolute;left:{ROW_X + shift}px;top:{top}px;font-size:20px;'
@@ -156,6 +171,83 @@ def home(rows, thumbs, nav_expanded):
             progress = 62 if (r == 1 and i == 1) else 0
             parts.append(card(v, x, top + 24 + 20, thumbs, focused, AGES[(i + r) % len(AGES)], progress))
     return "".join(parts) + nav(nav_expanded, focus_index=2)
+
+
+def search(suggestions, results, thumbs):
+    kb_x, kb_y, key = 480, 40, 44
+    parts = [nav(False, focus_index=1, current_index=1)]
+    # Search field (TextEditBox at the top of the keyboard)
+    parts.append(f'<div style="position:absolute;left:{kb_x}px;top:{kb_y}px;width:352px;height:46px;border-radius:18px;'
+                 f'background:#282828;color:#AAAAAA;font-size:19px;line-height:46px;padding-left:18px;box-sizing:border-box">'
+                 f'Search</div>')
+    rows = ["ABCDEFG\u232b", "HIJKLMN&", "OPQRSTU\U0001F310", "VWXYZ-' "]
+    grid_y = kb_y + 60
+    for r, row in enumerate(rows):
+        for c, ch in enumerate(row):
+            label = {"&": "&amp;123", "\u232b": "\u232b", "\U0001F310": "\u25CE"}.get(ch, ch)
+            focused = (r == 0 and c == 0)
+            style = "background:#F1F1F1;color:#0F0F0F;border-radius:8px;" if focused else "color:#BBBBBB;"
+            size = 15 if ch == "&" else 19
+            parts.append(f'<div style="position:absolute;left:{kb_x + c * key}px;top:{grid_y + r * key}px;width:{key}px;'
+                         f'height:{key}px;line-height:{key}px;text-align:center;font-size:{size}px;{style}">{label}</div>')
+    bottom_y = grid_y + 4 * key + 6
+    for i, label in enumerate(["SPACE", "CLEAR", "SEARCH"]):
+        parts.append(f'<div style="position:absolute;left:{kb_x + i * 117 + 2}px;top:{bottom_y}px;width:113px;height:36px;'
+                     f'border-radius:18px;background:#282828;color:#F1F1F1;font-size:14px;font-weight:500;line-height:36px;'
+                     f'text-align:center">{label}</div>')
+    # Suggestions as pills with the history icon
+    for i, text in enumerate(suggestions):
+        parts.append(f'<div style="position:absolute;left:104px;top:{122 + i * 44}px;height:36px;min-width:216px;max-width:330px;'
+                     f'border-radius:18px;background:#282828;color:#F1F1F1;font-size:16px;line-height:36px;'
+                     f'padding:0 18px 0 44px;box-sizing:border-box;white-space:nowrap;overflow:hidden">'
+                     f'<img src="{img("icons/yt-history.png")}" style="position:absolute;left:14px;top:9px;width:18px;height:18px">'
+                     f'{html.escape(text)}</div>')
+    # Filters button, top right
+    parts.append('<div style="position:absolute;left:880px;top:42px;height:58px;padding:0 26px;border-radius:24px;'
+                 'background:#282828;color:#F1F1F1;font-size:22px;line-height:58px">Filters</div>')
+    # Results row
+    top = 370
+    parts.append(f'<div style="position:absolute;left:{ROW_X}px;top:{top}px;font-size:20px;font-weight:700;'
+                 f'color:#EBEBEB;line-height:24px">Search - {html.escape(suggestions[0])}</div>')
+    for i, v in enumerate(results):
+        parts.append(card(v, ROW_X + i * (CARD_W + CARD_GAP), top + 44, thumbs, False, AGES[i % len(AGES)]))
+    return "".join(parts)
+
+
+def player(v, thumbs, related):
+    frame = (thumbs / f"{v['id']}.jpg").as_uri()
+    played = 0.42
+    bar_x, bar_w, bar_y = 68, 1144, 535 + 3.5
+    stats = " • ".join(p for p in (v.get("channel"), fmt_views(v.get("view_count")), "2 days ago") if p)
+    icons = ["play.png", "minimize.png"]
+    buttons = []
+    for i, name in enumerate(icons):
+        x = 1108 + i * 62
+        focused = i == 0
+        disc = "background:#F1F1F1;" if focused else ""
+        color = "#0F0F0F" if focused else "#F1F1F1"
+        url = img("icons/player/" + name)
+        buttons.append(f'<div style="position:absolute;left:{x}px;top:458px;width:42px;height:42px;border-radius:50%;{disc}">'
+                       f'<div style="width:42px;height:42px;background:{color};-webkit-mask:url({url}) center/contain no-repeat"></div></div>')
+    elapsed = fmt_duration((v.get("duration") or 0) * played)
+    remaining = "-" + fmt_duration((v.get("duration") or 0) * (1 - played))
+    return f'''
+<div style="position:absolute;inset:0;background:#000 url({frame}) center/cover"></div>
+<div style="position:absolute;left:0;top:260px;width:1280px;height:460px;
+            background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.88))"></div>
+<div style="position:absolute;left:64px;bottom:{720 - 506}px;width:900px">
+  <div style="font-size:22px;font-weight:700;color:#F1F1F1;line-height:1.17;display:-webkit-box;-webkit-line-clamp:2;
+              -webkit-box-orient:vertical;overflow:hidden">{html.escape(v["title"])}</div>
+  <div style="margin-top:6px;font-size:15px;color:#AAAAAA">{html.escape(stats)}</div>
+</div>
+{"".join(buttons)}
+<div style="position:absolute;left:{bar_x}px;top:{bar_y}px;width:{bar_w}px;height:5px;border-radius:3px;background:rgba(255,255,255,.45)"></div>
+<div style="position:absolute;left:{bar_x}px;top:{bar_y}px;width:{bar_w * played}px;height:5px;border-radius:3px 0 0 3px;
+            background:linear-gradient(90deg,#FB0034,#FD1C7A {100 / played}%)"></div>
+<div style="position:absolute;left:{bar_x + bar_w * played - 6}px;top:535px;width:12px;height:12px;border-radius:50%;background:#FFF"></div>
+<div style="position:absolute;left:{bar_x}px;top:561px;font-size:16px;color:#F1F1F1">{elapsed}</div>
+<div style="position:absolute;left:{bar_x + bar_w - 120}px;top:561px;width:120px;text-align:right;font-size:16px;color:#F1F1F1">{remaining}</div>
+'''
 
 
 def page(body):
@@ -184,6 +276,9 @@ def main():
     render(page(home(rows, thumbs, nav_expanded=True)), out / "04-home-nav-open.png", out)
     rows2 = [("Trending", videos[12:18]), ("Popular", videos[0:6])]
     render(page(home(rows2, thumbs, nav_expanded=False)), out / "05-home-more-rows.png", out)
+    render(page(search(["japan travel vlog", "japan travel guide", "japan food tour", "tokyo night walk",
+                        "kyoto in autumn"], videos[12:18], thumbs)), out / "06-search.png", out)
+    render(page(player(videos[1], thumbs, videos[6:12])), out / "07-player.png", out)
     for f in out.glob("*.html"):
         f.unlink()
 

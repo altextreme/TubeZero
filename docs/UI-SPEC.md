@@ -97,13 +97,24 @@ Not measurable from stills. Target from the brief: 150–200 ms eased focus move
 
 ## Status (what YourTube matches today)
 
+How the restyle is applied:
+- **App-wide (build plugin, `tools/bs-plugins/yourtube-rebrand-plugin.ts`):** Playlet palette mapped to the colors above,
+  every Roku system/preset font converted to Roboto, Playlet's glow focus swapped for the white ring and its buttons
+  for rounded pills. Upstream files stay untouched for these.
+- **Per screen:** the edits listed below, each marked `YourTube:` in the source.
+
 | Area | Status |
 | --- | --- |
-| Colors, background | Done |
-| Card: thumbnail, radius, badge, title, channel, stats line, focus ring | Done (this pass) |
+| Colors, background, fonts (every screen) | Done |
+| Card: thumbnail, radius, badge, title, channel, stats line, focus ring | Done |
+| Home top bar: mic, Search pill, logo; Up from the first row, OK opens Search | Done |
+| Nav rail: gray icons, white current icon, white focus pill | Done |
+| Search: A–G keyboard, &123 page, SPACE/CLEAR/SEARCH, pill suggestions, results row | Done (key spacing set by Roku's keyboard; check on TV) |
+| Player: bottom-left title, right action row, thin red→pink scrubber, bottom scrim | Done (only Play/Pause and Minimize exist until Phase 2 adds actions) |
+| Dialogs (`#212121` surface), context menu, settings categories, buttons | Done |
+| Info screen: YourTube labels, Playlet AGPL credit | Done |
 | Large first shelf (480 × 270) | Not yet |
-| CC / 4K chips | Not yet (needs format data per video) |
-| Nav rail: gray icons, white current icon, no pill when collapsed | Done (this pass) |
-| Top search bar + mic on Home | Not yet |
-| Search screen layout | Not yet |
-| Player overlay | Not yet |
+| CC / 4K chips on cards | Not yet (needs format data per video) |
+| Related shelf under the player scrubber | Not yet |
+| Nav items match YouTube's (Shorts, Subscriptions, Library, Live) | Not yet (Live arrives in Phase 6) |
+| Voice search via the mic button on Home | Opens Search; the remote's voice key dictates there (needs a TV check) |
