@@ -54,6 +54,7 @@ namespace InvidiousContent
         SetIfExists(node, "lines", item, "lines")
         SetIfExists(node, "videoInfo", item, "videoInfo")
         SetIfExists(node, "percentDurationWatched", item, "percentDurationWatched")
+        SetIfExists(node, "badges", item, "badges") ' YourTube: 4K/CC chips
 
         return node
     end function

@@ -1,0 +1,63 @@
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: picks the quality/caption badges YouTube shows on cards ("4K", "CC", ...) out of a
+' video renderer, whatever its shape (videoRenderer badges, lockup view models, TV tiles).
+' Bounded walk; anything unexpected is skipped, never fatal.
+namespace YourTubeBadges
+
+    const MAX_DEPTH = 8
+    const MAX_BADGES = 3
+
+    function Parse(nodeData as dynamic) as object
+        found = []
+        seen = {}
+        Walk(nodeData, 0, found, seen)
+        return found
+    end function
+
+    function Walk(node as dynamic, depth as integer, found as object, seen as object) as void
+        if depth > MAX_DEPTH or found.Count() >= MAX_BADGES
+            return
+        end if
+
+        if IsArray(node)
+            for each child in node
+                Walk(child, depth + 1, found, seen)
+            end for
+            return
+        end if
+
+        if not IsAssociativeArray(node)
+            return
+        end if
+
+        for each key in node
+            value = node[key]
+            if key = "metadataBadgeRenderer" and IsAssociativeArray(value)
+                Add(value["label"], found, seen)
+            else if key = "badgeViewModel" and IsAssociativeArray(value)
+                Add(value["badgeText"], found, seen)
+            else if key <> "thumbnailOverlays" and key <> "navigationEndpoint" and key <> "trackingParams"
+                ' thumbnail overlays hold the duration badge, not quality badges
+                Walk(value, depth + 1, found, seen)
+            end if
+        end for
+    end function
+
+    function Add(label as dynamic, found as object, seen as object) as void
+        if not IsString(label)
+            return
+        end if
+        text = label.Trim()
+        if not IsQualityBadge(text) or seen.DoesExist(text)
+            return
+        end if
+        seen[text] = true
+        found.Push(text)
+    end function
+
+    function IsQualityBadge(text as string) as boolean
+        return text = "4K" or text = "8K" or text = "HDR" or text = "CC" or text = "VR180" or text = "360°"
+    end function
+
+end namespace

@@ -73,12 +73,34 @@
                 color="#AAAAAA">
                 <Font role="font" uri="font:SystemFontFile" size="16" />
             </Label>
-            <Label
-                id="StatsLabel"
-                width="350"
-                color="#AAAAAA">
-                <Font role="font" uri="font:SystemFontFile" size="16" />
-            </Label>
+            <!-- chips ("4K", "CC") then "views · age", like the YouTube TV card -->
+            <LayoutGroup
+                id="StatsRow"
+                layoutDirection="horiz"
+                vertAlignment="center"
+                itemSpacings="[6]">
+                <RoundedRect id="Chip0" height="20" color="#3F3F3F" visible="false">
+                    <Label id="ChipLabel0" height="20" color="#AAAAAA" vertAlign="center" translation="[5,0]">
+                        <Font role="font" uri="font:MediumSystemFontFile" size="12" />
+                    </Label>
+                </RoundedRect>
+                <RoundedRect id="Chip1" height="20" color="#3F3F3F" visible="false">
+                    <Label id="ChipLabel1" height="20" color="#AAAAAA" vertAlign="center" translation="[5,0]">
+                        <Font role="font" uri="font:MediumSystemFontFile" size="12" />
+                    </Label>
+                </RoundedRect>
+                <RoundedRect id="Chip2" height="20" color="#3F3F3F" visible="false">
+                    <Label id="ChipLabel2" height="20" color="#AAAAAA" vertAlign="center" translation="[5,0]">
+                        <Font role="font" uri="font:MediumSystemFontFile" size="12" />
+                    </Label>
+                </RoundedRect>
+                <Label
+                    id="StatsLabel"
+                    width="350"
+                    color="#AAAAAA">
+                    <Font role="font" uri="font:SystemFontFile" size="16" />
+                </Label>
+            </LayoutGroup>
         </LayoutGroup>
     </children>
 </component>

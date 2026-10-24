@@ -2,6 +2,7 @@
 ' Only used in debug mode.
 #const DEBUG_THROW_ON_UNKNOWN_NODES = true
 
+import "pkg:/components/YourTube/YourTubeBadges.bs"
 import "pkg:/source/utils/Logging.bs"
 import "pkg:/source/utils/ObjectUtils.bs"
 import "pkg:/source/utils/StringUtils.bs"
@@ -35,6 +36,8 @@ namespace Innertube
                 continue for
             end if
 
+            ' YourTube: remember the renderer being parsed so PushFeedItem can read its badges
+            context.yourTubeNodeData = nodeData[key]
             subdata = directive(nodeData[key], context)
             ParseNode(subdata, context)
         end for
@@ -2198,6 +2201,10 @@ namespace Innertube
                 "title": ""
                 "items": []
             }
+        end if
+        ' YourTube: 4K / CC / HDR chips for video cards
+        if IsAssociativeArray(item) and item["type"] = "video" and context.yourTubeNodeData <> invalid
+            item["badges"] = YourTubeBadges.Parse(context.yourTubeNodeData)
         end if
         context.currentFeed.items.Push(item)
     end function

@@ -27,5 +27,7 @@
         <!-- videoInfo is from web client -->
         <field id="videoInfo" type="string" />
         <field id="percentDurationWatched" type="float" />
+        <!-- YourTube: card chips such as "4K", "CC" -->
+        <field id="badges" type="stringarray" />
     </interface>
 </component>
