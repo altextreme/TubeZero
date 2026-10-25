@@ -1,0 +1,40 @@
+<!--
+    YourTube: "Save video to..." - your playlists with check boxes (OK toggles one; it stays open), then
+    "New playlist" and "Done". Drawn like YourTubeDialog and shown through DialogUtils.ShowYourTubeDialog, so it
+    has the same close / wasClosed / returnFocus / FocusButtons contract. YourTubeLibraryService does the requests.
+-->
+<component name="YourTubeSaveToPlaylistDialog" extends="Group">
+    <interface>
+        <field id="videoId" type="string" />
+        <!-- [{ playlistId, title, contains }] -->
+        <field id="playlists" type="array" onChange="OnPlaylistsChange" />
+        <field id="status" type="string" onChange="OnStatusChange" />
+        <!-- { index, playlistId, title, add } when a box is toggled -->
+        <field id="toggled" type="assocarray" alwaysNotify="true" />
+        <!-- { index, checked }: puts a box back after a failed request -->
+        <field id="setChecked" type="assocarray" alwaysNotify="true" onChange="OnSetChecked" />
+        <!-- { playlistId, title, contains }: a playlist just created, added at the top -->
+        <field id="addPlaylist" type="assocarray" alwaysNotify="true" onChange="OnAddPlaylist" />
+        <field id="createRequested" type="boolean" alwaysNotify="true" />
+        <field id="alwaysOnTop" type="boolean" />
+        <field id="wasClosed" type="boolean" alwaysNotify="true" />
+        <field id="close" type="boolean" alwaysNotify="true" onChange="OnClose" />
+        <field id="returnFocus" type="node" />
+        <function name="FocusButtons" />
+    </interface>
+    <children>
+        <Rectangle id="Dim" width="1280" height="720" color="0x000000B3" />
+        <Rectangle id="Panel" color="0x212121FF" width="720">
+            <Label id="TitleLabel" color="0xF1F1F1FF" translation="[32,28]" width="656">
+                <Font role="font" uri="font:MediumSystemFontFile" size="26" />
+            </Label>
+            <Rectangle id="Divider" height="1" width="656" color="0x3F3F3FFF" translation="[32,72]" />
+            <Label id="StatusLabel" color="0xB4B4B4FF" translation="[32,88]" width="656" font="font:SmallSystemFont" />
+            <CheckList id="PlaylistList" translation="[32,124]" itemSize="[656,48]" itemSpacing="[0,4]"
+                vertFocusAnimationStyle="floatingFocus" color="0xEBEBEBFF" />
+            <LabelList id="ActionList" itemSize="[656,48]" itemSpacing="[0,4]" vertFocusAnimationStyle="floatingFocus"
+                color="0xEBEBEBFF" />
+        </Rectangle>
+        <Timer id="FocusTimer" duration="0.05" />
+    </children>
+</component>

@@ -5,6 +5,8 @@
         <JobQueue id="JobQueue" />
         <!-- YourTube: Live tab state + stream playback (m.global.yourtubeLive) -->
         <YourTubeLiveService id="YourTubeLiveService" />
+        <!-- YourTube: save to playlist, Not interested, Watch Later edits (m.global.yourtubeLibrary) -->
+        <YourTubeLibraryService id="YourTubeLibraryService" />
         <AppController id="AppController"
             screensContainer="bind:./AppScreens"
             root="bind:./AppRoot"

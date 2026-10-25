@@ -1,0 +1,176 @@
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+const SCREEN_W = 1280
+const SCREEN_H = 720
+const PANEL_W = 720
+const ROW_H = 52
+const MAX_ROWS = 7
+
+function Init()
+    m.panel = m.top.findNode("Panel")
+    m.top.findNode("TitleLabel").text = "Save video to..."
+    m.statusLabel = m.top.findNode("StatusLabel")
+    m.playlistList = m.top.findNode("PlaylistList")
+    m.playlistList.checkOnSelect = false
+    m.playlistList.observeField("itemSelected", FuncName(OnPlaylistSelected))
+    m.actionList = m.top.findNode("ActionList")
+    m.actionList.observeField("itemSelected", FuncName(OnActionSelected))
+    actions = CreateObject("roSGNode", "ContentNode")
+    for each text in ["New playlist", "Done"]
+        actions.createChild("ContentNode").title = text
+    end for
+    m.actionList.content = actions
+    m.actionList.numRows = 2
+    m.items = []
+    m.checked = []
+    m.closed = false
+    m.focusTimer = m.top.findNode("FocusTimer")
+    m.focusTimer.observeField("fire", FuncName(TakeFocus))
+    Layout()
+end function
+
+function OnPlaylistsChange() as void
+    m.items = []
+    m.checked = []
+    for each playlist in ValidArray(m.top.playlists)
+        m.items.Push({ playlistId: ValidString(playlist.playlistId), title: ValidString(playlist.title) })
+        m.checked.Push(playlist.contains = true)
+    end for
+    RebuildList()
+end function
+
+function OnAddPlaylist(event as object) as void
+    playlist = event.getData()
+    items = [{ playlistId: ValidString(playlist.playlistId), title: ValidString(playlist.title) }]
+    items.Append(m.items)
+    checked = [playlist.contains = true]
+    checked.Append(m.checked)
+    m.items = items
+    m.checked = checked
+    RebuildList()
+end function
+
+function RebuildList() as void
+    content = CreateObject("roSGNode", "ContentNode")
+    for each item in m.items
+        content.createChild("ContentNode").title = item.title
+    end for
+    m.playlistList.content = content
+    m.playlistList.checkedState = m.checked
+    Layout()
+    if not m.closed and m.top.isInFocusChain() and m.items.Count() > 0
+        NodeSetFocus(m.playlistList, true)
+    end if
+end function
+
+function OnStatusChange() as void
+    m.statusLabel.text = m.top.status
+    m.statusLabel.visible = m.top.status <> ""
+    Layout()
+end function
+
+function OnSetChecked(event as object) as void
+    data = event.getData()
+    index = ValidInt(data.index)
+    if index < 0 or index >= m.checked.Count()
+        return
+    end if
+    m.checked[index] = data.checked = true
+    m.playlistList.checkedState = m.checked
+end function
+
+function Layout() as void
+    top = 92
+    if m.top.status <> ""
+        top = 128
+    end if
+    rows = m.checked.Count()
+    if rows > MAX_ROWS
+        rows = MAX_ROWS
+    end if
+    m.playlistList.numRows = rows
+    m.playlistList.translation = [32, top]
+    m.playlistList.visible = rows > 0
+    actionsTop = top + rows * ROW_H
+    if rows > 0
+        actionsTop += 12
+    end if
+    m.actionList.translation = [32, actionsTop]
+    height = actionsTop + 2 * ROW_H + 28
+    m.panel.height = height
+    m.panel.translation = [(SCREEN_W - PANEL_W) / 2, (SCREEN_H - height) / 2]
+end function
+
+'' callFunc target (DialogUtils.ShowYourTubeDialog), hence the unused parameter
+function FocusButtons(_unused as dynamic) as void
+    TakeFocus()
+    m.focusTimer.control = "start"
+end function
+
+function TakeFocus() as void
+    if m.closed
+        return
+    end if
+    if m.checked.Count() > 0 and not m.actionList.hasFocus()
+        NodeSetFocus(m.playlistList, true)
+    else
+        NodeSetFocus(m.actionList, true)
+    end if
+end function
+
+function OnPlaylistSelected() as void
+    index = m.playlistList.itemSelected
+    if index < 0 or index >= m.items.Count()
+        return
+    end if
+    add = not m.checked[index]
+    m.checked[index] = add
+    m.playlistList.checkedState = m.checked
+    item = m.items[index]
+    m.top.toggled = { index: index, playlistId: item.playlistId, title: item.title, add: add }
+end function
+
+function OnActionSelected() as void
+    if m.actionList.itemSelected = 0
+        m.top.createRequested = true
+    else
+        m.top.close = true
+    end if
+end function
+
+function OnClose() as void
+    if m.closed or not m.top.close
+        return
+    end if
+    m.closed = true
+    hadFocus = m.top.isInFocusChain()
+    parent = m.top.getParent()
+    if parent <> invalid
+        parent.removeChild(m.top)
+        if parent.hasField("currentDialog") and parent.currentDialog <> invalid and parent.currentDialog.isSameNode(m.top)
+            parent.currentDialog = invalid
+        end if
+    end if
+    returnFocus = m.top.returnFocus
+    if hadFocus and returnFocus <> invalid
+        NodeSetFocus(returnFocus, true)
+    end if
+    m.top.wasClosed = true
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if not press
+        return true
+    end if
+    if key = RemoteKeys.Back
+        m.top.close = true
+    else if key = RemoteKeys.Down and m.playlistList.hasFocus()
+        NodeSetFocus(m.actionList, true)
+    else if key = RemoteKeys.Up and m.actionList.hasFocus() and m.checked.Count() > 0
+        NodeSetFocus(m.playlistList, true)
+    end if
+    ' nothing behind the dialog may react while it is open
+    return true
+end function

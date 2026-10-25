@@ -1,0 +1,239 @@
+import "pkg:/components/ContextMenu/ContextMenuUtils.bs"
+import "pkg:/components/Dialog/DialogUtils.bs"
+import "pkg:/components/JobSystem/Jobs.bs"
+import "pkg:/components/JobSystem/JobSystem.bs"
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/Logging.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+const SIGN_IN_MESSAGE = "Sign in with a YouTube account to save to playlists"
+
+function Init()
+    m.global.addFields({ yourtubeLibrary: m.top })
+    ' JobCallback id -> what the request was for
+    m.pending = {}
+end function
+
+function OnNodeReady()
+end function
+
+' The current profile when it is a signed-in YouTube account, else invalid.
+function CurrentYouTubeProfile() as dynamic
+    profilesService = m.top.profilesService
+    if profilesService = invalid
+        return invalid
+    end if
+    profile = profilesService.currentProfile
+    if profile = invalid or profile.type <> "youtube"
+        return invalid
+    end if
+    return profile
+end function
+
+function GetContextMenuOptionsForItem(item as object) as object
+    options = []
+    if item = invalid or item.type <> "video" or StringUtils.IsNullOrEmpty(item.videoId)
+        return options
+    end if
+    if CurrentYouTubeProfile() = invalid
+        return options
+    end if
+    options.push(ContextMenuUtils.CreateOption("Save to playlist...", m.top, "SaveVideoToPlaylist", [item]))
+    return options
+end function
+
+' Context menu target: the video's content node.
+function SaveVideoToPlaylist(video as object) as void
+    if video = invalid
+        return
+    end if
+    OpenSaveToPlaylist(ValidString(video.videoId))
+end function
+
+' Opens "Save video to..." for videoId: your playlists with check marks plus "New playlist".
+' Safe to call from any render-thread component (e.g. the player's Save button).
+function OpenSaveToPlaylist(videoId as string) as void
+    if videoId = ""
+        return
+    end if
+    profile = CurrentYouTubeProfile()
+    if profile = invalid
+        ShowToast(SIGN_IN_MESSAGE)
+        return
+    end if
+
+    CloseSaveDialog()
+    dialog = CreateObject("roSGNode", "YourTubeSaveToPlaylistDialog")
+    dialog.videoId = videoId
+    dialog.status = "Loading your playlists..."
+    dialog.observeFieldScoped("toggled", FuncName(OnPlaylistToggled))
+    dialog.observeFieldScoped("createRequested", FuncName(OnCreateRequested))
+    dialog.observeFieldScoped("wasClosed", FuncName(OnSaveDialogClosed))
+    m.saveDialog = dialog
+    DialogUtils.ShowYourTubeDialog(dialog)
+
+    QueueLibraryJob({ op: "playlists", videoId: videoId }, { kind: "playlists", dialog: dialog })
+end function
+
+function CloseSaveDialog() as void
+    if m.saveDialog <> invalid
+        m.saveDialog.close = true
+        m.saveDialog = invalid
+    end if
+end function
+
+function OnSaveDialogClosed(event as object) as void
+    dialog = event.getRoSGNode()
+    dialog.unobserveFieldScoped("toggled")
+    dialog.unobserveFieldScoped("createRequested")
+    dialog.unobserveFieldScoped("wasClosed")
+    if m.saveDialog <> invalid and m.saveDialog.isSameNode(dialog)
+        m.saveDialog = invalid
+    end if
+end function
+
+function OnPlaylistToggled(event as object) as void
+    dialog = event.getRoSGNode()
+    toggle = event.getData()
+    verb = "Removing from "
+    if toggle.add = true
+        verb = "Saving to "
+    end if
+    dialog.status = verb + ValidString(toggle.title) + "..."
+    QueueLibraryJob({ op: "edit", playlistId: toggle.playlistId, videoId: dialog.videoId, add: toggle.add = true }, { kind: "edit", dialog: dialog, toggle: toggle })
+end function
+
+function OnCreateRequested(event as object) as void
+    dialog = event.getRoSGNode()
+    keyboard = CreateObject("roSGNode", "StandardKeyboardDialog")
+    keyboard.title = "New playlist"
+    keyboard.message = ["Name your playlist. It starts private, with this video in it."]
+    keyboard.buttons = ["Create", "Cancel"]
+    keyboard.observeFieldScoped("buttonSelected", FuncName(OnNewPlaylistKeyboardButton))
+    keyboard.observeFieldScoped("wasClosed", FuncName(OnNewPlaylistKeyboardClosed))
+    m.keyboardDialog = keyboard
+    m.keyboardForDialog = dialog
+    m.top.getScene().dialog = keyboard
+end function
+
+function OnNewPlaylistKeyboardButton(event as object) as void
+    keyboard = event.getRoSGNode()
+    dialog = m.keyboardForDialog
+    title = ValidString(keyboard.text).Trim()
+    if keyboard.buttonSelected = 0 and title <> "" and dialog <> invalid
+        dialog.status = "Creating " + title + "..."
+        QueueLibraryJob({ op: "create", title: title, videoId: dialog.videoId }, { kind: "create", dialog: dialog })
+    end if
+    keyboard.close = true
+end function
+
+function OnNewPlaylistKeyboardClosed(event as object) as void
+    keyboard = event.getRoSGNode()
+    keyboard.unobserveFieldScoped("buttonSelected")
+    keyboard.unobserveFieldScoped("wasClosed")
+    dialog = m.keyboardForDialog
+    m.keyboardDialog = invalid
+    m.keyboardForDialog = invalid
+    if dialog <> invalid and dialog.getParent() <> invalid
+        dialog@.FocusButtons()
+    end if
+end function
+
+' --- jobs ---------------------------------------------------------------------------------------------------
+
+function QueueLibraryJob(input as object, context as object) as void
+    profile = CurrentYouTubeProfile()
+    if profile = invalid
+        ShowToast(SIGN_IN_MESSAGE)
+        return
+    end if
+    input.profile = profile
+    callback = JobSystem.CreateCallback(OnLibraryJobDone)
+    m.pending[callback.id] = context
+    JobSystem.QueueJob(m.top.jobQueue, Jobs.YourTubeLibraryJob, input, callback)
+end function
+
+function OnLibraryJobDone(event as object) as void
+    JobSystem.UnobserveCallback(event.getRoSGNode())
+    id = event.getNode()
+    context = m.pending[id]
+    m.pending.Delete(id)
+    if context = invalid
+        return
+    end if
+    info = event.getInfo()
+    success = info.success = true
+    data = ValidAssociativeArray(info.data)
+    if not success
+        LogWarn("YourTubeLibraryJob failed:", context.kind, info.error)
+    end if
+
+    kind = context.kind
+    if kind = "playlists"
+        OnPlaylistsLoaded(context.dialog, success, data)
+    else if kind = "edit"
+        OnPlaylistEdited(context.dialog, context.toggle, success)
+    else if kind = "create"
+        OnPlaylistCreated(context.dialog, success, data)
+    end if
+end function
+
+function OnPlaylistsLoaded(dialog as object, success as boolean, data as object) as void
+    if not success
+        dialog.status = "Couldn't load your playlists. Try again."
+        return
+    end if
+    playlists = ValidArray(data.playlists)
+    dialog.playlists = playlists
+    if playlists.Count() = 0
+        dialog.status = "You don't have any playlists yet."
+    else
+        dialog.status = ""
+    end if
+end function
+
+function OnPlaylistEdited(dialog as object, toggle as object, success as boolean) as void
+    title = ValidString(toggle.title)
+    if not success
+        dialog.setChecked = { index: toggle.index, checked: toggle.add <> true }
+        dialog.status = "Couldn't update " + title + ". Try again."
+        return
+    end if
+    if toggle.add = true
+        dialog.status = "Saved to " + title
+    else
+        dialog.status = "Removed from " + title
+    end if
+end function
+
+function OnPlaylistCreated(dialog as object, success as boolean, data as object) as void
+    if not success
+        dialog.status = "Couldn't create the playlist. Try again."
+        return
+    end if
+    title = ValidString(data.title)
+    dialog.addPlaylist = { playlistId: ValidString(data.playlistId), title: title, contains: true }
+    dialog.status = "Saved to " + title
+end function
+
+' --- toast --------------------------------------------------------------------------------------------------
+
+' A short message at the top of the screen, above everything (the dialog layer).
+function ShowToast(text as string) as void
+    scene = m.top.getScene()
+    if scene = invalid
+        return
+    end if
+    host = scene.findNode("YourTubeDialogHost")
+    if host = invalid
+        host = scene
+    end if
+    toast = host.findNode("YourTubeLibraryToast")
+    if toast = invalid
+        toast = CreateObject("roSGNode", "YourTubeToast")
+        toast.id = "YourTubeLibraryToast"
+        host.insertChild(toast, 0)
+    end if
+    toast.text = text
+end function

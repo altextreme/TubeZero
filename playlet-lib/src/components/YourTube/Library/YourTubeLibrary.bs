@@ -1,0 +1,463 @@
+import "pkg:/components/Services/Innertube/Context.bs"
+import "pkg:/components/YourTube/YourTubeJson.bs"
+import "pkg:/source/services/HttpClient.bs"
+
+' YourTube: library and account requests (save to playlist, create playlist, Watch Later edits, "Not interested",
+' notifications) and the defensive parsers for their responses. Builders return { endpoint, body, client } with no
+' context yet; CreateRequest adds the context and headers. Everything here is pure (no nodes), so the specs can
+' run it against fixtures. The signed-in shapes can't be captured from the Mac: each parser searches for the keys
+' YouTube uses on both the WEB and TV clients instead of following one fixed path.
+namespace YourTubeLibrary
+
+    const SEARCH_DEPTH = 40
+
+    ' --- request bodies ---------------------------------------------------------------------------------------
+
+    ' Your playlists, each with whether it already holds the video (playlist/get_add_to_playlist).
+    function AddToPlaylistPayload(videoId as string) as object
+        return { endpoint: "playlist/get_add_to_playlist", client: "TV", body: { "videoIds": [videoId], "excludeWatchLater": false } }
+    end function
+
+    ' Adds or removes one video (browse/edit_playlist, by video id).
+    function EditPlaylistPayload(playlistId as string, videoId as string, add as boolean) as object
+        action = { "action": "ACTION_REMOVE_VIDEO_BY_VIDEO_ID", "removedVideoId": videoId }
+        if add
+            action = { "action": "ACTION_ADD_VIDEO", "addedVideoId": videoId }
+        end if
+        return { endpoint: "browse/edit_playlist", client: "TV", body: { "playlistId": playlistId, "actions": [action] } }
+    end function
+
+    ' Moves the video with setVideoId in front of the one with successorSetVideoId (the first item = "Move to top").
+    function MoveBeforePayload(playlistId as string, setVideoId as string, successorSetVideoId as string) as object
+        action = { "action": "ACTION_MOVE_VIDEO_BEFORE", "setVideoId": setVideoId, "movedSetVideoIdSuccessor": successorSetVideoId }
+        return { endpoint: "browse/edit_playlist", client: "TV", body: { "playlistId": playlistId, "actions": [action] } }
+    end function
+
+    ' A new private playlist that starts with videoId (playlist/create).
+    function CreatePlaylistPayload(title as string, videoId as string) as object
+        body = { "title": title, "privacyStatus": "PRIVATE" }
+        if videoId <> ""
+            body["videoIds"] = [videoId]
+        end if
+        return { endpoint: "playlist/create", client: "TV", body: body }
+    end function
+
+    ' "Not interested", "Don't recommend channel", "Remove from watch history" and their undo all post a token here.
+    function FeedbackPayload(token as string) as object
+        return { endpoint: "feedback", client: "TV", body: { "feedbackTokens": [token], "isFeedbackTokenUnencrypted": false, "shouldMerge": false } }
+    end function
+
+    ' The bell menu. client is "WEB" or "TV" (which one answers to a TV sign-in is checked on the TV).
+    function NotificationsPayload(client as string) as object
+        return { endpoint: "notification/get_notification_menu", client: client, body: { "notificationsMenuRequestType": "NOTIFICATIONS_MENU_REQUEST_TYPE_INBOX" } }
+    end function
+
+    function UnseenCountPayload(client as string) as object
+        return { endpoint: "notification/get_unseen_count", client: client, body: {} }
+    end function
+
+    ' Watch history, optionally searched. YouTube's web history search sends the text as "query" on the FEhistory
+    ' browse; the result is filtered on the TV too (FilterVideos) in case a client ignores it.
+    function HistoryPayload(query as string, continuation as string, client as string) as object
+        body = {}
+        if continuation <> ""
+            body["continuation"] = continuation
+        else
+            body["browseId"] = "FEhistory"
+            if query <> ""
+                body["query"] = query
+            end if
+        end if
+        return { endpoint: "browse", client: client, body: body }
+    end function
+
+    function CreateRequest(payload as object, accessToken as string, onBehalfOfUser as string) as object
+        client = Innertube.ClientType.Tv
+        if payload.client = "WEB"
+            client = Innertube.ClientType.Web
+        end if
+        options = {}
+        if onBehalfOfUser <> ""
+            options["onBehalfOfUser"] = onBehalfOfUser
+        end if
+        body = {}
+        body.Append(payload.body)
+        body["context"] = Innertube.CreateContext(client, CreateObject("roDeviceInfo"), options)
+        request = HttpClient.Post(`https://www.youtube.com/youtubei/v1/${payload.endpoint}?prettyPrint=false&alt=json`).JsonBody(body)
+        request.Headers(Innertube.CreateHeaders(client))
+        if accessToken <> ""
+            request.Header("Authorization", "Bearer " + accessToken)
+        end if
+        return request
+    end function
+
+    ' --- response parsers --------------------------------------------------------------------------------------
+
+    ' [{ playlistId, title, contains, privacy }] in the order YouTube lists them. Reads every object that has both
+    ' "playlistId" and "containsSelectedVideos" (playlistAddToOptionRenderer on WEB and TV).
+    function ParseAddToPlaylist(response as dynamic) as object
+        found = []
+        CollectPlaylistOptions(response, found, {}, 0)
+        return found
+    end function
+
+    function CollectPlaylistOptions(node as dynamic, found as object, seen as object, depth as integer) as void
+        if depth > SEARCH_DEPTH
+            return
+        end if
+        if YourTubeJson.IsAA(node)
+            playlistId = YourTubeJson.AsString(node["playlistId"])
+            if playlistId <> "" and node.DoesExist("containsSelectedVideos")
+                if not seen.DoesExist(playlistId)
+                    seen[playlistId] = true
+                    contains = YourTubeJson.AsString(node["containsSelectedVideos"])
+                    found.Push({
+                        playlistId: playlistId
+                        title: TextOf(node["title"])
+                        contains: contains = "ALL" or contains = "SOME"
+                        privacy: YourTubeJson.AsString(node["privacy"])
+                    })
+                end if
+                return
+            end if
+            for each key in node
+                CollectPlaylistOptions(node[key], found, seen, depth + 1)
+            end for
+        else if YourTubeJson.IsArr(node)
+            for each child in node
+                CollectPlaylistOptions(child, found, seen, depth + 1)
+            end for
+        end if
+    end function
+
+    ' The id of a playlist/create response, or "".
+    function ParseCreatedPlaylistId(response as dynamic) as string
+        if not YourTubeJson.IsAA(response)
+            return ""
+        end if
+        playlistId = YourTubeJson.AsString(response["playlistId"])
+        if playlistId = ""
+            playlistId = YourTubeJson.AsString(YourTubeJson.FindKey(response, "playlistId", 0))
+        end if
+        return playlistId
+    end function
+
+    ' True unless an edit_playlist / feedback response says it failed (a missing status counts as success).
+    function IsEditSuccess(response as dynamic) as boolean
+        if not YourTubeJson.IsAA(response)
+            return true
+        end if
+        status = YourTubeJson.AsString(response["status"])
+        if status <> "" and status <> "STATUS_SUCCEEDED"
+            return false
+        end if
+        processed = YourTubeJson.FindKey(response, "isProcessed", 0)
+        if processed = false
+            return false
+        end if
+        return true
+    end function
+
+    ' Feedback actions in a card's menu: { notInterested, notInterestedUndo, dontRecommend, dontRecommendUndo,
+    ' removeFromHistory } (only the ones found). Menu items are menuServiceItemRenderer (WEB and TV, text + optional
+    ' icon) or listItemViewModel (WEB lockup sheet, title.content). Matched by icon, then English label; unlabeled
+    ' tokens fill "Not interested" then "Don't recommend channel" in menu order, like YouTube lists them.
+    function ParseFeedback(rendererData as dynamic) as object
+        entries = []
+        CollectFeedbackEntries(rendererData, entries, 0)
+        result = {}
+        unmatched = []
+        for each entry in entries
+            kind = FeedbackKind(entry.label, entry.icon)
+            if kind = ""
+                unmatched.Push(entry)
+            else if not result.DoesExist(kind)
+                result[kind] = entry.token
+                if entry.undo <> "" and kind <> "removeFromHistory"
+                    result[kind + "Undo"] = entry.undo
+                end if
+            end if
+        end for
+        for each entry in unmatched
+            kind = "notInterested"
+            if result.DoesExist(kind)
+                kind = "dontRecommend"
+            end if
+            if result.DoesExist(kind)
+                exit for
+            end if
+            result[kind] = entry.token
+            if entry.undo <> ""
+                result[kind + "Undo"] = entry.undo
+            end if
+        end for
+        return result
+    end function
+
+    function FeedbackKind(label as string, icon as string) as string
+        text = LCase(label)
+        if icon = "NOT_INTERESTED" or text.InStr("not interested") >= 0
+            return "notInterested"
+        end if
+        if text.InStr("recommend channel") >= 0 or text.InStr("recommend this channel") >= 0
+            return "dontRecommend"
+        end if
+        if text.InStr("history") >= 0
+            return "removeFromHistory"
+        end if
+        if icon = "REMOVE" or icon = "BLOCK"
+            return "dontRecommend"
+        end if
+        if icon = "DELETE"
+            return "removeFromHistory"
+        end if
+        return ""
+    end function
+
+    ' Keys that never hold menu items; skipping them keeps the walk cheap on big cards.
+    function SkipKey(key as string) as boolean
+        return key = "thumbnail" or key = "thumbnails" or key = "contentImage" or key = "accessibility" or key = "loggingDirectives" or key = "trackingParams" or key = "watchEndpointSupportedOnesieConfig" or key = "image"
+    end function
+
+    function CollectFeedbackEntries(node as dynamic, entries as object, depth as integer) as void
+        if depth > SEARCH_DEPTH
+            return
+        end if
+        if YourTubeJson.IsAA(node)
+            item = invalid
+            if YourTubeJson.IsAA(node["menuServiceItemRenderer"])
+                item = node["menuServiceItemRenderer"]
+            else if YourTubeJson.IsAA(node["listItemViewModel"])
+                item = node["listItemViewModel"]
+            end if
+            if item <> invalid
+                token = FindFeedbackToken(item, 0)
+                if token <> ""
+                    entries.Push({
+                        token: token
+                        undo: YourTubeJson.AsString(FindKeyDeep(item, "undoToken", 0))
+                        label: ItemLabel(item)
+                        icon: ItemIcon(item)
+                    })
+                end if
+                return
+            end if
+            for each key in node
+                if not SkipKey(key)
+                    CollectFeedbackEntries(node[key], entries, depth + 1)
+                end if
+            end for
+        else if YourTubeJson.IsArr(node)
+            for each child in node
+                CollectFeedbackEntries(child, entries, depth + 1)
+            end for
+        end if
+    end function
+
+    ' The first feedbackEndpoint.feedbackToken inside a menu item (not an undo token).
+    function FindFeedbackToken(node as dynamic, depth as integer) as string
+        if depth > SEARCH_DEPTH
+            return ""
+        end if
+        if YourTubeJson.IsAA(node)
+            endpoint = node["feedbackEndpoint"]
+            if YourTubeJson.IsAA(endpoint)
+                token = YourTubeJson.AsString(endpoint["feedbackToken"])
+                if token <> ""
+                    return token
+                end if
+            end if
+            for each key in node
+                if key <> "undoFeedbackEndpoint"
+                    token = FindFeedbackToken(node[key], depth + 1)
+                    if token <> ""
+                        return token
+                    end if
+                end if
+            end for
+        else if YourTubeJson.IsArr(node)
+            for each child in node
+                token = FindFeedbackToken(child, depth + 1)
+                if token <> ""
+                    return token
+                end if
+            end for
+        end if
+        return ""
+    end function
+
+    function ItemLabel(item as object) as string
+        label = TextOf(item["text"])
+        if label = ""
+            label = TextOf(item["title"])
+        end if
+        return label
+    end function
+
+    function ItemIcon(item as object) as string
+        icon = YourTubeJson.AsString(YourTubeJson.Dig(item, ["icon", "iconType"]))
+        if icon = ""
+            icon = YourTubeJson.AsString(YourTubeJson.Dig(item, ["leadingImage", "sources", 0, "clientResource", "imageName"]))
+        end if
+        return icon
+    end function
+
+    ' runs / simpleText / view-model { content } text.
+    function TextOf(node as dynamic) as string
+        if GetInterface(node, "ifString") <> invalid
+            return node
+        end if
+        if not YourTubeJson.IsAA(node)
+            return ""
+        end if
+        if node["content"] <> invalid
+            return YourTubeJson.AsString(node["content"])
+        end if
+        return YourTubeJson.RunsText(node)
+    end function
+
+    ' FindKey with this namespace's deeper limit (menus nest past YourTubeJson's 12 levels).
+    function FindKeyDeep(node as dynamic, key as string, depth as integer) as dynamic
+        if depth > SEARCH_DEPTH
+            return invalid
+        end if
+        if YourTubeJson.IsAA(node)
+            if node.DoesExist(key)
+                return node[key]
+            end if
+            for each childKey in node
+                if not SkipKey(childKey)
+                    found = FindKeyDeep(node[childKey], key, depth + 1)
+                    if found <> invalid
+                        return found
+                    end if
+                end if
+            end for
+        else if YourTubeJson.IsArr(node)
+            for each child in node
+                found = FindKeyDeep(child, key, depth + 1)
+                if found <> invalid
+                    return found
+                end if
+            end for
+        end if
+        return invalid
+    end function
+
+    ' A playlist item's setVideoId (what edit_playlist moves), or "". playlistVideoRenderer has it at the top; TV
+    ' tiles carry it in their watch endpoint or "remove" menu action.
+    function ParseSetVideoId(rendererData as dynamic) as string
+        if not YourTubeJson.IsAA(rendererData)
+            return ""
+        end if
+        setVideoId = YourTubeJson.AsString(rendererData["setVideoId"])
+        if setVideoId = ""
+            setVideoId = YourTubeJson.AsString(FindKeyDeep(rendererData, "playlistSetVideoId", 0))
+        end if
+        if setVideoId = ""
+            setVideoId = YourTubeJson.AsString(FindKeyDeep(rendererData, "setVideoId", 0))
+        end if
+        return setVideoId
+    end function
+
+    ' [{ id, message, time, thumbnail, videoThumbnail, read, videoId, channelId }] from get_notification_menu
+    ' (notificationRenderer, WEB). Items without a message are dropped.
+    function ParseNotifications(response as dynamic) as object
+        found = []
+        CollectNotifications(response, found, 0)
+        return found
+    end function
+
+    function CollectNotifications(node as dynamic, found as object, depth as integer) as void
+        if depth > SEARCH_DEPTH
+            return
+        end if
+        if YourTubeJson.IsAA(node)
+            renderer = node["notificationRenderer"]
+            if YourTubeJson.IsAA(renderer)
+                item = NotificationItem(renderer)
+                if item.message <> ""
+                    found.Push(item)
+                end if
+                return
+            end if
+            for each key in node
+                if key <> "responseContext"
+                    CollectNotifications(node[key], found, depth + 1)
+                end if
+            end for
+        else if YourTubeJson.IsArr(node)
+            for each child in node
+                CollectNotifications(child, found, depth + 1)
+            end for
+        end if
+    end function
+
+    function NotificationItem(renderer as object) as object
+        endpoint = renderer["navigationEndpoint"]
+        videoId = YourTubeJson.AsString(YourTubeJson.Dig(endpoint, ["watchEndpoint", "videoId"]))
+        if videoId = ""
+            videoId = YourTubeJson.AsString(FindKeyDeep(endpoint, "videoId", 0))
+        end if
+        channelId = YourTubeJson.AsString(YourTubeJson.Dig(endpoint, ["browseEndpoint", "browseId"]))
+        if not channelId.StartsWith("UC")
+            channelId = ""
+        end if
+        return {
+            id: YourTubeJson.AsString(renderer["notificationId"])
+            message: TextOf(renderer["shortMessage"])
+            time: TextOf(renderer["sentTimeText"])
+            thumbnail: LastThumbnail(renderer["thumbnail"])
+            videoThumbnail: LastThumbnail(renderer["videoThumbnail"])
+            read: renderer["read"] = true
+            videoId: videoId
+            channelId: channelId
+        }
+    end function
+
+    function LastThumbnail(node as dynamic) as string
+        thumbnails = YourTubeJson.Dig(node, ["thumbnails"])
+        if not YourTubeJson.IsArr(thumbnails) or thumbnails.Count() = 0
+            return ""
+        end if
+        url = YourTubeJson.AsString(YourTubeJson.Dig(thumbnails[thumbnails.Count() - 1], ["url"]))
+        if url.StartsWith("//")
+            url = "https:" + url
+        end if
+        return url
+    end function
+
+    ' The unread count from get_unseen_count (unseenCount at the top or in an update action), or -1.
+    function ParseUnseenCount(response as dynamic) as integer
+        value = FindKeyDeep(response, "unseenCount", 0)
+        if GetInterface(value, "ifInt") <> invalid or GetInterface(value, "ifFloat") <> invalid or GetInterface(value, "ifDouble") <> invalid
+            return value
+        end if
+        return -1
+    end function
+
+    ' The feed items (video AAs from Innertube's parser) whose title or channel contains query, ignoring case.
+    function FilterVideos(items as object, query as string) as object
+        needle = LCase(query.Trim())
+        if needle = ""
+            return items
+        end if
+        matches = []
+        for each item in items
+            if YourTubeJson.IsAA(item)
+                haystack = LCase(YourTubeJson.AsString(item["title"]) + " " + YourTubeJson.AsString(item["author"]))
+                lines = item["lines"]
+                if YourTubeJson.IsArr(lines)
+                    for each line in lines
+                        haystack += " " + LCase(YourTubeJson.AsString(line))
+                    end for
+                end if
+                if haystack.InStr(needle) >= 0
+                    matches.Push(item)
+                end if
+            end if
+        end for
+        return matches
+    end function
+
+end namespace

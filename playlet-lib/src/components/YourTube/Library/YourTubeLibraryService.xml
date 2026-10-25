@@ -1,0 +1,17 @@
+<!--
+    YourTube: library actions for the signed-in YouTube profile - the "Save to playlist..." dialog, and the long-press
+    menu items that go with it. Lives in MainScene and registers itself as m.global.yourtubeLibrary, so any screen
+    (or the player's Save button) can reach it:
+        m.global.yourtubeLibrary@.OpenSaveToPlaylist(videoId)
+    It is also a context menu provider: VideoRowList and PlaylistView add it to their providers.
+-->
+<component name="YourTubeLibraryService" extends="Node" includes="AutoBind,ContextMenuProvider">
+    <interface>
+        <field id="appController" type="node" bind="/AppController" />
+        <field id="profilesService" type="node" bind="/ProfilesService" />
+        <field id="jobQueue" type="node" bind="/JobQueue" />
+        <function name="OpenSaveToPlaylist" />
+        <function name="SaveVideoToPlaylist" />
+        <function name="ShowToast" />
+    </interface>
+</component>

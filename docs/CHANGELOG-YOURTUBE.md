@@ -37,6 +37,12 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   which reads as a heavy blur, under a #0F0F0F scrim at 85% (`YourTubeThumbBackdrop`, reusable for other opaque
   panels). Not added to the large pause icon, the Related row or live chat: those sit over the video itself, so the
   paused frame already is the backdrop.
+### Library and account (not yet checked on the TV)
+- Save to playlist: long-press a video (rows and playlist pages) > "Save to playlist..." opens "Save video to..."
+  with your playlists as check boxes (OK adds or removes right away) plus "New playlist" (Roku keyboard; the new
+  playlist is private and starts with the video). `playlist/get_add_to_playlist`, `browse/edit_playlist`,
+  `playlist/create` on the TV client with the profile's token. The player's Save button can open the same dialog
+  with `m.global.yourtubeLibrary@.OpenSaveToPlaylist(videoId)` (not wired yet).
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote

@@ -158,7 +158,7 @@ function OnItemLongPressed(index as integer) as void
 
     LogInfo("Long press: playlist:", playlistId, "video:", videoId)
 
-    contextMenuProviders = [m.top]
+    contextMenuProviders = [m.top, m.global.yourtubeLibrary] ' YourTube: + library actions
     ContextMenuUtils.Open(contextMenuProviders, m.appController, video)
 end function
 

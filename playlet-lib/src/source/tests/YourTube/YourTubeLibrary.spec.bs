@@ -1,0 +1,190 @@
+' YourTube: library request builders and parsers (save to playlist, feedback, Watch Later edits, notifications).
+' Signed-in responses can't be captured from the Mac, so the fixtures in source/tests/fixtures/yourtube/library-*.json
+' are hand-built from the shapes youtubei.js parses (PlaylistAddToOption, FeedbackEndpoint, Notification) and the
+' TV tile menus Playlet already reads; check them against GET /api/yourtube/debug/library on the TV.
+import "pkg:/components/YourTube/Library/YourTubeLibrary.bs"
+import "pkg:/source/utils/StringUtils.bs"
+
+namespace Tests
+
+    @suite
+    class YourTubeLibraryTests extends Rooibos.BaseTestSuite
+
+        function Fixture(name as string) as dynamic
+            return StringUtils.ParseJsonSafe(ReadAsciiFile("pkg:/source/tests/fixtures/yourtube/" + name))
+        end function
+
+        @describe("YourTubeLibrary payloads")
+
+        @it("builds edit_playlist add and remove actions")
+        function _()
+            add = YourTubeLibrary.EditPlaylistPayload("PLx", "vid", true)
+            m.assertEqual(add.endpoint, "browse/edit_playlist")
+            m.assertEqual(add.body.playlistId, "PLx")
+            m.assertEqual(add.body.actions[0].action, "ACTION_ADD_VIDEO")
+            m.assertEqual(add.body.actions[0].addedVideoId, "vid")
+            remove = YourTubeLibrary.EditPlaylistPayload("PLx", "vid", false)
+            m.assertEqual(remove.body.actions[0].action, "ACTION_REMOVE_VIDEO_BY_VIDEO_ID")
+            m.assertEqual(remove.body.actions[0].removedVideoId, "vid")
+        end function
+
+        @it("builds move-before, create, feedback and history bodies")
+        function _()
+            move = YourTubeLibrary.MoveBeforePayload("WL", "SET_B", "SET_A")
+            m.assertEqual(move.body.actions[0].action, "ACTION_MOVE_VIDEO_BEFORE")
+            m.assertEqual(move.body.actions[0].setVideoId, "SET_B")
+            m.assertEqual(move.body.actions[0].movedSetVideoIdSuccessor, "SET_A")
+
+            create = YourTubeLibrary.CreatePlaylistPayload("Road trip", "vid")
+            m.assertEqual(create.endpoint, "playlist/create")
+            m.assertEqual(create.body.title, "Road trip")
+            m.assertEqual(create.body.privacyStatus, "PRIVATE")
+            m.assertEqual(create.body.videoIds[0], "vid")
+
+            feedback = YourTubeLibrary.FeedbackPayload("TOKEN")
+            m.assertEqual(feedback.endpoint, "feedback")
+            m.assertEqual(feedback.body.feedbackTokens[0], "TOKEN")
+            m.assertFalse(feedback.body.isFeedbackTokenUnencrypted)
+
+            history = YourTubeLibrary.HistoryPayload("cats", "", "TV")
+            m.assertEqual(history.body.browseId, "FEhistory")
+            m.assertEqual(history.body.query, "cats")
+            nextPage = YourTubeLibrary.HistoryPayload("cats", "CONT", "TV")
+            m.assertEqual(nextPage.body.continuation, "CONT")
+            m.assertInvalid(nextPage.body.browseId)
+        end function
+
+        @describe("YourTubeLibrary.ParseAddToPlaylist")
+
+        @it("lists playlists with their check state, without duplicates")
+        function _()
+            playlists = YourTubeLibrary.ParseAddToPlaylist(m.Fixture("library-add-to-playlist.json"))
+            m.assertEqual(playlists.Count(), 3)
+            m.assertEqual(playlists[0].playlistId, "WL")
+            m.assertEqual(playlists[0].title, "Watch later")
+            m.assertFalse(playlists[0].contains)
+            m.assertEqual(playlists[1].playlistId, "PLabc123")
+            m.assertEqual(playlists[1].title, "Road trip")
+            m.assertTrue(playlists[1].contains)
+            m.assertEqual(playlists[1].privacy, "UNLISTED")
+            m.assertEqual(playlists[2].title, "Cooking")
+        end function
+
+        @it("returns nothing for bad input")
+        function _()
+            m.assertEqual(YourTubeLibrary.ParseAddToPlaylist(invalid).Count(), 0)
+            m.assertEqual(YourTubeLibrary.ParseAddToPlaylist({ "contents": [1, "x"] }).Count(), 0)
+        end function
+
+        @describe("YourTubeLibrary.ParseCreatedPlaylistId / IsEditSuccess")
+
+        @it("reads the new playlist id")
+        function _()
+            m.assertEqual(YourTubeLibrary.ParseCreatedPlaylistId({ "playlistId": "PLnew" }), "PLnew")
+            m.assertEqual(YourTubeLibrary.ParseCreatedPlaylistId({ "actions": [{ "x": { "playlistId": "PLdeep" } }] }), "PLdeep")
+            m.assertEqual(YourTubeLibrary.ParseCreatedPlaylistId(invalid), "")
+        end function
+
+        @it("treats a failed status as failure and a missing one as success")
+        function _()
+            m.assertTrue(YourTubeLibrary.IsEditSuccess({ "status": "STATUS_SUCCEEDED" }))
+            m.assertTrue(YourTubeLibrary.IsEditSuccess({}))
+            m.assertFalse(YourTubeLibrary.IsEditSuccess({ "status": "STATUS_FAILED" }))
+            m.assertFalse(YourTubeLibrary.IsEditSuccess({ "feedbackResponses": [{ "isProcessed": false }] }))
+            m.assertTrue(YourTubeLibrary.IsEditSuccess({ "feedbackResponses": [{ "isProcessed": true }] }))
+        end function
+
+        @describe("YourTubeLibrary.ParseFeedback")
+
+        @it("reads Not interested and Don't recommend channel from a TV tile menu")
+        function _()
+            feedback = YourTubeLibrary.ParseFeedback(m.Fixture("library-feedback-menus.json")["tvTile"]["tileRenderer"])
+            m.assertEqual(feedback.notInterested, "TV_NI")
+            m.assertEqual(feedback.dontRecommend, "TV_DR")
+            m.assertInvalid(feedback.notInterestedUndo)
+        end function
+
+        @it("reads tokens and undo tokens from a WEB lockup sheet, by icon")
+        function _()
+            feedback = YourTubeLibrary.ParseFeedback(m.Fixture("library-feedback-menus.json")["webLockup"]["lockupViewModel"])
+            m.assertEqual(feedback.notInterested, "WEB_NI")
+            m.assertEqual(feedback.notInterestedUndo, "WEB_NI_UNDO")
+            m.assertEqual(feedback.dontRecommend, "WEB_DR")
+            m.assertEqual(feedback.dontRecommendUndo, "WEB_DR_UNDO")
+        end function
+
+        @it("reads Remove from watch history")
+        function _()
+            feedback = YourTubeLibrary.ParseFeedback(m.Fixture("library-feedback-menus.json")["webVideo"]["videoRenderer"])
+            m.assertEqual(feedback.removeFromHistory, "WEB_HIST")
+            m.assertInvalid(feedback.notInterested)
+        end function
+
+        @it("fills unlabeled tokens in menu order")
+        function _()
+            feedback = YourTubeLibrary.ParseFeedback(m.Fixture("library-feedback-menus.json")["unlabeled"]["tileRenderer"])
+            m.assertEqual(feedback.notInterested, "U1")
+            m.assertEqual(feedback.dontRecommend, "U2")
+            m.assertEqual(feedback.Count(), 2)
+        end function
+
+        @it("returns an empty object without menus")
+        function _()
+            m.assertEqual(YourTubeLibrary.ParseFeedback(invalid).Count(), 0)
+            m.assertEqual(YourTubeLibrary.ParseFeedback({ "videoId": "x" }).Count(), 0)
+        end function
+
+        @describe("YourTubeLibrary.ParseSetVideoId")
+
+        @it("reads the set id from a WEB playlist row and a TV tile")
+        function _()
+            fixture = m.Fixture("library-feedback-menus.json")
+            m.assertEqual(YourTubeLibrary.ParseSetVideoId(fixture["playlistWebVideo"]["playlistVideoRenderer"]), "SET_E")
+            m.assertEqual(YourTubeLibrary.ParseSetVideoId(fixture["playlistTvTile"]["tileRenderer"]), "SET_D")
+            m.assertEqual(YourTubeLibrary.ParseSetVideoId(fixture["tvTile"]["tileRenderer"]), "")
+            m.assertEqual(YourTubeLibrary.ParseSetVideoId(invalid), "")
+        end function
+
+        @describe("YourTubeLibrary.ParseNotifications")
+
+        @it("lists notifications with their targets")
+        function _()
+            items = YourTubeLibrary.ParseNotifications(m.Fixture("library-notifications.json"))
+            m.assertEqual(items.Count(), 2)
+            m.assertEqual(items[0].message, "Channel One uploaded: A new video")
+            m.assertEqual(items[0].time, "2 hours ago")
+            m.assertEqual(items[0].videoId, "vid00000001")
+            m.assertEqual(items[0].thumbnail, "https://yt3.ggpht.com/a=s88")
+            m.assertEqual(items[0].videoThumbnail, "https://i.ytimg.com/vi/vid00000001/hqdefault.jpg")
+            m.assertFalse(items[0].read)
+            m.assertEqual(items[1].message, "Channel Two is live now")
+            m.assertEqual(items[1].channelId, "UCchannel2")
+            m.assertEqual(items[1].videoId, "")
+            m.assertTrue(items[1].read)
+        end function
+
+        @it("reads the unseen count")
+        function _()
+            m.assertEqual(YourTubeLibrary.ParseUnseenCount({ "unseenCount": 4 }), 4)
+            m.assertEqual(YourTubeLibrary.ParseUnseenCount({ "actions": [{ "updateNotificationsUnseenCountAction": { "unseenCount": 2 } }] }), 2)
+            m.assertEqual(YourTubeLibrary.ParseUnseenCount({}), -1)
+        end function
+
+        @describe("YourTubeLibrary.FilterVideos")
+
+        @it("matches title, channel and lines ignoring case")
+        function _()
+            items = [
+                { "title": "Cats being cats", "author": "Pets" }
+                { "title": "Cooking pasta", "author": "Chef CATalina" }
+                { "title": "Rockets", "lines": ["Space channel", "1M views"] }
+            ]
+            m.assertEqual(YourTubeLibrary.FilterVideos(items, "cat").Count(), 2)
+            m.assertEqual(YourTubeLibrary.FilterVideos(items, "SPACE")[0].title, "Rockets")
+            m.assertEqual(YourTubeLibrary.FilterVideos(items, "  ").Count(), 3)
+            m.assertEqual(YourTubeLibrary.FilterVideos(items, "zzz").Count(), 0)
+        end function
+
+    end class
+
+end namespace

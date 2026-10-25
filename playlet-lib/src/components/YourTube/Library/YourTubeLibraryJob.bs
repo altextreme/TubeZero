@@ -1,0 +1,138 @@
+import "pkg:/components/ContentNode/ProfileContentAuthTokenUtils.bs"
+import "pkg:/components/YourTube/Library/YourTubeLibrary.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: library actions for the signed-in YouTube profile (InnerTube + the profile's OAuth token).
+' Input: { op, profile, ... } where op is
+'   "playlists"  { videoId }                        -> { playlists: [{ playlistId, title, contains, privacy }] }
+'   "edit"       { playlistId, videoId, add }       -> { playlistId, videoId, add }
+'   "move"       { playlistId, setVideoId, successorSetVideoId } -> {}
+'   "create"     { title, videoId }                 -> { playlistId, title }
+'   "feedback"   { token }                          -> {}
+'   "notifications" {}                              -> { items, client }
+'   "unseen"     {}                                 -> { count }
+@job("YourTubeLibraryJob")
+function ExecuteJob() as void
+    input = JobGetInput()
+    op = ValidString(input.op)
+    profile = input.profile
+    if profile = invalid or profile.type <> "youtube"
+        JobError("Needs a YouTube profile")
+        return
+    end if
+
+    auth = ProfileContentAuthTokenUtils.EnsureFreshAccessToken(profile)
+    if auth.state <> ProfileContentAuthTokenUtils.AccessTokenState.Ok
+        JobError("No usable access token: " + auth.state)
+        return
+    end if
+    token = ValidString(auth.token)
+    onBehalfOfUser = ValidString(auth.activeIdentifyToken)
+
+    if op = "playlists"
+        json = LibrarySend(YourTubeLibrary.AddToPlaylistPayload(ValidString(input.videoId)), token, onBehalfOfUser)
+        if json = invalid
+            return
+        end if
+        JobSuccessData({ playlists: YourTubeLibrary.ParseAddToPlaylist(json) })
+    else if op = "edit"
+        add = input.add = true
+        json = LibrarySend(YourTubeLibrary.EditPlaylistPayload(ValidString(input.playlistId), ValidString(input.videoId), add), token, onBehalfOfUser)
+        if json = invalid
+            return
+        end if
+        if not YourTubeLibrary.IsEditSuccess(json)
+            JobError("YouTube didn't accept the playlist change")
+            return
+        end if
+        JobSuccessData({ playlistId: ValidString(input.playlistId), videoId: ValidString(input.videoId), add: add })
+    else if op = "move"
+        json = LibrarySend(YourTubeLibrary.MoveBeforePayload(ValidString(input.playlistId), ValidString(input.setVideoId), ValidString(input.successorSetVideoId)), token, onBehalfOfUser)
+        if json = invalid
+            return
+        end if
+        if not YourTubeLibrary.IsEditSuccess(json)
+            JobError("YouTube didn't accept the move")
+            return
+        end if
+        JobSuccessData({})
+    else if op = "create"
+        title = ValidString(input.title)
+        json = LibrarySend(YourTubeLibrary.CreatePlaylistPayload(title, ValidString(input.videoId)), token, onBehalfOfUser)
+        if json = invalid
+            return
+        end if
+        playlistId = YourTubeLibrary.ParseCreatedPlaylistId(json)
+        if playlistId = ""
+            JobError("No playlist id in the response")
+            return
+        end if
+        JobSuccessData({ playlistId: playlistId, title: title })
+    else if op = "feedback"
+        json = LibrarySend(YourTubeLibrary.FeedbackPayload(ValidString(input.token)), token, onBehalfOfUser)
+        if json = invalid
+            return
+        end if
+        if not YourTubeLibrary.IsEditSuccess(json)
+            JobError("YouTube didn't accept the feedback")
+            return
+        end if
+        JobSuccessData({})
+    else if op = "notifications"
+        ' WEB first (the shape youtubei.js parses), TV if WEB refuses the TV sign-in or returns nothing.
+        items = []
+        usedClient = ""
+        errorText = ""
+        for each clientName in ["WEB", "TV"]
+            request = YourTubeLibrary.CreateRequest(YourTubeLibrary.NotificationsPayload(clientName), token, onBehalfOfUser)
+            request.Cancellation(JobGetCancellation())
+            response = request.Await()
+            if response.IsSuccess()
+                items = YourTubeLibrary.ParseNotifications(response.Json())
+                usedClient = clientName
+                if items.Count() > 0
+                    exit for
+                end if
+            else
+                errorText = response.ErrorMessage()
+            end if
+        end for
+        if usedClient = ""
+            JobError(errorText)
+            return
+        end if
+        JobSuccessData({ items: items, client: usedClient })
+    else if op = "unseen"
+        count = -1
+        for each clientName in ["WEB", "TV"]
+            request = YourTubeLibrary.CreateRequest(YourTubeLibrary.UnseenCountPayload(clientName), token, onBehalfOfUser)
+            request.Cancellation(JobGetCancellation())
+            response = request.Await()
+            if response.IsSuccess()
+                count = YourTubeLibrary.ParseUnseenCount(response.Json())
+                if count >= 0
+                    exit for
+                end if
+            end if
+        end for
+        JobSuccessData({ count: count })
+    else
+        JobError("Unknown op: " + op)
+    end if
+end function
+
+' The response JSON, or invalid after reporting the error (JobError) when the request fails.
+function LibrarySend(payload as object, token as string, onBehalfOfUser as string) as dynamic
+    request = YourTubeLibrary.CreateRequest(payload, token, onBehalfOfUser)
+    request.Cancellation(JobGetCancellation())
+    response = request.Await()
+    if not response.IsSuccess()
+        JobError(response.ErrorMessage())
+        return invalid
+    end if
+    json = response.Json()
+    if json = invalid
+        json = {}
+    end if
+    return json
+end function
