@@ -1,0 +1,28 @@
+<!--
+    TubeZero: fake "ambient" backdrop for opaque panels over the player. Roku can't blur, so the video's thumbnail is
+    decoded tiny (loadWidth/loadHeight = 1/10 of the panel, cropped to its shape) and drawn stretched to the panel
+    size, which reads as a heavy blur and costs almost no texture memory. A #0F0F0F scrim at 85% keeps text readable.
+    Set width/height first, then videoId (or uri).
+-->
+<component name="YourTubeThumbBackdrop" extends="Group">
+    <interface>
+        <field id="width" type="float" value="560" onChange="OnSizeChange" />
+        <field id="height" type="float" value="720" onChange="OnSizeChange" />
+        <field id="videoId" type="string" onChange="OnVideoIdChange" />
+        <field id="uri" type="string" alias="Thumb.uri" />
+    </interface>
+    <children>
+        <Poster
+            id="Thumb"
+            width="560"
+            height="720"
+            loadWidth="56"
+            loadHeight="72"
+            loadDisplayMode="zoomToFill" />
+        <Rectangle
+            id="Scrim"
+            width="560"
+            height="720"
+            color="0x0F0F0FD9" />
+    </children>
+</component>

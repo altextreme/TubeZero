@@ -1,0 +1,32 @@
+import "pkg:/source/utils/StringUtils.bs"
+
+' TubeZero: see YourTubeThumbBackdrop.xml
+
+' How much smaller than the panel the thumbnail is decoded (the "blur").
+const BLUR_FACTOR = 10
+
+function Init()
+    m.thumb = m.top.findNode("Thumb")
+    m.scrim = m.top.findNode("Scrim")
+end function
+
+function OnSizeChange() as void
+    width = m.top.width
+    height = m.top.height
+    m.thumb.width = width
+    m.thumb.height = height
+    m.thumb.loadWidth = Int(width / BLUR_FACTOR)
+    m.thumb.loadHeight = Int(height / BLUR_FACTOR)
+    m.scrim.width = width
+    m.scrim.height = height
+end function
+
+function OnVideoIdChange() as void
+    videoId = m.top.videoId
+    if StringUtils.IsNullOrEmpty(videoId)
+        m.thumb.uri = ""
+        return
+    end if
+    ' 320x180, no letterbox bars (default.jpg/hqdefault.jpg are 4:3 with black bars on 16:9 videos)
+    m.thumb.uri = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`
+end function

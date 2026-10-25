@@ -30,6 +30,7 @@ function OnVideoIdChange() as void
     m.slideIn.control = "start"
     NodeSetFocus(m.list, true)
 
+    m.top.findNode("Backdrop").videoId = m.top.videoId ' TubeZero
     if m.top.videoId <> ""
         QueueJob({ videoId: m.top.videoId })
     end if

@@ -14,6 +14,11 @@
                 width="560"
                 height="720"
                 color="0x212121FF" />
+            <!-- TubeZero: blurred, darkened thumbnail of the video behind the comments -->
+            <YourTubeThumbBackdrop
+                id="Backdrop"
+                width="560"
+                height="720" />
             <Label
                 id="Heading"
                 text="Comments"

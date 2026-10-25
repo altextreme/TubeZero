@@ -33,6 +33,10 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   Home, Subscriptions and You already keep their focused row and card when you leave and come back (root screens
   stay alive and RowList keeps its focus); the one reset found, You rebuilding its rows after a bookmark change,
   now returns to the row you were on.
+- Comments panel backdrop: the video's thumbnail (`mqdefault`) decoded at a tenth of the panel size and stretched,
+  which reads as a heavy blur, under a #0F0F0F scrim at 85% (`YourTubeThumbBackdrop`, reusable for other opaque
+  panels). Not added to the large pause icon, the Related row or live chat: those sit over the video itself, so the
+  paused frame already is the backdrop.
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote
