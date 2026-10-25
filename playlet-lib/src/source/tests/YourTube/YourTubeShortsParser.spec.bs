@@ -35,6 +35,7 @@ namespace Tests
             m.assertEqual(first.videoId, "cVNJH0wzv4g")
             m.assertEqual(first.thumbnail, "https://i.ytimg.com/vi/cVNJH0wzv4g/frame0.jpg")
             m.assertEqual(first.channel, "Rufus Goodboy")
+            m.assertEqual(first.channelId, "UC6T4TmdMIg3bPWd9at6vFRQ")
             m.assertTrue(first.title.StartsWith("Ranking My Funniest Dog Voiceovers"))
             m.assertEqual(sequence.shorts[9].videoId, "tFAPsS9Hzog")
             m.assertTrue(sequence.continuation.Len() > 20)
@@ -46,6 +47,7 @@ namespace Tests
             m.assertEqual(second.videoId, "UWOLSHz6ufg")
             m.assertEqual(second.title, "")
             m.assertEqual(second.channel, "")
+            m.assertEqual(second.channelId, "")
         end function
 
         @it("returns empty values for bad input")
@@ -102,11 +104,50 @@ namespace Tests
             m.assertEqual(info.likesText, "17K")
         end function
 
+        @it("reads the channel id and the comment count")
+        function _()
+            info = YourTubeShorts.ParseReelItem(m.Fixture("reel-item.json"))
+            m.assertEqual(info.channelId, "UC1TNXIu5eE5zzTypxR_VqXA")
+            m.assertEqual(info.commentsText, "738")
+        end function
+
+        @it("takes the channel id and comment count from the overlay alone")
+        function _()
+            data = m.Fixture("reel-item.json")
+            data["engagementPanels"] = []
+            info = YourTubeShorts.ParseReelItem(data)
+            m.assertEqual(info.channelId, "UC1TNXIu5eE5zzTypxR_VqXA")
+            m.assertEqual(info.commentsText, "738")
+        end function
+
+        @it("falls back to the comments panel header for the count, and ignores a count-less button")
+        function _()
+            data = m.Fixture("reel-item.json")
+            buttons = data["overlay"]["reelPlayerOverlayRenderer"]["playerOverlay"]["reelPlayerOverlayViewModel"]["actionBar"]["reelActionBarViewModel"]["buttonViewModels"]
+            buttons[1]["buttonViewModel"]["title"] = "Comments"
+            data["engagementPanels"][0]["engagementPanelSectionListRenderer"]["header"]["engagementPanelTitleHeaderRenderer"]["contextualInfo"]["runs"][0]["text"] = "1.2K"
+            m.assertEqual(YourTubeShorts.ParseReelItem(data).commentsText, "1.2K")
+            data["engagementPanels"] = []
+            m.assertEqual(YourTubeShorts.ParseReelItem(data).commentsText, "")
+        end function
+
         @it("returns empty values for bad input")
         function _()
             info = YourTubeShorts.ParseReelItem(invalid)
             m.assertEqual(info.title, "")
             m.assertEqual(info.likesText, "")
+            m.assertEqual(info.channelId, "")
+            m.assertEqual(info.commentsText, "")
+        end function
+
+        @describe("YourTubeShorts.ChannelIdOrEmpty")
+
+        @it("keeps UC channel ids only")
+        function _()
+            m.assertEqual(YourTubeShorts.ChannelIdOrEmpty("UC1TNXIu5eE5zzTypxR_VqXA"), "UC1TNXIu5eE5zzTypxR_VqXA")
+            m.assertEqual(YourTubeShorts.ChannelIdOrEmpty("FEhashtag"), "")
+            m.assertEqual(YourTubeShorts.ChannelIdOrEmpty(invalid), "")
+            m.assertEqual(YourTubeShorts.ChannelIdOrEmpty(12), "")
         end function
 
         @describe("YourTubeShorts.StatsLine")

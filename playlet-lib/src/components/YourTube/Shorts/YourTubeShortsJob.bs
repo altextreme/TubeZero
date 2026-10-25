@@ -7,7 +7,8 @@ import "pkg:/source/utils/Types.bs"
 ' YourTube: InnerTube (WEB client, signed out) calls for the Shorts tab.
 ' Input { op: "start", seedId? }   -> { shorts, continuation }  (seed: given id, else a random shorts search hit)
 '       { op: "more", continuation, lastVideoId } -> { shorts, continuation }
-'       { op: "info", videoId }    -> { videoId, title, channel, statsText, needsSystemFont }
+'       { op: "info", videoId }    -> { videoId, title, channel, statsText, channelId, likesText, commentsText,
+'                                       needsSystemFont }
 @job("YourTubeShortsJob")
 function ExecuteJob() as void
     input = JobGetInput()
@@ -33,6 +34,9 @@ function ExecuteJob() as void
             title: title.text
             channel: channel.text
             statsText: YourTubeShorts.StatsLine(parsed.viewsText, parsed.likesText)
+            channelId: parsed.channelId
+            likesText: parsed.likesText
+            commentsText: parsed.commentsText
             needsSystemFont: title.needsSystemFont or channel.needsSystemFont
         })
         return
@@ -49,7 +53,7 @@ function ExecuteJob() as void
         seed = invalid
         seedId = ValidString(input.seedId)
         if seedId <> ""
-            seed = { videoId: seedId, thumbnail: YourTubeShorts.ThumbnailUrl(seedId), title: "", channel: "", viewsText: "" }
+            seed = { videoId: seedId, thumbnail: YourTubeShorts.ThumbnailUrl(seedId), title: "", channel: "", channelId: "", viewsText: "" }
         else
             seed = SearchSeed(cancellation)
         end if

@@ -1,0 +1,60 @@
+' YourTube: renderer for the Shorts action column (see the .xml). Index order matches the screen's ACTION_* consts.
+
+function Init()
+    m.slots = []
+    for each name in ["ActLike", "ActDislike", "ActComments", "ActSubscribe"]
+        m.slots.Push({
+            circle: m.top.findNode(name + "Circle")
+            icon: m.top.findNode(name + "Icon")
+            label: m.top.findNode(name + "Label")
+        })
+    end for
+    Render()
+end function
+
+function Render() as void
+    likeLabel = m.top.likeText
+    if likeLabel = ""
+        likeLabel = "Like"
+    end if
+    commentsLabel = m.top.commentsText
+    if commentsLabel = ""
+        commentsLabel = "Comments"
+    end if
+    subscribeLabel = "Subscribe"
+    if m.top.subscribed
+        subscribeLabel = "Subscribed"
+    end if
+
+    likeIcon = "pkg:/images/icons/ms/like.png"
+    if m.top.liked
+        likeIcon = "pkg:/images/icons/ms/like_fill.png"
+    end if
+    dislikeIcon = "pkg:/images/icons/ms/dislike.png"
+    if m.top.disliked
+        dislikeIcon = "pkg:/images/icons/ms/dislike_fill.png"
+    end if
+    subscribeIcon = "pkg:/images/icons/ms/subscribe.png"
+    if m.top.subscribed
+        subscribeIcon = "pkg:/images/icons/ms/subscribed.png"
+    end if
+
+    m.slots[0].icon.uri = likeIcon
+    m.slots[1].icon.uri = dislikeIcon
+    m.slots[3].icon.uri = subscribeIcon
+    m.slots[0].label.text = likeLabel
+    m.slots[1].label.text = "Dislike"
+    m.slots[2].label.text = commentsLabel
+    m.slots[3].label.text = subscribeLabel
+
+    for i = 0 to m.slots.Count() - 1
+        slot = m.slots[i]
+        if i = m.top.focusIndex
+            slot.circle.blendColor = "#EBEBEBFF"
+            slot.icon.blendColor = "#161616FF"
+        else
+            slot.circle.blendColor = "#272727FF"
+            slot.icon.blendColor = "#EBEBEBFF"
+        end if
+    end for
+end function

@@ -3,7 +3,9 @@ import "pkg:/components/YourTube/YourTubeJson.bs"
 ' YourTube: pure helpers for the Shorts tab. InnerTube WEB responses:
 '   /search (shorts filter)        -> seed Shorts           (ParseSearchSeeds)
 '   /reel/reel_watch_sequence      -> the Shorts to swipe   (ParseSequence)
-'   /reel/reel_item_watch          -> title/channel/likes   (ParseReelItem)
+'   /reel/reel_item_watch          -> title/channel/likes/comments (ParseReelItem)
+' and, signed in, /browse FEsubscriptions (TV, WEB fallback) -> Shorts from your subscriptions
+' (ParseSubscriptionShorts).
 ' Parsed JSON AAs are case-sensitive, so every lookup goes through bracket keys / YourTubeJson.Dig.
 namespace YourTubeShorts
 
@@ -32,7 +34,8 @@ namespace YourTubeShorts
         return `https://i.ytimg.com/vi/${videoId}/frame0.jpg`
     end function
 
-    ' -> [{ videoId, thumbnail, title, viewsText }] from the shortsLockupViewModels of a shorts search
+    ' -> [{ videoId, thumbnail, title, channel, channelId, viewsText }] from the shortsLockupViewModels of a
+    ' shorts search
     function ParseSearchSeeds(json as dynamic) as object
         seeds = []
         seen = {}
@@ -70,11 +73,12 @@ namespace YourTubeShorts
             thumbnail: EndpointThumbnail(endpoint, videoId)
             title: YourTubeJson.AsString(YourTubeJson.Dig(lockup, ["overlayMetadata", "primaryText", "content"]))
             channel: ""
+            channelId: ""
             viewsText: YourTubeJson.AsString(YourTubeJson.Dig(lockup, ["overlayMetadata", "secondaryText", "content"]))
         })
     end function
 
-    ' -> { shorts: [{ videoId, thumbnail, title, channel, viewsText }], continuation }
+    ' -> { shorts: [{ videoId, thumbnail, title, channel, channelId, viewsText }], continuation }
     ' The sequence never repeats its seed; title/channel are only present for prefetched entries.
     function ParseSequence(json as dynamic) as object
         shorts = []
@@ -90,6 +94,7 @@ namespace YourTubeShorts
                         thumbnail: EndpointThumbnail(endpoint, videoId)
                         title: YourTubeJson.AsString(YourTubeJson.Dig(details, ["title"]))
                         channel: YourTubeJson.AsString(YourTubeJson.Dig(details, ["author"]))
+                        channelId: ChannelIdOrEmpty(YourTubeJson.Dig(details, ["channelId"]))
                         viewsText: ""
                     })
                 end if
@@ -107,14 +112,17 @@ namespace YourTubeShorts
         return url
     end function
 
-    ' -> { title, channel, viewsText, likesText } from reel_item_watch: the structured description panel first
-    ' (full title, channel name, "2,798,149 views", Likes factoid), then the player overlay as a fallback.
+    ' -> { title, channel, channelId, viewsText, likesText, commentsText } from reel_item_watch: the structured
+    ' description panel first (full title, channel name and id, "2,798,149 views", Likes factoid), then the player
+    ' overlay (channel bar: name and id; action bar: like and comment counts) and the comments panel's header.
     function ParseReelItem(json as dynamic) as object
-        info = { title: "", channel: "", viewsText: "", likesText: "" }
+        info = { title: "", channel: "", channelId: "", viewsText: "", likesText: "", commentsText: "" }
+        commentsHeaderText = ""
         panels = YourTubeJson.Dig(json, ["engagementPanels"])
         if YourTubeJson.IsArr(panels)
             for each panel in panels
-                items = YourTubeJson.Dig(panel, ["engagementPanelSectionListRenderer", "content", "structuredDescriptionContentRenderer", "items"])
+                section = YourTubeJson.Dig(panel, ["engagementPanelSectionListRenderer"])
+                items = YourTubeJson.Dig(section, ["content", "structuredDescriptionContentRenderer", "items"])
                 if YourTubeJson.IsArr(items)
                     for each item in items
                         title = YourTubeJson.AsString(YourTubeJson.Dig(item, ["videoTitleHeaderViewModel", "videoTitle", "content"]))
@@ -127,6 +135,9 @@ namespace YourTubeShorts
                         end if
                     end for
                 end if
+                if commentsHeaderText = "" and YourTubeJson.AsString(YourTubeJson.Dig(section, ["targetId"])) = "engagement-panel-comments-section"
+                    commentsHeaderText = YourTubeJson.RunsText(YourTubeJson.Dig(section, ["header", "engagementPanelTitleHeaderRenderer", "contextualInfo"]))
+                end if
             end for
         end if
 
@@ -137,29 +148,60 @@ namespace YourTubeShorts
                 if info.title = ""
                     info.title = YourTubeJson.AsString(YourTubeJson.Dig(item, ["shortsVideoTitleViewModel", "text", "content"]))
                 end if
-                if info.channel = ""
-                    info.channel = YourTubeJson.AsString(YourTubeJson.Dig(item, ["reelChannelBarViewModel", "channelName", "content"]))
+                channelBar = YourTubeJson.Dig(item, ["reelChannelBarViewModel"])
+                if YourTubeJson.IsAA(channelBar)
+                    ReadChannelBar(info, channelBar)
                 end if
             end for
         end if
-        if info.likesText = ""
-            buttons = YourTubeJson.Dig(overlay, ["actionBar", "reelActionBarViewModel", "buttonViewModels"])
-            if YourTubeJson.IsArr(buttons)
-                for each button in buttons
-                    likes = YourTubeJson.AsString(YourTubeJson.Dig(button, ["likeButtonViewModel", "toggleButtonViewModel", "toggleButtonViewModel", "defaultButtonViewModel", "buttonViewModel", "title"]))
-                    if likes <> ""
-                        info.likesText = likes
-                        exit for
-                    end if
-                end for
-            end if
+        buttons = YourTubeJson.Dig(overlay, ["actionBar", "reelActionBarViewModel", "buttonViewModels"])
+        if YourTubeJson.IsArr(buttons)
+            for each button in buttons
+                ReadActionButton(info, button)
+            end for
+        end if
+        if info.commentsText = "" and HasDigit(commentsHeaderText)
+            info.commentsText = commentsHeaderText
         end if
         return info
+    end function
+
+    function ReadChannelBar(info as object, channelBar as object) as void
+        if info.channel = ""
+            info.channel = YourTubeJson.AsString(YourTubeJson.Dig(channelBar, ["channelName", "content"]))
+        end if
+        if info.channelId = ""
+            info.channelId = ChannelIdOrEmpty(YourTubeJson.Dig(channelBar, ["channelName", "commandRuns", 0, "onTap", "innertubeCommand", "browseEndpoint", "browseId"]))
+        end if
+        if info.channelId = ""
+            info.channelId = ChannelIdOrEmpty(YourTubeJson.Dig(channelBar, ["decoratedAvatarViewModel", "decoratedAvatarViewModel", "rendererContext", "commandContext", "onTap", "innertubeCommand", "browseEndpoint", "browseId"]))
+        end if
+    end function
+
+    function ReadActionButton(info as object, button as dynamic) as void
+        if info.likesText = ""
+            info.likesText = YourTubeJson.AsString(YourTubeJson.Dig(button, ["likeButtonViewModel", "toggleButtonViewModel", "toggleButtonViewModel", "defaultButtonViewModel", "buttonViewModel", "title"]))
+        end if
+        if info.commentsText <> ""
+            return
+        end if
+        plain = YourTubeJson.Dig(button, ["buttonViewModel"])
+        if UCase(YourTubeJson.AsString(YourTubeJson.Dig(plain, ["iconName"]))).InStr("COMMENT") = -1
+            return
+        end if
+        ' "738" / "1.2K"; a button that just says "Comments" has no count
+        commentsTitle = YourTubeJson.AsString(YourTubeJson.Dig(plain, ["title"]))
+        if HasDigit(commentsTitle)
+            info.commentsText = commentsTitle
+        end if
     end function
 
     function ReadDescriptionHeader(info as object, header as object) as void
         if info.channel = ""
             info.channel = YourTubeJson.RunsText(header["channel"])
+        end if
+        if info.channelId = ""
+            info.channelId = ChannelIdOrEmpty(YourTubeJson.Dig(header, ["channelNavigationEndpoint", "browseEndpoint", "browseId"]))
         end if
         if info.viewsText = ""
             info.viewsText = YourTubeJson.RunsText(header["views"])
@@ -177,6 +219,19 @@ namespace YourTubeShorts
         end for
     end function
 
+    ' A UC... channel id, else "" (hashtag pages and other browse ids don't count).
+    function ChannelIdOrEmpty(value as dynamic) as string
+        id = YourTubeJson.AsString(value)
+        if id.Len() >= 20 and id.StartsWith("UC")
+            return id
+        end if
+        return ""
+    end function
+
+    function HasDigit(text as string) as boolean
+        return CreateObject("roRegex", "[0-9]", "").IsMatch(text)
+    end function
+
     ' "2,798,149 views" + "17K" -> "2,798,149 views  ·  17K likes"; either part may be empty.
     function StatsLine(viewsText as string, likesText as string) as string
         parts = []
@@ -187,6 +242,163 @@ namespace YourTubeShorts
             parts.Push(likesText + " likes")
         end if
         return parts.Join("  ·  ")
+    end function
+
+    '---------------------------------------------------------------------------
+    ' Shorts from your subscriptions.
+    '---------------------------------------------------------------------------
+
+    ' -> [{ videoId, thumbnail, title, channel, channelId, viewsText }]: every Short in a subscriptions feed, in
+    ' feed order, without duplicates. The signed-in shape can't be captured ahead of time, so this looks anywhere
+    ' for TV tiles of type SHORTS (or that open a reel), shortsLockupViewModel and reelItemRenderer entries, video
+    ' renderers with the SHORTS overlay or a reel endpoint, and as a last resort any reelWatchEndpoint.
+    ' Regular videos are skipped.
+    function ParseSubscriptionShorts(json as dynamic, maxCount = 100 as integer) as object
+        shorts = []
+        seen = CreateObject("roAssociativeArray")
+        seen.SetModeCaseSensitive()
+        CollectShorts(json, shorts, seen, maxCount, 0)
+        return shorts
+    end function
+
+    function CollectShorts(node as dynamic, shorts as object, seen as object, maxCount as integer, depth as integer) as void
+        if depth > 40 or shorts.Count() >= maxCount
+            return
+        end if
+        if YourTubeJson.IsAA(node)
+            for each key in node
+                child = node[key]
+                if YourTubeJson.IsAA(child)
+                    item = ShortFromEntry(key, child)
+                    if item <> invalid
+                        if not seen.DoesExist(item.videoId) and shorts.Count() < maxCount
+                            seen[item.videoId] = true
+                            shorts.Push(item)
+                        end if
+                        continue for
+                    end if
+                end if
+                CollectShorts(child, shorts, seen, maxCount, depth + 1)
+            end for
+        else if YourTubeJson.IsArr(node)
+            for each child in node
+                CollectShorts(child, shorts, seen, maxCount, depth + 1)
+            end for
+        end if
+    end function
+
+    ' A Short from one keyed feed entry ("tileRenderer": {...}), or invalid when the entry isn't one.
+    function ShortFromEntry(key as string, entry as object) as dynamic
+        item = invalid
+        if key = "tileRenderer"
+            item = ShortFromTile(entry)
+        else if key = "shortsLockupViewModel"
+            item = NewShort(YourTubeJson.AsString(YourTubeJson.Dig(entry, ["onTap", "innertubeCommand", "reelWatchEndpoint", "videoId"])))
+            if item <> invalid
+                item.title = YourTubeJson.AsString(YourTubeJson.Dig(entry, ["overlayMetadata", "primaryText", "content"]))
+                item.viewsText = YourTubeJson.AsString(YourTubeJson.Dig(entry, ["overlayMetadata", "secondaryText", "content"]))
+            end if
+        else if key = "reelItemRenderer"
+            item = NewShort(YourTubeJson.AsString(entry["videoId"]))
+            if item <> invalid
+                item.title = YourTubeJson.RunsText(entry["headline"])
+                item.viewsText = YourTubeJson.RunsText(entry["viewCountText"])
+            end if
+        else if key = "videoRenderer" or key = "gridVideoRenderer" or key = "compactVideoRenderer"
+            item = ShortFromVideoRenderer(entry)
+        else if key = "reelWatchEndpoint"
+            item = NewShort(YourTubeJson.AsString(entry["videoId"]))
+        end if
+        return item
+    end function
+
+    function NewShort(videoId as string) as dynamic
+        if videoId = ""
+            return invalid
+        end if
+        return { videoId: videoId, thumbnail: ThumbnailUrl(videoId), title: "", channel: "", channelId: "", viewsText: "" }
+    end function
+
+    function ShortFromTile(tile as object) as dynamic
+        videoId = ""
+        if YourTubeJson.AsString(tile["contentType"]) = "TILE_CONTENT_TYPE_SHORTS"
+            videoId = YourTubeJson.AsString(tile["contentId"])
+        end if
+        if videoId = ""
+            videoId = YourTubeJson.AsString(YourTubeJson.Dig(tile, ["onSelectCommand", "reelWatchEndpoint", "videoId"]))
+        end if
+        item = NewShort(videoId)
+        if item = invalid
+            return invalid
+        end if
+        item.title = YourTubeJson.RunsText(YourTubeJson.Dig(tile, ["metadata", "tileMetadataRenderer", "title"]))
+        overlays = YourTubeJson.Dig(tile, ["header", "tileHeaderRenderer", "thumbnailOverlays"])
+        if item.title = "" and YourTubeJson.IsArr(overlays)
+            for each overlay in overlays
+                item.title = YourTubeJson.RunsText(YourTubeJson.Dig(overlay, ["tileMetadataRenderer", "title"]))
+                if item.title <> ""
+                    exit for
+                end if
+            end for
+        end if
+        item.channelId = FindChannelId(tile, 0)
+        return item
+    end function
+
+    function ShortFromVideoRenderer(renderer as object) as dynamic
+        isShort = YourTubeJson.AsString(YourTubeJson.Dig(renderer, ["navigationEndpoint", "reelWatchEndpoint", "videoId"])) <> ""
+        overlays = renderer["thumbnailOverlays"]
+        if not isShort and YourTubeJson.IsArr(overlays)
+            for each overlay in overlays
+                if YourTubeJson.AsString(YourTubeJson.Dig(overlay, ["thumbnailOverlayTimeStatusRenderer", "style"])) = "SHORTS"
+                    isShort = true
+                    exit for
+                end if
+            end for
+        end if
+        if not isShort
+            return invalid
+        end if
+        item = NewShort(YourTubeJson.AsString(renderer["videoId"]))
+        if item = invalid
+            return invalid
+        end if
+        item.title = YourTubeJson.RunsText(renderer["title"])
+        byline = renderer["shortBylineText"]
+        if not YourTubeJson.IsAA(byline)
+            byline = renderer["ownerText"]
+        end if
+        item.channel = YourTubeJson.RunsText(byline)
+        item.channelId = ChannelIdOrEmpty(YourTubeJson.Dig(byline, ["runs", 0, "navigationEndpoint", "browseEndpoint", "browseId"]))
+        item.viewsText = YourTubeJson.RunsText(renderer["viewCountText"])
+        return item
+    end function
+
+    ' The first UC browse id inside an entry (a TV tile's only channel link is its owner's), else "".
+    function FindChannelId(node as dynamic, depth as integer) as string
+        if depth > 12
+            return ""
+        end if
+        if YourTubeJson.IsAA(node)
+            id = ChannelIdOrEmpty(YourTubeJson.Dig(node, ["browseEndpoint", "browseId"]))
+            if id <> ""
+                return id
+            end if
+            for each childKey in node
+                id = FindChannelId(node[childKey], depth + 1)
+                if id <> ""
+                    return id
+                end if
+            end for
+        else if YourTubeJson.IsArr(node)
+            for each child in node
+                id = FindChannelId(child, depth + 1)
+                if id <> ""
+                    return id
+                end if
+            end for
+        end if
+        return ""
     end function
 
 end namespace

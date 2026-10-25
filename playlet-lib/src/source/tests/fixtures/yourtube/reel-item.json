@@ -9,7 +9,20 @@
         {
          "reelChannelBarViewModel": {
           "channelName": {
-           "content": "@ItsRankVault"
+           "content": "@ItsRankVault",
+           "commandRuns": [
+            {
+             "startIndex": 0,
+             "length": 13,
+             "onTap": {
+              "innertubeCommand": {
+               "browseEndpoint": {
+                "browseId": "UC1TNXIu5eE5zzTypxR_VqXA"
+               }
+              }
+             }
+            }
+           ]
           }
          }
         },
@@ -39,6 +52,20 @@
            }
           }
          }
+        },
+        {
+         "buttonViewModel": {
+          "iconName": "SHORTS_COMMENT",
+          "title": "738",
+          "accessibilityText": "View 738 comments"
+         }
+        },
+        {
+         "buttonViewModel": {
+          "iconName": "SHORTS_SHARE",
+          "title": "Share",
+          "accessibilityText": "Share"
+         }
         }
        ]
       }
@@ -48,6 +75,29 @@
   }
  },
  "engagementPanels": [
+  {
+   "engagementPanelSectionListRenderer": {
+    "targetId": "engagement-panel-comments-section",
+    "header": {
+     "engagementPanelTitleHeaderRenderer": {
+      "title": {
+       "runs": [
+        {
+         "text": "Comments"
+        }
+       ]
+      },
+      "contextualInfo": {
+       "runs": [
+        {
+         "text": "738"
+        }
+       ]
+      }
+     }
+    }
+   }
+  },
   {
    "engagementPanelSectionListRenderer": {
     "targetId": "engagement-panel-structured-description",
@@ -117,6 +167,11 @@
            }
           }
          ],
+         "channelNavigationEndpoint": {
+          "browseEndpoint": {
+           "browseId": "UC1TNXIu5eE5zzTypxR_VqXA"
+          }
+         },
          "channelThumbnail": {
           "thumbnails": [
            {

@@ -1,0 +1,45 @@
+<!--
+    YourTube: the round action buttons right of the Shorts frame, like the YouTube TV Shorts player:
+    Like (with count), Dislike, Comments (with count) and Subscribe. Display only: the screen owns the keys and
+    sets focusIndex (-1 while the frame has focus) and the like / subscribe state.
+-->
+<component name="YourTubeShortsActions" extends="Group">
+    <interface>
+        <field id="focusIndex" type="integer" value="-1" onChange="Render" />
+        <field id="liked" type="boolean" onChange="Render" />
+        <field id="disliked" type="boolean" onChange="Render" />
+        <field id="subscribed" type="boolean" onChange="Render" />
+        <field id="likeText" type="string" onChange="Render" />
+        <field id="commentsText" type="string" onChange="Render" />
+    </interface>
+    <children>
+        <Group id="ActLikeSlot" translation="[0,0]">
+            <Poster id="ActLikeCircle" uri="pkg:/images/white-circle.png" width="64" height="64" translation="[18,0]" />
+            <Poster id="ActLikeIcon" width="32" height="32" translation="[34,16]" />
+            <Label id="ActLikeLabel" width="100" horizAlign="center" translation="[0,70]" color="0xF1F1F1FF">
+                <Font role="font" uri="font:MediumSystemFontFile" size="16" />
+            </Label>
+        </Group>
+        <Group id="ActDislikeSlot" translation="[0,104]">
+            <Poster id="ActDislikeCircle" uri="pkg:/images/white-circle.png" width="64" height="64" translation="[18,0]" />
+            <Poster id="ActDislikeIcon" width="32" height="32" translation="[34,16]" />
+            <Label id="ActDislikeLabel" width="100" horizAlign="center" translation="[0,70]" color="0xF1F1F1FF">
+                <Font role="font" uri="font:MediumSystemFontFile" size="16" />
+            </Label>
+        </Group>
+        <Group id="ActCommentsSlot" translation="[0,208]">
+            <Poster id="ActCommentsCircle" uri="pkg:/images/white-circle.png" width="64" height="64" translation="[18,0]" />
+            <Poster id="ActCommentsIcon" uri="pkg:/images/icons/ms/comment.png" width="32" height="32" translation="[34,16]" />
+            <Label id="ActCommentsLabel" width="100" horizAlign="center" translation="[0,70]" color="0xF1F1F1FF">
+                <Font role="font" uri="font:MediumSystemFontFile" size="16" />
+            </Label>
+        </Group>
+        <Group id="ActSubscribeSlot" translation="[0,312]">
+            <Poster id="ActSubscribeCircle" uri="pkg:/images/white-circle.png" width="64" height="64" translation="[18,0]" />
+            <Poster id="ActSubscribeIcon" width="32" height="32" translation="[34,16]" />
+            <Label id="ActSubscribeLabel" width="100" horizAlign="center" translation="[0,70]" color="0xF1F1F1FF">
+                <Font role="font" uri="font:MediumSystemFontFile" size="16" />
+            </Label>
+        </Group>
+    </children>
+</component>

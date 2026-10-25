@@ -21,6 +21,14 @@ const FRAME_H = 640
 const PREFETCH_DISTANCE = 3
 ' consecutive Shorts that failed to play before giving up on auto-skipping
 const MAX_FAILURES = 3
+' YourTube: the action column's buttons (YourTubeShortsActions renders them in this order)
+const ACTION_LIKE = 0
+const ACTION_DISLIKE = 1
+const ACTION_COMMENTS = 2
+const ACTION_SUBSCRIBE = 3
+const ACTION_COUNT = 4
+' how far the stage (and the player on it) slides left while the comments panel is docked on the right
+const COMMENTS_SHIFT = 400
 
 function Init()
     m.keySink = m.top.findNode("KeySink")
@@ -34,6 +42,12 @@ function Init()
     m.statsLabel = m.top.findNode("StatsLabel")
     m.playStateLabel = m.top.findNode("PlayStateLabel")
     m.keyHint = m.top.findNode("KeyHint")
+    m.sideKeyHint = m.top.findNode("SideKeyHint")
+    m.infoGroup = m.top.findNode("InfoGroup")
+    m.sideHints = m.top.findNode("SideHints")
+    m.actions = m.top.findNode("Actions")
+    m.comments = m.top.findNode("ShortsComments")
+    m.toast = m.top.findNode("ShortsToast")
     m.revealTimer = m.top.findNode("RevealTimer")
     m.skipTimer = m.top.findNode("SkipTimer")
     m.blurTimer = m.top.findNode("BlurTimer")
@@ -57,6 +71,13 @@ function Init()
     m.savedQueueIndex = -1
     m.queuedIds = {}
     m.failures = 0
+
+    ' "frame" (Up/Down = Shorts), "actions" (the button column) or "comments" (the panel has focus)
+    m.focusArea = "frame"
+    m.actionIndex = ACTION_LIKE
+    m.frameShift = 0
+    m.stateJob = invalid
+    m.pendingActions = {}
     m.top.focusable = true
 end function
 
@@ -70,6 +91,7 @@ function OnNodeReady()
     m.skipTimer.ObserveField("fire", FuncName(OnSkipTimer))
     m.blurTimer.ObserveField("fire", FuncName(OnBlurTimer))
     m.messageState.ObserveField("selected", FuncName(OnRetrySelected))
+    m.comments.ObserveField("closed", FuncName(OnCommentsClosed))
     m.videoQueue.ObserveField("player", FuncName(OnQueuePlayerChange))
     ' AppScreens slides right while the nav is open; the player (in the video container) has to follow
     m.screensContainer = m.top.getParent()
@@ -150,6 +172,7 @@ function StartPlayback() as void
 end function
 
 function StopPlayback() as void
+    ResetLayout()
     m.skipTimer.control = "stop"
     m.revealTimer.control = "stop"
     m.pendingAdvance = false
@@ -281,7 +304,7 @@ function ApplyPlayerRect() as void
     if m.screensContainer <> invalid
         offsetX = m.screensContainer.translation[0]
     end if
-    x = FRAME_X + offsetX
+    x = FRAME_X - m.frameShift + offsetX
     ' minRect too: the player sizes itself from it in OnNodeReady, which may still be ahead of it
     player.minRect = [x, FRAME_Y, FRAME_W, FRAME_H]
     player.width = FRAME_W
@@ -302,10 +325,10 @@ function OnPlayerState(event as object) as void
         RevealPlayer()
         m.failures = 0
         m.playStateLabel.text = ""
-        m.keyHint.text = "OK  Pause"
+        UpdateKeyHints()
     else if state = "paused"
         m.playStateLabel.text = "Paused"
-        m.keyHint.text = "OK  Play"
+        UpdateKeyHints()
     end if
 end function
 
@@ -337,6 +360,7 @@ function OnQueuePlayerChange() as void
     m.active = false
     m.ownsContainer = false
     m.queuedIds = {}
+    ResetLayout()
     m.videoQueue.videoContainer.fullscreen = true
     NodeSetFocus(player, true)
 end function
@@ -402,7 +426,9 @@ function ShowCurrent() as void
     m.channelLabel.text = item.channel
     m.statsLabel.text = item.statsText
     m.playStateLabel.text = ""
-    m.keyHint.text = "OK  Pause / play"
+    UpdateKeyHints()
+    UpdateActions()
+    LoadAccountState(item)
     if m.index + 1 < m.shorts.Count()
         m.preloadThumb.uri = m.shorts[m.index + 1].thumbnail
     end if
@@ -448,11 +474,17 @@ function OnInfoDone(event as object) as void
             if ValidString(data.statsText) <> ""
                 item.statsText = data.statsText
             end if
+            if ValidString(data.channelId) <> ""
+                item.channelId = data.channelId
+            end if
+            item.likesText = ValidString(data.likesText)
+            item.commentsText = ValidString(data.commentsText)
             item.infoLoaded = true
             if i = m.index
                 m.titleLabel.text = item.title
                 m.channelLabel.text = item.channel
                 m.statsLabel.text = item.statsText
+                UpdateActions()
             end if
             exit for
         end if
@@ -509,7 +541,14 @@ function OnLoadDone(event as object) as void
                 thumbnail: ValidString(entry.thumbnail)
                 title: ValidString(entry.title)
                 channel: ValidString(entry.channel)
+                channelId: ValidString(entry.channelId)
                 statsText: ValidString(entry.viewsText)
+                likesText: ""
+                commentsText: ""
+                liked: false
+                disliked: false
+                subscribed: false
+                stateLoaded: false
                 infoLoaded: false
             })
             added += 1
@@ -547,6 +586,9 @@ end function
 '-------------------------------------------------------------------------------
 function ShowMessage(title as string, message as string, actionText as string) as void
     StopPlayback()
+    m.focusArea = "frame"
+    UpdateActions()
+    UpdateKeyHints()
     m.stage.visible = false
     m.messageState.title = title
     m.messageState.message = message
@@ -591,6 +633,10 @@ function OnKeyEvent(key as string, press as boolean) as boolean
     if key = RemoteKeys.Options
         return true
     end if
+    ' YourTube: the action column handles its own Left/Back (back to the frame) ahead of the nav's
+    if press and m.focusArea = "actions" and not m.messageState.visible
+        return OnActionsKey(key)
+    end if
     if NavigationKeyHandler(key, press).handled
         return true
     end if
@@ -610,7 +656,273 @@ function OnKeyEvent(key as string, press as boolean) as boolean
         TogglePause()
         return true
     else if key = RemoteKeys.Right
+        ' YourTube: into the action column
+        if CurrentItem() <> invalid
+            SetFocusArea("actions")
+        end if
         return true
     end if
     return false
+end function
+
+function OnActionsKey(key as string) as boolean
+    if key = RemoteKeys.Left or key = RemoteKeys.Back
+        SetFocusArea("frame")
+        return true
+    else if key = RemoteKeys.Up
+        if m.actionIndex > 0
+            m.actionIndex -= 1
+            UpdateActions()
+        end if
+        return true
+    else if key = RemoteKeys.Down
+        if m.actionIndex < ACTION_COUNT - 1
+            m.actionIndex += 1
+            UpdateActions()
+        end if
+        return true
+    else if key = RemoteKeys.Ok
+        ActivateAction(m.actionIndex)
+        return true
+    else if key = RemoteKeys.Right
+        return true
+    end if
+    return false
+end function
+
+'-------------------------------------------------------------------------------
+' YourTube: action column (like / dislike / comments / subscribe).
+'-------------------------------------------------------------------------------
+function SetFocusArea(area as string) as void
+    m.focusArea = area
+    NodeSetFocus(m.keySink, true)
+    UpdateActions()
+    UpdateKeyHints()
+end function
+
+function UpdateKeyHints() as void
+    if m.focusArea = "actions"
+        m.keyHint.text = "OK  Select"
+        m.sideKeyHint.text = "Left  Back to the Short"
+        return
+    end if
+    state = ""
+    if m.player <> invalid
+        state = m.player.state
+    end if
+    if state = "playing"
+        m.keyHint.text = "OK  Pause"
+    else if state = "paused"
+        m.keyHint.text = "OK  Play"
+    else
+        m.keyHint.text = "OK  Pause / play"
+    end if
+    m.sideKeyHint.text = "Right  Like, comments"
+end function
+
+function CurrentItem() as dynamic
+    if m.index < 0 or m.index >= m.shorts.Count()
+        return invalid
+    end if
+    return m.shorts[m.index]
+end function
+
+function UpdateActions() as void
+    item = CurrentItem()
+    focusIndex = -1
+    if m.focusArea = "actions"
+        focusIndex = m.actionIndex
+    else if m.focusArea = "comments"
+        focusIndex = ACTION_COMMENTS
+    end if
+    if item = invalid
+        m.actions.likeText = ""
+        m.actions.commentsText = ""
+        m.actions.liked = false
+        m.actions.disliked = false
+        m.actions.subscribed = false
+    else
+        m.actions.likeText = item.likesText
+        m.actions.commentsText = item.commentsText
+        m.actions.liked = item.liked
+        m.actions.disliked = item.disliked
+        m.actions.subscribed = item.subscribed
+    end if
+    m.actions.focusIndex = focusIndex
+end function
+
+function CurrentProfile() as dynamic
+    if m.profilesService = invalid
+        return invalid
+    end if
+    return m.profilesService.currentProfile
+end function
+
+function IsYouTubeProfile(profile as dynamic) as boolean
+    return profile <> invalid and profile.type = "youtube"
+end function
+
+' Your like / subscribe state for a Short, once per Short (signed in only).
+function LoadAccountState(item as object) as void
+    if item.stateLoaded
+        return
+    end if
+    profile = CurrentProfile()
+    if not IsYouTubeProfile(profile)
+        return
+    end if
+    if m.stateJob <> invalid
+        JobSystem.UnobserveCallback(m.stateJob)
+        m.stateJob.cancel = true
+    end if
+    m.stateJob = JobSystem.CreateCallback(OnAccountStateLoaded)
+    JobSystem.QueueJob(m.jobQueue, Jobs.YourTubeVideoStateJob, { videoId: item.videoId, profile: profile }, m.stateJob)
+end function
+
+function OnAccountStateLoaded(event as object) as void
+    JobSystem.UnobserveCallback(event.getRoSGNode())
+    m.stateJob = invalid
+    info = event.getInfo()
+    if not info.success
+        return
+    end if
+    data = info.data
+    videoId = ValidString(data.videoId)
+    for each item in m.shorts
+        if item.videoId = videoId
+            item.stateLoaded = true
+            item.liked = data.likeStatus = "LIKE"
+            item.disliked = data.likeStatus = "DISLIKE"
+            if data.subscribed = true or data.subscribed = false
+                item.subscribed = data.subscribed
+            end if
+            exit for
+        end if
+    end for
+    UpdateActions()
+end function
+
+function ActivateAction(index as integer) as void
+    item = CurrentItem()
+    if item = invalid
+        return
+    end if
+    if index = ACTION_COMMENTS
+        OpenComments(item)
+        return
+    end if
+    profile = CurrentProfile()
+    if not IsYouTubeProfile(profile)
+        m.toast.text = "Sign in with YouTube from Profile first"
+        return
+    end if
+
+    previous = { liked: item.liked, disliked: item.disliked, subscribed: item.subscribed }
+    targetId = item.videoId
+    action = ""
+    message = ""
+    if index = ACTION_LIKE
+        if item.liked
+            action = "removelike"
+            message = "Like removed"
+        else
+            action = "like"
+            message = "Liked"
+        end if
+        item.liked = not item.liked
+        item.disliked = false
+    else if index = ACTION_DISLIKE
+        if item.disliked
+            action = "removelike"
+            message = "Dislike removed"
+        else
+            action = "dislike"
+            message = "Disliked"
+        end if
+        item.disliked = not item.disliked
+        item.liked = false
+    else if index = ACTION_SUBSCRIBE
+        targetId = ValidString(item.channelId)
+        if targetId = ""
+            m.toast.text = "Couldn't find this Short's channel"
+            return
+        end if
+        if item.subscribed
+            action = "unsubscribe"
+            message = "Unsubscribed"
+        else
+            action = "subscribe"
+            message = "Subscribed"
+        end if
+        item.subscribed = not item.subscribed
+    end if
+    if action = ""
+        return
+    end if
+    m.toast.text = message
+    UpdateActions()
+
+    callback = JobSystem.CreateCallback(OnAccountActionDone)
+    m.pendingActions[callback.id] = { videoId: item.videoId, previous: previous }
+    JobSystem.QueueJob(m.jobQueue, Jobs.YourTubeAccountActionJob, { action: action, videoId: targetId, profile: profile }, callback)
+end function
+
+' The buttons flip right away; a failed request flips them back.
+function OnAccountActionDone(event as object) as void
+    callback = event.getRoSGNode()
+    JobSystem.UnobserveCallback(callback)
+    pending = m.pendingActions[callback.id]
+    m.pendingActions.Delete(callback.id)
+    if event.getInfo().success or pending = invalid
+        return
+    end if
+    for each item in m.shorts
+        if item.videoId = pending.videoId
+            item.liked = pending.previous.liked
+            item.disliked = pending.previous.disliked
+            item.subscribed = pending.previous.subscribed
+            exit for
+        end if
+    end for
+    UpdateActions()
+    m.toast.text = "Couldn't update your account. Try again."
+end function
+
+' The comments panel docks on the right; the stage (and the player on it) slides left out of its way.
+function OpenComments(item as object) as void
+    m.frameShift = COMMENTS_SHIFT
+    m.stage.translation = [-COMMENTS_SHIFT, 0]
+    m.infoGroup.visible = false
+    m.sideHints.visible = false
+    ApplyPlayerRect()
+    m.focusArea = "comments"
+    UpdateActions()
+    m.comments.jobQueue = m.jobQueue
+    m.comments.visible = true
+    ' the panel takes focus itself; it's inside this screen, so playback keeps going
+    m.comments.videoId = item.videoId
+end function
+
+function OnCommentsClosed() as void
+    ResetLayout()
+    SetFocusArea("actions")
+end function
+
+' Comments closed (or the screen is letting go of the player): stage back in place.
+function ResetLayout() as void
+    if m.comments.visible
+        m.comments.visible = false
+    end if
+    if m.focusArea = "comments"
+        m.focusArea = "actions"
+        m.actionIndex = ACTION_COMMENTS
+    end if
+    if m.frameShift = 0
+        return
+    end if
+    m.frameShift = 0
+    m.stage.translation = [0, 0]
+    m.infoGroup.visible = true
+    m.sideHints.visible = true
+    ApplyPlayerRect()
 end function
