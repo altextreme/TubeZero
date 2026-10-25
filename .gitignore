@@ -20,3 +20,6 @@ playlet-web/stats.html
 
 # YourTube: reference photos of the official app stay local (Google's images)
 reference/*.png
+
+# agent worktrees
+.claude/worktrees/
