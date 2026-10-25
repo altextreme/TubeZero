@@ -80,6 +80,14 @@
         type: "boolean",
         defaultValue: false,
       },
+      // TubeZero: YourTubeText.FixCaps (synced to the global ytFixCapsTitles field by Preferences.bs)
+      {
+        displayText: "Fix ALL-CAPS titles",
+        key: "content_feed.fix_caps_titles",
+        description: "Show titles written in all capitals in sentence case, keeping acronyms like NBA or 4K.",
+        type: "boolean",
+        defaultValue: true,
+      },
       // TubeZero: blocklist (YourTubeBlocklist), comma-separated
       {
         displayText: "Blocked channels",

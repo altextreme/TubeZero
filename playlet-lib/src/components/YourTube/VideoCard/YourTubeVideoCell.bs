@@ -177,7 +177,7 @@ function ShowChips(badges as dynamic) as void
 end function
 
 function SetTitle(text as string) as void
-    cleaned = YourTubeText.Clean(text)
+    cleaned = YourTubeText.CleanTitle(text) ' TubeZero: also ALL-CAPS -> sentence case
     if cleaned.needsSystemFont
         m.titleLabel.font = m.systemTitleFont
     else

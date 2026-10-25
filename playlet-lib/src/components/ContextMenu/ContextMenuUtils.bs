@@ -45,8 +45,12 @@ namespace ContextMenuUtils
             thumbnail = item.thumbnail
         end if
 
-        ' YourTube: drop emoji (no glyphs in Roboto)
-        contextMenu.title = YourTubeText.Clean(title).text
+        ' YourTube: drop emoji (no glyphs in Roboto); video/playlist titles also ALL-CAPS -> sentence case
+        if item.type = "channel"
+            contextMenu.title = YourTubeText.Clean(title).text
+        else
+            contextMenu.title = YourTubeText.CleanTitle(title).text
+        end if
         contextMenu.subtitle = subtitle
         contextMenu.thumbnail = thumbnail
     end function

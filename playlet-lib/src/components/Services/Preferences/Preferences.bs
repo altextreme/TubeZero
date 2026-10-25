@@ -18,6 +18,20 @@ function Init()
     AddNodeFields()
     LoadUserPreferencesFromRegistry()
     AddNodeFieldsObservers()
+    SyncYourTubeGlobals() ' YourTube
+end function
+
+' YourTube: YourTubeText.CleanTitle runs in cards and jobs that have no Preferences node; mirror the setting.
+function SyncYourTubeGlobals() as void
+    if not m.global.hasField("ytFixCapsTitles")
+        m.global.addFields({ ytFixCapsTitles: true })
+    end if
+    OnYourTubeFixCapsChange()
+    m.top.observeField("content_feed.fix_caps_titles", FuncName(OnYourTubeFixCapsChange))
+end function
+
+function OnYourTubeFixCapsChange() as void
+    m.global.ytFixCapsTitles = m.top["content_feed.fix_caps_titles"] <> false
 end function
 
 function LoadPreferencesFile()

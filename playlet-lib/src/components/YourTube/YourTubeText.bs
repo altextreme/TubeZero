@@ -31,6 +31,200 @@ namespace YourTubeText
         return { text: cleaned.Trim(), needsSystemFont: needsSystemFont }
     end function
 
+    ' TubeZero: Clean() for video titles, plus ALL-CAPS -> sentence case when content_feed.fix_caps_titles is on
+    ' (mirrored to the global ytFixCapsTitles field by Preferences; on when the field isn't there yet).
+    function CleanTitle(text as string) as object
+        cleaned = Clean(text)
+        if FixCapsEnabled()
+            cleaned.text = FixCaps(cleaned.text)
+        end if
+        return cleaned
+    end function
+
+    function FixCapsEnabled() as boolean
+        globalNode = GetGlobalAA().global
+        if globalNode = invalid or not globalNode.hasField("ytFixCapsTitles")
+            return true
+        end if
+        return globalNode.ytFixCapsTitles = true
+    end function
+
+    ' TubeZero: "I BUILT A 4K NBA COURT IN MY BACKYARD!" -> "I built a 4K NBA court in my backyard!"
+    ' Only when at least 80% of the letters (and 6 or more) are capitals. Kept as they are: known acronyms,
+    ' two-letter words that aren't common English words (VR, UK, TV), words with digits (4K, PS5, 1080P),
+    ' hashtags and @handles, and Roman numerals. The first word of each sentence (and after " - " / " | ")
+    ' is capitalized, and so is "I".
+    function FixCaps(text as string) as string
+        if not IsMostlyCaps(text)
+            return text
+        end if
+        acronyms = CapsAcronyms()
+        commonShort = CapsCommonShortWords()
+        result = ""
+        capitalizeNext = true
+        parts = text.Split(" ")
+        for i = 0 to parts.Count() - 1
+            word = parts[i]
+            fixed = word
+            ' a word already in mixed case ("iPhone", "McDonald's") was typed that way on purpose
+            if word <> "" and word = UCase(word)
+                fixed = FixCapsWord(word, acronyms, commonShort)
+                if capitalizeNext
+                    fixed = CapitalizeFirstLetter(fixed)
+                end if
+            end if
+            if word <> ""
+                ' a leading hashtag ("#SHORTS FUNNY CAT") doesn't use up the sentence start
+                capitalizeNext = EndsSentence(word) or (capitalizeNext and word.Left(1) = "#")
+            end if
+            if i > 0
+                result += " "
+            end if
+            result += fixed
+        end for
+        return result
+    end function
+
+    function IsMostlyCaps(text as string) as boolean
+        letters = 0
+        upper = 0
+        for i = 0 to text.Len() - 1
+            ch = text.Mid(i, 1)
+            lowerCh = LCase(ch)
+            upperCh = UCase(ch)
+            if lowerCh <> upperCh
+                letters += 1
+                if ch = upperCh
+                    upper += 1
+                end if
+            end if
+        end for
+        return letters >= 6 and upper * 5 >= letters * 4
+    end function
+
+    ' The letters/digits of a word, uppercased (punctuation around it dropped): "(NBA!)" -> "NBA", "Q&A" -> "Q&A"
+    function CapsWordKey(word as string) as string
+        key = ""
+        for i = 0 to word.Len() - 1
+            ch = word.Mid(i, 1)
+            code = Asc(ch)
+            if IsWordChar(code) or ch = "&"
+                key += ch
+            end if
+        end for
+        return UCase(key)
+    end function
+
+    function FixCapsWord(word as string, acronyms as object, commonShort as object) as string
+        first = word.Left(1)
+        if first = "#" or first = "@"
+            return word
+        end if
+        key = CapsWordKey(word)
+        if key = ""
+            return word
+        end if
+        if HasDigit(key)
+            return word
+        end if
+        ' I'M, I'LL, I'VE, I'D (before the acronym check: "IM" and "ID" would pass for acronyms)
+        upperWord = UCase(word)
+        if upperWord.StartsWith("I'") or upperWord.StartsWith("I" + Chr(8217))
+            return "I" + LCase(word.Mid(1))
+        end if
+        ' possessive of an acronym: "NBA'S" -> "NBA's"
+        for each suffix in ["'S", Chr(8217) + "S"]
+            if upperWord.InStr(suffix) > 0 and key.Right(1) = "S"
+                base = key.Left(key.Len() - 1)
+                if IsCapsAcronym(base, acronyms, commonShort)
+                    cut = upperWord.InStr(suffix)
+                    return word.Left(cut) + LCase(word.Mid(cut))
+                end if
+            end if
+        end for
+        if IsCapsAcronym(key, acronyms, commonShort)
+            return word
+        end if
+        if key = "I"
+            return word
+        end if
+        return LCase(word)
+    end function
+
+    function IsCapsAcronym(key as string, acronyms as object, commonShort as object) as boolean
+        if acronyms.DoesExist(key)
+            return true
+        end if
+        if key.Len() = 2 and not commonShort.DoesExist(key)
+            return true
+        end if
+        return IsRomanNumeral(key)
+    end function
+
+    function HasDigit(text as string) as boolean
+        for i = 0 to text.Len() - 1
+            code = Asc(text.Mid(i, 1))
+            if code >= 48 and code <= 57
+                return true
+            end if
+        end for
+        return false
+    end function
+
+    ' II..XX (not "I", "V", "X", "L", "C", "D", "M" alone, nor words like "MIX" or "DIV")
+    function IsRomanNumeral(key as string) as boolean
+        numerals = ["II", "III", "IV", "VI", "VII", "VIII", "IX", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"]
+        for each numeral in numerals
+            if key = numeral
+                return true
+            end if
+        end for
+        return false
+    end function
+
+    function CapitalizeFirstLetter(word as string) as string
+        for i = 0 to word.Len() - 1
+            ch = word.Mid(i, 1)
+            if LCase(ch) <> UCase(ch)
+                return word.Left(i) + UCase(ch) + word.Mid(i + 1)
+            end if
+        end for
+        return word
+    end function
+
+    ' A word that ends a sentence ("WOW!", "END.") or is a separator ("-", "|", ":").
+    function EndsSentence(word as string) as boolean
+        last = word.Right(1)
+        if last = "." or last = "!" or last = "?" or last = ":"
+            return true
+        end if
+        return word = "-" or word = "|" or word = Chr(8211) or word = Chr(8212) or word = "/"
+    end function
+
+    function CapsAcronyms() as object
+        result = {}
+        for each word in ["NBA", "NFL", "NHL", "MLB", "MLS", "NCAA", "UFC", "WWE", "MMA", "ESPN", "USA", "UAE", "NYC", "NASA", "FBI", "CIA", "BBC", "CNN", "HBO", "MTV", "ABC", "NBC", "CBS", "FOX", "PBS", "IGN", "GTA", "RPG", "FPS", "MMO", "NPC", "DLC", "PS2", "PS4", "PS5", "XBOX", "PC", "TV", "HD", "UHD", "HDR", "DIY", "ASMR", "POV", "IRL", "MVP", "GOAT", "OMG", "LOL", "WTF", "FAQ", "CEO", "CPU", "GPU", "RAM", "SSD", "USB", "GPS", "DNA", "NFT", "EV", "BMW", "AMG", "GTR", "SUV", "ATV", "UFO", "LED", "LCD", "OLED", "RGB", "API", "AWS", "IBM", "AMD", "HP", "LG", "Q&A", "AMA", "TLDR", "EP", "LP", "DJ", "MC", "VR", "AR", "AI", "UK", "EU", "UN", "LA", "DC", "NY", "SF", "F1", "GP", "BTS", "K-POP", "MCU", "DC", "WW2", "WWII", "WWI", "ICU", "ER", "IQ", "ID", "OK", "IOS", "MAC", "ASAP", "FYI", "TBT", "RIP", "SNL", "NPR", "PSA", "VS"]
+            result[word] = true
+        end for
+        ' Shared spelling with an ordinary word in titles; always lowercased
+        result.Delete("FOX")
+        result.Delete("GOAT")
+        result.Delete("MAC")
+        result.Delete("VS")
+        result.Delete("OK")
+        result.Delete("RIP")
+        return result
+    end function
+
+    ' Two-letter words lowercased like any other word (others are taken for acronyms: VR, UK, TV).
+    function CapsCommonShortWords() as object
+        result = {}
+        for each word in ["OF", "IN", "TO", "IS", "IT", "ON", "AT", "BY", "BE", "WE", "HE", "ME", "MY", "NO", "SO", "UP", "OR", "AN", "AS", "DO", "GO", "IF", "US", "AM", "OH", "OK", "HI", "YO", "VS", "ST", "ND", "RD", "TH", "OX", "AH", "EH", "UH", "UM", "HA", "PM", "MR", "MS"]
+            result[word] = true
+        end for
+        return result
+    end function
+
     function IsWordChar(code as integer) as boolean
         return (code >= 48 and code <= 57) or (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or code >= &hC0
     end function

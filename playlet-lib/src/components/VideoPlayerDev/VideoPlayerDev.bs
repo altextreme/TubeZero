@@ -1587,7 +1587,7 @@ function UpdateOverlayMeta() as void
     title = ValidString(content.title)
     secondaryTitle = ValidString(content.secondaryTitle)
     ' YourTube: no emoji boxes; system font for scripts Roboto lacks
-    cleaned = YourTubeText.Clean(title)
+    cleaned = YourTubeText.CleanTitle(title) ' YourTube: also ALL-CAPS -> sentence case
     title = cleaned.text
     if cleaned.needsSystemFont
         m.titleLabel.font = YourTubeText.SystemBoldFont(22)

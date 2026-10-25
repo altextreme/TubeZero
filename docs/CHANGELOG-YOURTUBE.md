@@ -23,6 +23,12 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   SponsorBlock time saved. `YourTubeWatchStatsTracker` observes each player's position/state from VideoQueue
   (wall-clock time while playing, saved at most once a minute); SponsorBlock auto/manual skips add the segment
   length. Kept only on the TV, in one compact registry value (30 days, 25 channels).
+- Sentence-case titles (Settings > Content Feed > "Fix ALL-CAPS titles", on by default): a title that is mostly
+  capitals is shown in sentence case on cards, Related, the player title, Shorts and the long-press menu.
+  Acronyms (NBA, USA, ASMR), two-letter non-words (VR, UK, TV), words with digits (4K, PS5), hashtags, @handles,
+  Roman numerals, "I" and mixed-case words (iPhone) are kept; sentences and text after " - " / " | " start with
+  a capital. `YourTubeText.CleanTitle` = Clean + `FixCaps`; the setting is mirrored to the global
+  `ytFixCapsTitles` field for cards and jobs.
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote

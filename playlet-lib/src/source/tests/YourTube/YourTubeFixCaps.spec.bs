@@ -1,0 +1,107 @@
+' TubeZero: ALL-CAPS titles -> sentence case (YourTubeText.FixCaps)
+import "pkg:/components/YourTube/YourTubeText.bs"
+
+namespace Tests
+
+    @suite
+    class YourTubeFixCapsTests extends Rooibos.BaseTestSuite
+
+        @describe("YourTubeText.FixCaps: when it applies")
+
+        @it("leaves normal and mixed-case titles alone")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("How to bake bread at home"), "How to bake bread at home")
+            m.assertEqual(YourTubeText.FixCaps("The NBA Finals Recap"), "The NBA Finals Recap")
+            m.assertEqual(YourTubeText.FixCaps("Why I Quit My Job (HONEST)"), "Why I Quit My Job (HONEST)")
+        end function
+
+        @it("leaves short or letterless titles alone")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("WOW"), "WOW")
+            m.assertEqual(YourTubeText.FixCaps("NBA 2K"), "NBA 2K")
+            m.assertEqual(YourTubeText.FixCaps("2024 - 1080P"), "2024 - 1080P")
+            m.assertEqual(YourTubeText.FixCaps(""), "")
+        end function
+
+        @it("applies when most letters are capitals")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("THIS IS INSANE"), "This is insane")
+            m.assertEqual(YourTubeText.FixCaps("THIS IS SO INSANE (wow)"), "This is so insane (wow)")
+        end function
+
+        @describe("YourTubeText.FixCaps: words it keeps")
+
+        @it("keeps known acronyms")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("I BUILT AN NBA COURT IN THE USA"), "I built an NBA court in the USA")
+            m.assertEqual(YourTubeText.FixCaps("ESPN AND HBO REACT TO NASA"), "ESPN and HBO react to NASA")
+            m.assertEqual(YourTubeText.FixCaps("MY FIRST ASMR VIDEO, Q&A AFTER"), "My first ASMR video, Q&A after")
+        end function
+
+        @it("keeps two-letter acronyms but not common two-letter words")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("TRYING VR FOR THE FIRST TIME IN THE UK"), "Trying VR for the first time in the UK")
+            m.assertEqual(YourTubeText.FixCaps("WE WENT UP TO THE TOP OF IT"), "We went up to the top of it")
+            m.assertEqual(YourTubeText.FixCaps("AI IS TAKING OVER MY TV"), "AI is taking over my TV")
+        end function
+
+        @it("keeps words with digits")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("4K HDR DEMO ON THE NEW PS5"), "4K HDR demo on the new PS5")
+            m.assertEqual(YourTubeText.FixCaps("TOP 10 BEST CARS OF 2024"), "Top 10 best cars of 2024")
+            m.assertEqual(YourTubeText.FixCaps("F1 RACE HIGHLIGHTS 1080P60"), "F1 race highlights 1080P60")
+        end function
+
+        @it("keeps hashtags and handles")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("FUNNIEST CAT EVER #SHORTS #CATS"), "Funniest cat ever #SHORTS #CATS")
+            m.assertEqual(YourTubeText.FixCaps("#SHORTS FUNNY DOG VIDEO"), "#SHORTS Funny dog video")
+            m.assertEqual(YourTubeText.FixCaps("REACTING TO @MRBEAST VIDEOS"), "Reacting to @MRBEAST videos")
+        end function
+
+        @it("keeps Roman numerals and mixed-case words")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("ROCKY II FULL MOVIE REVIEW"), "Rocky II full movie review")
+            m.assertEqual(YourTubeText.FixCaps("WORLD WAR II DOCUMENTARY PART IV"), "World war II documentary part IV")
+            m.assertEqual(YourTubeText.FixCaps("NEW iPhone UNBOXING AND FIRST LOOK"), "New iPhone unboxing and first look")
+        end function
+
+        @describe("YourTubeText.FixCaps: sentence case")
+
+        @it("capitalizes the start of each sentence and after separators")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("I CAN'T BELIEVE IT. THIS IS CRAZY!"), "I can't believe it. This is crazy!")
+            m.assertEqual(YourTubeText.FixCaps("WHAT HAPPENED? NOBODY KNOWS"), "What happened? Nobody knows")
+            m.assertEqual(YourTubeText.FixCaps("BEST GOALS - WORLD CUP 2022 | FULL HIGHLIGHTS"), "Best goals - World cup 2022 | Full highlights")
+            m.assertEqual(YourTubeText.FixCaps("MINECRAFT: THE FINAL BOSS"), "Minecraft: The final boss")
+        end function
+
+        @it("keeps I and its contractions capitalized")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("WHY I'M LEAVING AND WHAT I'LL DO NEXT"), "Why I'm leaving and what I'll do next")
+            m.assertEqual(YourTubeText.FixCaps("TODAY I TRIED SUSHI"), "Today I tried sushi")
+        end function
+
+        @it("handles possessives of acronyms and punctuation around words")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("THE NBA'S WORST TRADE EVER"), "The NBA's worst trade ever")
+            m.assertEqual(YourTubeText.FixCaps("IT'S (FINALLY) HERE!!"), "It's (finally) here!!")
+            m.assertEqual(YourTubeText.FixCaps(`"UNBELIEVABLE" REACTION FROM THE CEO`), `"Unbelievable" reaction from the CEO`)
+        end function
+
+        @it("keeps the spacing")
+        function _()
+            m.assertEqual(YourTubeText.FixCaps("BIG  NEWS  TODAY"), "Big  news  today")
+            m.assertEqual(YourTubeText.FixCaps(" LEADING SPACE TITLE"), " Leading space title")
+        end function
+
+        @describe("YourTubeText.CleanTitle")
+
+        @it("drops emoji, then fixes capitals")
+        function _()
+            m.assertEqual(YourTubeText.CleanTitle("WORST DAY EVER " + Chr(&h2764)).text, "Worst day ever")
+        end function
+
+    end class
+
+end namespace

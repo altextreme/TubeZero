@@ -47,7 +47,7 @@ function ExecuteJob() as void
             return
         end if
         parsed = YourTubeShorts.ParseReelItem(response.json)
-        title = YourTubeText.Clean(parsed.title)
+        title = YourTubeText.CleanTitle(parsed.title) ' TubeZero: also ALL-CAPS -> sentence case
         channel = YourTubeText.Clean(parsed.channel)
         JobSuccessData({
             videoId: videoId
@@ -107,7 +107,7 @@ function ExecuteJob() as void
 
     shorts.Append(sequence.shorts)
     for each item in shorts
-        item.title = YourTubeText.Clean(item.title).text
+        item.title = YourTubeText.CleanTitle(item.title).text ' TubeZero: also ALL-CAPS -> sentence case
         item.channel = YourTubeText.Clean(item.channel).text
     end for
     JobSuccessData({ shorts: shorts, continuation: ValidString(sequence.continuation) })
