@@ -14,6 +14,19 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   fades the controls. At the edge it stays the red-bullet "LIVE", and OK there still hides the controls. During
   the 1.6s "LIVE" flash on reveal, OK still hides the controls (it does what the bar shows). The time during a
   rewind is "-M:SS" too. No new button: the row keeps its 10 buttons and indexes.
+- SponsorBlock extras. Each category (Settings > SponsorBlock > Categories, on the TV and the phone) has four modes,
+  now named "Skip automatically" / "Ask (press OK to skip)" / "Show on scrubber only" / "Off" (the stored values
+  are unchanged: `auto_skip` / `manual_skip` / `show_in_seekbar` / `disable`). Filler is one of them.
+- "Jump to highlight": a highlight (`poi_highlight`) set to "Ask" (the new default) shows "Highlight - Press OK to
+  jump to it" in the first 10 s of a video while the chrome is hidden and the highlight is at least 3 s ahead. OK
+  jumps there (play state kept), Back dismisses it for this video; it follows the manual-skip notice rules (OK and
+  Back go to it first). It is withdrawn while the chrome is up and comes back if the chrome hides inside the
+  window. The highlight is never skipped as a segment (`SponsorBlock.IsSkippable`), in either player.
+- Preferences v11: saved category modes are kept as they were, categories missing from an older save get their
+  defaults, and the highlight's old "Show in Seekbar" becomes "Ask" ("Off" stays off).
+- Your stats: a "Segments skipped" tile with the all-time number of skips and the three most skipped categories
+  (`k` in the `yourtube_watch_stats` registry value; highlight jumps are not counted).
+
 ### Personal extras and polish (not yet checked on the TV)
 - Phone pairing: account and playback routes on the phone web server (every POST/PUT/DELETE except DIAL, DRM
   licenses, the built-in Invidious backend and `/api/pair*`; plus GET `/watch`, `/api/view/open`,

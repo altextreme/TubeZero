@@ -1,6 +1,7 @@
 <!--
     TubeZero: "Your stats" page, hosted by YourTubeStandaloneScreen from Settings > More. Watch time today, this
-    week and in the last 30 days, the most watched channels and SponsorBlock time saved (YourTubeWatchStats).
+    week and in the last 30 days, the most watched channels, SponsorBlock time saved and segments skipped per
+    category (YourTubeWatchStats).
     Read once when the page opens; nothing on it is focusable, Back closes it.
 -->
 <component name="YourTubeStatsScreen" extends="Group">
@@ -53,6 +54,18 @@
             </Label>
             <Label id="SavedDetail" translation="[24,116]" width="300" wrap="true" color="0xAAAAAAFF">
                 <Font role="font" uri="font:SystemFontFile" size="18" />
+            </Label>
+        </Rectangle>
+
+        <Rectangle id="SkipsTile" width="340" height="150" translation="[832,478]" color="0x212121FF">
+            <Label id="SkipsHeading" text="Segments skipped" translation="[24,18]" width="300" color="0xAAAAAAFF">
+                <Font role="font" uri="font:SystemFontFile" size="20" />
+            </Label>
+            <Label id="SkipsValue" translation="[24,50]" width="300" color="0xF1F1F1FF">
+                <Font role="font" uri="font:BoldSystemFontFile" size="36" />
+            </Label>
+            <Label id="SkipsDetail" translation="[24,102]" width="300" height="40" wrap="true" maxLines="2" color="0xAAAAAAFF">
+                <Font role="font" uri="font:SystemFontFile" size="16" />
             </Label>
         </Rectangle>
 

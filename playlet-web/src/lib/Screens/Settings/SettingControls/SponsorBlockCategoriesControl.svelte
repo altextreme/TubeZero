@@ -8,12 +8,21 @@
 
   const textSizes = ["text-2xl", "text-lg", "text-base", "text-sm", "text-xs"];
 
+  // YourTube: the same mode names as the TV (YourTubeSponsorBlock.OptionTitle). For the highlight, "Ask" is a
+  // "Jump to highlight" prompt near the start of the video.
   const optionTitles = {
-    disable: "Disable",
-    auto_skip: "Auto Skip",
-    manual_skip: "Manual Skip",
-    show_in_seekbar: "Show in Seekbar",
+    disable: "Off",
+    auto_skip: "Skip automatically",
+    manual_skip: "Ask (press OK to skip)",
+    show_in_seekbar: "Show on scrubber only",
   };
+
+  function optionTitle(category: string, option: string): string {
+    if (category === "poi_highlight" && option === "manual_skip") {
+      return "Ask (press OK to jump to it)";
+    }
+    return optionTitles[option] ?? option;
+  }
 
   export let displayText: string = "";
   export let key: string = "";
@@ -35,6 +44,14 @@
 
   async function openEditor() {
     value = JSON.parse(JSON.stringify(originalValue));
+    // YourTube: a category missing from an older save is shown (as Off) instead of hidden.
+    if (value && sponsorBlockConfig?.categoryList) {
+      for (const category of sponsorBlockConfig.categoryList) {
+        if (!value[category]) {
+          value[category] = { option: "disable" };
+        }
+      }
+    }
     modal.showModal();
   }
 
@@ -98,7 +115,7 @@
                     >
                       {#each sponsorBlockConfig.categories[category].options as option}
                         <option value={option}
-                          >{$translate(optionTitles[option])}</option
+                          >{$translate(optionTitle(category, option))}</option
                         >
                       {/each}
                     </select>

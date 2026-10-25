@@ -136,6 +136,10 @@ namespace SponsorBlock
         end if
 
         action = segment.option
+        ' YourTube: a highlight's "manual_skip" means the VideoPlayerDev jump prompt, never a skip here.
+        if segment.category = "poi_highlight"
+            return
+        end if
 
         ' If we're close to the end of the segment, we don't want to show
         ' a notification, since it is possible this is where we skipped to.

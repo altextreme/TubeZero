@@ -3,6 +3,7 @@ import "pkg:/components/JobSystem/JobSystem.bs"
 import "pkg:/components/Services/SponsorBlock/Notifications/SponsorBlockNotificationUtils.bs"
 import "pkg:/components/Services/SponsorBlock/SponsorBlockTimeline.bs"
 import "pkg:/components/VideoPlayer/SponsorBlockSegmentAction.bs"
+import "pkg:/components/YourTube/SponsorBlock/YourTubeSponsorBlock.bs"
 import "pkg:/components/YourTube/WatchStats/YourTubeWatchStats.bs"
 import "pkg:/source/utils/Logging.bs"
 import "pkg:/source/utils/Types.bs"
@@ -48,6 +49,11 @@ namespace SponsorBlockController
         private quietUntilMs as integer = -1
         ' UUIDs already reported to the service: one report per segment per viewing.
         private reportedSegmentIds as object = {}
+        ' YourTube: the highlight with a "Jump to highlight" prompt (index into segments, -1 = none). While its
+        ' prompt is up, manualSkipIndex points at it, so OK/Back take the manual-skip route (and priority).
+        private highlightIndex as integer = -1
+        ' YourTube: the highlight prompt is one-shot: done once jumped, dismissed or past the start window.
+        private highlightDone as boolean = false
 
         function new(deps as object)
             m.jobQueue = deps.jobQueue
@@ -88,19 +94,26 @@ namespace SponsorBlockController
             if segments = invalid or segments.Count() = 0
                 return
             end if
+            m.SetSegments(segments, info.data.timeline) ' YourTube: shared with the seam mock
+            LogDebug("segments ready:", segments.Count())
+        end function
+
+        ' YourTube: store the segments + timeline (the job result, or a test seed) and find the highlight.
+        function SetSegments(segments as object, timeline as object) as void
             m.segments = segments
-            m.timeline = info.data.timeline
+            m.timeline = timeline
+            m.highlightIndex = YourTubeSponsorBlock.FindHighlightIndex(segments)
+            m.highlightDone = false
             if m.top <> invalid
                 m.top.seekMode = "accurate"
             end if
-            LogDebug("segments ready:", segments.Count())
         end function
 
         ' The real position (ms) while idle. Returns the auto-skip target (ms), FINISH_SENTINEL (segment at the
         ' video end), or NO_SKIP. A manual segment only shows the notification + arms it for the next OK
         ' (TrySkip), and withdraws it once OK can no longer skip. Reports the skip to the service on an actual
-        ' auto-skip.
-        function OnPosition(positionMs as integer) as integer
+        ' auto-skip. YourTube: `chromeShown` gates the start-of-video "Jump to highlight" prompt (UpdateHighlight).
+        function OnPosition(positionMs as integer, chromeShown = false as boolean) as integer
             if not m.enabled or m.segments = invalid
                 return SponsorBlockController.NO_SKIP
             end if
@@ -130,10 +143,13 @@ namespace SponsorBlockController
                 end if
             end if
 
-            if m.manualSkipIndex <> -1 and (targetMs = SponsorBlockController.NO_SKIP or m.manualSkipIndex <> index)
+            ' YourTube: the highlight prompt is not tied to the segment under the position (UpdateHighlight owns it).
+            highlightArmed = m.highlightIndex <> -1 and m.manualSkipIndex = m.highlightIndex
+            if m.manualSkipIndex <> -1 and not highlightArmed and (targetMs = SponsorBlockController.NO_SKIP or m.manualSkipIndex <> index)
                 m.WithdrawManual()
             end if
             if targetMs = SponsorBlockController.NO_SKIP
+                m.UpdateHighlight(positionMs, chromeShown) ' YourTube
                 return targetMs
             end if
 
@@ -164,6 +180,13 @@ namespace SponsorBlockController
                 return SponsorBlockController.NO_SKIP
             end if
 
+            ' YourTube: the highlight prompt jumps to the highlight (no skip is recorded or reported).
+            if index = m.highlightIndex
+                m.highlightDone = true
+                SponsorBlock.RemoveNotifcation(m.notifications)
+                return YourTubeSponsorBlock.HighlightTargetMs(m.segments[index])
+            end if
+
             segment = m.segments[index]
             positionS = positionMs / 1000.0
             if positionS < segment.start or segment.end < positionS
@@ -187,9 +210,41 @@ namespace SponsorBlockController
                 return false
             end if
             m.manualSkipIndex = -1
-            m.dismissedIndex = index
+            if index = m.highlightIndex
+                m.highlightDone = true ' YourTube: a dismissed highlight prompt does not come back
+            else
+                m.dismissedIndex = index
+            end if
             SponsorBlock.RemoveNotifcation(m.notifications)
             return true
+        end function
+
+        ' YourTube: the "Jump to highlight" prompt, offered near the start with the chrome hidden and nothing
+        ' else to skip. Withdrawn when the chrome comes up (and re-offered if it hides again inside the window);
+        ' done for this video once the window has passed.
+        function UpdateHighlight(positionMs as integer, chromeShown as boolean) as void
+            if m.highlightIndex = -1 or m.highlightDone or m.notifications = invalid
+                return
+            end if
+            if m.manualSkipIndex <> -1 and m.manualSkipIndex <> m.highlightIndex
+                return
+            end if
+            highlight = m.segments[m.highlightIndex]
+            armed = m.manualSkipIndex = m.highlightIndex
+            if not YourTubeSponsorBlock.ShouldOfferHighlight(positionMs, YourTubeSponsorBlock.HighlightTargetMs(highlight), chromeShown)
+                if armed
+                    m.WithdrawManual()
+                end if
+                if positionMs > YourTubeSponsorBlock.HIGHLIGHT_WINDOW_MS
+                    m.highlightDone = true
+                end if
+                return
+            end if
+            if armed and m.IsManualPromptShowing(m.highlightIndex)
+                return
+            end if
+            SponsorBlock.ShowNotifcation(m.notifications, highlight)
+            m.manualSkipIndex = m.highlightIndex
         end function
 
         function OnSkipped(segment as object, targetMs as integer) as void

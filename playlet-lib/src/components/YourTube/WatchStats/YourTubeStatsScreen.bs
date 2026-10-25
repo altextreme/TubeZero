@@ -1,3 +1,4 @@
+import "pkg:/components/Services/SponsorBlock/SponsorBlockConfig.bs"
 import "pkg:/components/YourTube/WatchStats/YourTubeWatchStats.bs"
 
 ' TubeZero: see YourTubeStatsScreen.xml
@@ -22,7 +23,27 @@ function Init()
     m.top.findNode("SavedValue").text = savedValue
     m.top.findNode("SavedDetail").text = savedDetail
 
+    ShowSkips(summary)
     ShowChannels(summary.topChannels)
+end function
+
+' Segments skipped: the all-time count and the three most skipped categories.
+function ShowSkips(summary as object) as void
+    if summary.skipTotal <= 0
+        m.top.findNode("SkipsValue").text = "None yet"
+        m.top.findNode("SkipsDetail").text = "Each skipped segment is counted here"
+        return
+    end if
+    config = new SponsorBlock.SponsorBlockConfig()
+    parts = []
+    for each entry in summary.skipCategories
+        if parts.Count() >= 3
+            exit for
+        end if
+        parts.Push(`${config.SegmentShortTitle(entry.category)} ${entry.count}`)
+    end for
+    m.top.findNode("SkipsValue").text = YourTubeWatchStats.FormatSkipCount(summary.skipTotal)
+    m.top.findNode("SkipsDetail").text = parts.Join(", ")
 end function
 
 function ShowChannels(channels as object) as void

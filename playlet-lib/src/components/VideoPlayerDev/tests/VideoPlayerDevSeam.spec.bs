@@ -597,6 +597,45 @@ namespace Tests
             return [{ start: startS, end: endS, option: "manual_skip", title: "Sponsor", shortTitle: "Sponsor", actionText: "Press OK to skip", showNotification: true, UUID: "seg-manual", category: "sponsor" }]
         end function
 
+        ' YourTube: a highlight set to Ask, as the segments job returns it (padded to [115,125] around 120s).
+        function HighlightSegment() as object
+            return [{ start: 115.0, end: 125.0, option: "manual_skip", title: "Highlight", shortTitle: "Highlight", actionText: "Press OK to jump to it", showNotification: true, UUID: "seg-highlight", category: "poi_highlight" }]
+        end function
+
+        @it("YourTube: the Jump to highlight prompt shows near the start with the chrome hidden; OK jumps there")
+        function _()
+            m.top.duration = 300
+            m.top.callFunc("TestSeedSponsorBlock", m.HighlightSegment())
+            m.assertFalse(m.Snap().chromeShown)
+            m.top.position = 2.0 ' the REAL OnPosition offers the prompt
+            m.assertTrue(m.Snap().sponsorNoticeShown, "the prompt is up")
+
+            m.top.callFunc("TestKey", RemoteKeys.Ok, true)
+            after = m.Snap()
+            m.assertEqual(Int(m.top.seek * 1000), 120000, "OK jumped to the highlight")
+            m.assertFalse(after.sponsorNoticeShown, "the jump took the prompt down")
+            m.assertFalse(after.chromeShown, "OK acted on the prompt, not on the player")
+        end function
+
+        @it("YourTube: no Jump to highlight prompt while the chrome is up; Back dismisses it without closing")
+        function _()
+            m.top.duration = 300
+            m.top.callFunc("TestSeedSponsorBlock", m.HighlightSegment())
+            m.top.callFunc("TestKey", RemoteKeys.Up, true) ' reveal the chrome
+            m.top.position = 2.0
+            m.assertFalse(m.Snap().sponsorNoticeShown, "no prompt over the chrome")
+
+            m.top.callFunc("TestKey", RemoteKeys.Back, true) ' dismiss the chrome (fade-out)
+            m.top.callFunc("TestFinishChromeFadeOut")
+            m.top.position = 3.0
+            m.assertTrue(m.Snap().sponsorNoticeShown, "offered once the chrome is gone")
+            m.top.callFunc("TestKey", RemoteKeys.Back, true)
+            m.assertFalse(m.Snap().sponsorNoticeShown, "Back took the prompt down")
+            m.assertFalse(m.top.videoQueue.closePlayer, "Back acted on the prompt, NOT on the player")
+            m.top.position = 4.0
+            m.assertFalse(m.Snap().sponsorNoticeShown, "a dismissed prompt stays down")
+        end function
+
         ' Minimize is the discriminator: activating it would have hidden the chrome.
         @it("an armed SponsorBlock notice outranks the buttons tier: OK skips instead of activating the button")
         function _()

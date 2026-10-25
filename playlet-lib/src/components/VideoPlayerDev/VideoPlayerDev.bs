@@ -1264,7 +1264,8 @@ function OnPosition(event as object) as void
     end if
 
     ' SponsorBlock auto-skip off the real position (the controller decides; we apply the seek / finish).
-    skipMs = m.sponsorblock.OnPosition(posMs)
+    ' YourTube: the chrome state gates the start-of-video "Jump to highlight" prompt.
+    skipMs = m.sponsorblock.OnPosition(posMs, m.chromeMode = ChromeMode.Shown or m.chromeMode = ChromeMode.FadingIn)
     if skipMs = SponsorBlockController.FINISH_SENTINEL
         OnPlaybackFinished()
     else if skipMs <> SponsorBlockController.NO_SKIP

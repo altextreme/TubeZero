@@ -98,6 +98,10 @@ namespace SponsorBlock
 
     ' Auto-skip, or manual-skip with its prompt: the prompt is the only way to skip a manual segment.
     function IsSkippable(segment as object) as boolean
+        ' YourTube: a highlight is a point to jump TO (the start-of-video prompt), never a range to skip.
+        if segment.category = "poi_highlight"
+            return false
+        end if
         if segment.option = SponsorBlock.SegmentAction.AutoSkip
             return true
         end if

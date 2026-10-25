@@ -97,6 +97,12 @@ focus (the screen says so), and Back dismisses the notice instead of acting on t
 after the position leaves the segment. A skip confirmed while paused stays paused (the coordinator re-pauses on
 the playing edge; the device auto-resumes on any seek).
 
+YourTube: the "Jump to highlight" prompt (a `poi_highlight` set to Ask) rides the same notice and priority:
+`manualSkipIndex` points at the highlight while it is up, so OK jumps (`TrySkip` returns the highlight point) and
+Back dismisses it. It is offered only in the first 10s with the chrome hidden (`OnPosition`'s `chromeShown`), is
+withdrawn while the chrome is up, and is one-shot per video (jumped, dismissed or the window passed). A highlight is
+never a skippable segment.
+
 ## Lounge takeover
 
 A transport freezes the video, so an external resume from the linked phone (Lounge sets `control=resume` on the

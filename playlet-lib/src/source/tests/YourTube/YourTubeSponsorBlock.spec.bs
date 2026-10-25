@@ -1,0 +1,94 @@
+' TubeZero: SponsorBlock extras (mode names, the v11 preferences migration, the highlight prompt rules)
+import "pkg:/components/YourTube/SponsorBlock/YourTubeSponsorBlock.bs"
+
+namespace Tests
+
+    @suite
+    class YourTubeSponsorBlockTests extends Rooibos.BaseTestSuite
+
+        @describe("YourTubeSponsorBlock.OptionTitle")
+
+        @it("names the four modes")
+        function _()
+            m.assertEqual(YourTubeSponsorBlock.OptionTitle("sponsor", "auto_skip"), "Skip automatically")
+            m.assertEqual(YourTubeSponsorBlock.OptionTitle("sponsor", "manual_skip"), "Ask (press OK to skip)")
+            m.assertEqual(YourTubeSponsorBlock.OptionTitle("filler", "show_in_seekbar"), "Show on scrubber only")
+            m.assertEqual(YourTubeSponsorBlock.OptionTitle("filler", "disable"), "Off")
+        end function
+
+        @it("calls the highlight's Ask a jump")
+        function _()
+            m.assertEqual(YourTubeSponsorBlock.OptionTitle("poi_highlight", "manual_skip"), "Ask (press OK to jump to it)")
+            titles = YourTubeSponsorBlock.OptionTitles("poi_highlight", ["manual_skip", "disable"])
+            m.assertEqual(titles.Count(), 2)
+            m.assertEqual(titles["disable"], "Off")
+        end function
+
+        @describe("YourTubeSponsorBlock.MigrateCategories")
+
+        @it("keeps saved modes and adds missing categories from the defaults")
+        function _()
+            saved = {
+                sponsor: { option: "auto_skip" }
+                intro: { option: "manual_skip" }
+                outro: { option: "disable" }
+            }
+            defaults = {
+                sponsor: { option: "auto_skip" }
+                intro: { option: "auto_skip" }
+                outro: { option: "manual_skip" }
+                filler: { option: "manual_skip" }
+            }
+            result = YourTubeSponsorBlock.MigrateCategories(saved, defaults)
+            m.assertEqual(result["sponsor"].option, "auto_skip")
+            m.assertEqual(result["intro"].option, "manual_skip")
+            m.assertEqual(result["outro"].option, "disable")
+            m.assertEqual(result["filler"].option, "manual_skip")
+        end function
+
+        @it("turns the highlight's old Show in Seekbar into Ask, and keeps Off")
+        function _()
+            result = YourTubeSponsorBlock.MigrateCategories({ poi_highlight: { option: "show_in_seekbar" } }, {})
+            m.assertEqual(result["poi_highlight"].option, "manual_skip")
+            result = YourTubeSponsorBlock.MigrateCategories({ poi_highlight: { option: "disable" } }, {})
+            m.assertEqual(result["poi_highlight"].option, "disable")
+        end function
+
+        @it("drops malformed entries (their default fills in) and ignores a missing value")
+        function _()
+            result = YourTubeSponsorBlock.MigrateCategories({ sponsor: "auto_skip" }, { sponsor: { option: "manual_skip" } })
+            m.assertEqual(result["sponsor"].option, "manual_skip")
+            m.assertInvalid(YourTubeSponsorBlock.MigrateCategories(invalid, {}))
+        end function
+
+        @describe("YourTubeSponsorBlock highlight rules")
+
+        @it("finds the first highlight set to Ask with a notification")
+        function _()
+            segments = [
+                { category: "sponsor", option: "manual_skip", showNotification: true }
+                { category: "poi_highlight", option: "manual_skip", showNotification: false }
+                { category: "poi_highlight", option: "manual_skip", showNotification: true }
+            ]
+            m.assertEqual(YourTubeSponsorBlock.FindHighlightIndex(segments), 2)
+            m.assertEqual(YourTubeSponsorBlock.FindHighlightIndex([]), -1)
+            m.assertEqual(YourTubeSponsorBlock.FindHighlightIndex(invalid), -1)
+        end function
+
+        @it("jumps to the middle of the padded highlight")
+        function _()
+            m.assertEqual(YourTubeSponsorBlock.HighlightTargetMs({ start: 115.0, end: 125.0 }), 120000)
+        end function
+
+        @it("offers the prompt only near the start, with the chrome hidden and the highlight ahead")
+        function _()
+            m.assertTrue(YourTubeSponsorBlock.ShouldOfferHighlight(0, 120000, false))
+            m.assertTrue(YourTubeSponsorBlock.ShouldOfferHighlight(10000, 120000, false))
+            m.assertFalse(YourTubeSponsorBlock.ShouldOfferHighlight(10001, 120000, false))
+            m.assertFalse(YourTubeSponsorBlock.ShouldOfferHighlight(1000, 120000, true))
+            m.assertFalse(YourTubeSponsorBlock.ShouldOfferHighlight(1000, 3500, false))
+        end function
+
+    end class
+
+end namespace

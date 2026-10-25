@@ -216,7 +216,6 @@
         rokuComponent: "SponsorBlockCategoriesControl",
         defaultValue: {
           // TODO:P1 support for exclusive_access and chapter
-          // TODO:P1 support for manual skip for poi_highlight
           sponsor: {
             option: "auto_skip",
           },
@@ -227,7 +226,8 @@
             option: "manual_skip",
           },
           poi_highlight: {
-            option: "show_in_seekbar",
+            // YourTube: "Ask" = a "Jump to highlight" prompt near the start (was show_in_seekbar)
+            option: "manual_skip",
           },
           intro: {
             option: "manual_skip",

@@ -3,6 +3,7 @@ import "pkg:/components/Navigation/Navigation.bs"
 import "pkg:/components/parts/AutoBind/OnNodeReadyNoOp.bs"
 import "pkg:/components/Services/SponsorBlock/SponsorBlockConfig.bs"
 import "pkg:/components/VideoPlayer/SponsorBlockSegmentAction.bs"
+import "pkg:/components/YourTube/SponsorBlock/YourTubeSponsorBlock.bs"
 import "pkg:/source/utils/Logging.bs"
 import "pkg:/source/utils/RemoteKeys.bs"
 import "pkg:/source/utils/Types.bs"
@@ -50,7 +51,8 @@ function SetupCategoriesUi() as void
         categoryNode.categoryTitle = Tr(m.config.SegmentTitle(category))
         categoryNode.selectedOption = SponsorBlock.SegmentAction.Disable
         categoryNode.options = m.config.GetOptionsForCategory(category)
-        categoryNode.optionTitles = m.optionTitles
+        ' YourTube: "Skip automatically" / "Ask" / "Show on scrubber only" / "Off" (Ask = jump, for the highlight)
+        categoryNode.optionTitles = YourTubeSponsorBlock.OptionTitles(category, categoryNode.options)
         categoryNode.color = m.config.SegmentColor(category)
         categoryContentNodes.push(categoryNode)
     end for
@@ -174,6 +176,9 @@ function OnCategoryDialogResult(event as object) as void
     category = dialog.categoryContentNode.category
 
     value = m.top.value
+    if not IsAssociativeArray(value[category]) ' YourTube: a category missing from an older save
+        value[category] = {}
+    end if
     value[category].option = selectedOption
     m.top.value = value
 

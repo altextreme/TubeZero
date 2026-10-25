@@ -1,0 +1,106 @@
+import "pkg:/source/utils/Types.bs"
+
+' TubeZero: SponsorBlock extras shared by the TV settings, the preferences migration and the player.
+'   - Per-category modes are the existing option strings (auto_skip / manual_skip / show_in_seekbar / disable),
+'     shown as "Skip automatically" / "Ask" / "Show on scrubber only" / "Off".
+'   - A highlight (poi_highlight) set to "manual_skip" means "Ask": a "Jump to highlight" prompt near the start.
+namespace YourTubeSponsorBlock
+
+    const HIGHLIGHT_CATEGORY = "poi_highlight"
+    ' the highlight prompt is offered while the position is within this window (ms) of the video start.
+    const HIGHLIGHT_WINDOW_MS = 10000
+    ' no prompt when the highlight is this close (ms) ahead of the position: the jump would be pointless.
+    const HIGHLIGHT_MIN_LEAD_MS = 3000
+
+    function OptionTitle(category as string, option as string) as string
+        if option = "auto_skip"
+            return "Skip automatically"
+        else if option = "manual_skip"
+            if category = HIGHLIGHT_CATEGORY
+                return "Ask (press OK to jump to it)"
+            end if
+            return "Ask (press OK to skip)"
+        else if option = "show_in_seekbar"
+            return "Show on scrubber only"
+        else if option = "disable"
+            return "Off"
+        end if
+        return option
+    end function
+
+    ' { option: title } for one category's options.
+    function OptionTitles(category as string, options as object) as object
+        titles = {}
+        for each option in ValidArray(options)
+            titles[option] = OptionTitle(category, option)
+        end for
+        return titles
+    end function
+
+    ' The notification's action line for a segment whose prompt is shown.
+    function HighlightActionText() as string
+        return "Press OK to jump to it"
+    end function
+
+    ' Preferences v10 -> v11. Every category missing from the saved value gets its default (older saves may lack
+    ' filler, hook, ...). The highlight could only be "Show on scrubber only" or "Off" before; "Show on scrubber
+    ' only" becomes the new default "Ask", "Off" stays off. Every other saved mode is kept as it was ("Skip"
+    ' stays "Skip", "Ask" stays "Ask"). Returns the migrated value (a copy), or invalid if it is not a value.
+    function MigrateCategories(categories as dynamic, defaults as dynamic) as object
+        if not IsAssociativeArray(categories)
+            return invalid
+        end if
+        result = {}
+        for each category in categories
+            entry = categories[category]
+            if IsAssociativeArray(entry) and IsString(entry.option)
+                result[category] = { option: entry.option }
+            end if
+        end for
+        if IsAssociativeArray(defaults)
+            for each category in defaults
+                entry = defaults[category]
+                if not result.DoesExist(category) and IsAssociativeArray(entry) and IsString(entry.option)
+                    result[category] = { option: entry.option }
+                end if
+            end for
+        end if
+        highlight = result[HIGHLIGHT_CATEGORY]
+        if IsAssociativeArray(highlight) and highlight.option = "show_in_seekbar"
+            highlight.option = "manual_skip"
+        end if
+        return result
+    end function
+
+    ' The first highlight with an "Ask" prompt (index into segments), or -1.
+    function FindHighlightIndex(segments as dynamic) as integer
+        if not IsArray(segments)
+            return -1
+        end if
+        for i = 0 to segments.Count() - 1
+            segment = segments[i]
+            if IsAssociativeArray(segment) and segment.category = HIGHLIGHT_CATEGORY and segment.option = "manual_skip" and segment.showNotification = true
+                return i
+            end if
+        end for
+        return -1
+    end function
+
+    ' Where the jump lands (ms). The segments job pads a highlight symmetrically for the chapter label, so its
+    ' midpoint is the submitted point.
+    function HighlightTargetMs(segment as object) as integer
+        return Int((segment.start + segment.end) / 2 * 1000)
+    end function
+
+    ' Whether the prompt should be up at `positionMs`: chrome hidden, near the start, highlight well ahead.
+    function ShouldOfferHighlight(positionMs as integer, targetMs as integer, chromeShown as boolean) as boolean
+        if chromeShown
+            return false
+        end if
+        if positionMs > HIGHLIGHT_WINDOW_MS
+            return false
+        end if
+        return targetMs - positionMs >= HIGHLIGHT_MIN_LEAD_MS
+    end function
+
+end namespace

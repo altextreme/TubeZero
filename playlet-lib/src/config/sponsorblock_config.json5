@@ -34,7 +34,8 @@
     poi_highlight: {
       title: "Highlight",
       short_title: "Highlight",
-      options: ["show_in_seekbar", "disable"],
+      // YourTube: manual_skip = "Ask": a "Jump to highlight" prompt near the start of the video.
+      options: ["manual_skip", "show_in_seekbar", "disable"],
       color: "#FF1684B3",
     },
     intro: {

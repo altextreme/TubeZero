@@ -2,6 +2,7 @@ import "pkg:/components/Services/SponsorBlock/SponsorBlockConfig.bs"
 import "pkg:/components/Services/SponsorBlock/SponsorBlockService.bs"
 import "pkg:/components/Services/SponsorBlock/SponsorBlockTimeline.bs"
 import "pkg:/components/VideoPlayer/SponsorBlockSegmentAction.bs"
+import "pkg:/components/YourTube/SponsorBlock/YourTubeSponsorBlock.bs"
 import "pkg:/source/utils/Types.bs"
 
 @job("SponsorBlockSegmentsJob")
@@ -72,6 +73,8 @@ function ProcessSkipSegments(skipSegments as object, showNotifications as boolea
         if segment.showNotification
             if option = SponsorBlock.SegmentAction.AutoSkip
                 segment.actionText = Tr(Locale.SponsorBlock.Skipped)
+            else if option = SponsorBlock.SegmentAction.ManualSkip and segment.category = YourTubeSponsorBlock.HIGHLIGHT_CATEGORY
+                segment.actionText = YourTubeSponsorBlock.HighlightActionText() ' YourTube: "Jump to highlight" prompt
             else if option = SponsorBlock.SegmentAction.ManualSkip
                 segment.actionText = Tr(Locale.SponsorBlock.PressOkToSkip)
             else

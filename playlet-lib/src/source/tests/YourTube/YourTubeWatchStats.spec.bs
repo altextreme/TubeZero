@@ -98,6 +98,42 @@ namespace Tests
             m.assertEqual(YourTubeWatchStats.FormatDuration(invalid), "Under 1 min")
         end function
 
+        @describe("YourTubeWatchStats skip counts")
+
+        @it("counts skips per category, most skipped first")
+        function _()
+            store = YourTubeWatchStats.NewStore()
+            YourTubeWatchStats.AddSkip(store, "sponsor")
+            YourTubeWatchStats.AddSkip(store, "filler")
+            YourTubeWatchStats.AddSkip(store, "sponsor")
+            YourTubeWatchStats.AddSkip(store, "")
+            YourTubeWatchStats.AddSkip(store, invalid)
+            summary = YourTubeWatchStats.Summary(store, 1)
+            m.assertEqual(summary.skipTotal, 3)
+            m.assertEqual(summary.skipCategories.Count(), 2)
+            m.assertEqual(summary.skipCategories[0].category, "sponsor")
+            m.assertEqual(summary.skipCategories[0].count, 2)
+        end function
+
+        @it("keeps skip counts through prune + save + load, and tolerates old stores without them")
+        function _()
+            store = YourTubeWatchStats.NewStore()
+            YourTubeWatchStats.AddSkip(store, "intro")
+            parsed = YourTubeWatchStats.Parse(FormatJson(YourTubeWatchStats.Prune(store, 7)))
+            m.assertEqual(YourTubeWatchStats.Summary(parsed, 7).skipTotal, 1)
+            old = YourTubeWatchStats.Parse(`{"v":1,"d":{},"c":{},"sb":30}`)
+            m.assertEqual(YourTubeWatchStats.Summary(old, 7).skipTotal, 0)
+            YourTubeWatchStats.AddSkip(old, "sponsor")
+            m.assertEqual(YourTubeWatchStats.Summary(old, 7).skipTotal, 1)
+        end function
+
+        @it("formats the skip count")
+        function _()
+            m.assertEqual(YourTubeWatchStats.FormatSkipCount(1), "1 skip")
+            m.assertEqual(YourTubeWatchStats.FormatSkipCount(12), "12 skips")
+            m.assertEqual(YourTubeWatchStats.FormatSkipCount(invalid), "0 skips")
+        end function
+
     end class
 
 end namespace

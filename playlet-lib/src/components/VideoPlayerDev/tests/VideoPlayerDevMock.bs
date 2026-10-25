@@ -145,8 +145,7 @@ end function
 ' REAL OnPosition, which is what arms the manual notice.
 function TestSeedSponsorBlock(segments as object) as void
     m.sponsorblock.enabled = true
-    m.sponsorblock.segments = segments
-    m.sponsorblock.timeline = SponsorBlock.BuildTimeline(segments)
+    m.sponsorblock.SetSegments(segments, SponsorBlock.BuildTimeline(segments)) ' YourTube: also finds the highlight
 end function
 
 ' TestSeekToInitialPosition — the content-load seek (live edge / resume timestamp / percent watched), minus the

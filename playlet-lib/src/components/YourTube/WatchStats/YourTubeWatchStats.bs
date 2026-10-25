@@ -5,7 +5,7 @@ import "pkg:/source/utils/Types.bs"
 ' TubeZero: local watch-time stats, kept on this TV only (registry key yourtube_watch_stats). Compact so it
 ' fits the small Roku registry:
 '   { v: 1, d: { "<day>": [watchedSeconds, sponsorBlockSavedSeconds] }, c: { "<channel>": [seconds, lastDay] },
-'     sb: allTimeSavedSeconds }
+'     sb: allTimeSavedSeconds, k: { "<sponsorblock category>": allTimeSkipCount } }
 ' <day> is the local day number (local seconds / 86400). Days older than KEEP_DAYS and channels not watched in
 ' KEEP_DAYS are dropped; at most MAX_CHANNELS channels are kept (the most watched).
 namespace YourTubeWatchStats
@@ -14,9 +14,11 @@ namespace YourTubeWatchStats
     const KEEP_DAYS = 30
     const MAX_CHANNELS = 25
     const MAX_CHANNEL_NAME = 60
+    const MAX_SKIP_CATEGORIES = 20
+    const MAX_CATEGORY_NAME = 30
 
     function NewStore() as object
-        return { v: 1, d: {}, c: {}, sb: 0 }
+        return { v: 1, d: {}, c: {}, sb: 0, k: {} }
     end function
 
     function Parse(raw as dynamic) as object
@@ -36,6 +38,9 @@ namespace YourTubeWatchStats
         end if
         if IsNumber(parsed.sb)
             store.sb = parsed.sb
+        end if
+        if IsAssociativeArray(parsed.k)
+            store.k = parsed.k
         end if
         return store
     end function
@@ -98,6 +103,43 @@ namespace YourTubeWatchStats
         return store
     end function
 
+    ' One more skipped segment of this SponsorBlock category (all-time count).
+    function AddSkip(store as object, category as dynamic) as object
+        name = ValidString(category).Trim()
+        if name = "" or name.Len() > MAX_CATEGORY_NAME
+            return store
+        end if
+        if not IsAssociativeArray(store.k)
+            store.k = {}
+        end if
+        current = store.k[name]
+        if not IsNumber(current)
+            if store.k.Count() >= MAX_SKIP_CATEGORIES
+                return store
+            end if
+            current = 0
+        end if
+        store.k[name] = Int(current) + 1
+        return store
+    end function
+
+    ' [{ category, count }] most skipped first, and the total.
+    function SkipCounts(store as object) as object
+        counts = []
+        total = 0
+        if IsAssociativeArray(store.k)
+            for each name in store.k
+                count = store.k[name]
+                if IsNumber(count) and count > 0
+                    counts.Push({ category: name, count: Int(count) })
+                    total += Int(count)
+                end if
+            end for
+        end if
+        counts.SortBy("count", "r")
+        return { total: total, categories: counts }
+    end function
+
     ' Drops old days and channels and keeps the store small. Rounds to whole seconds.
     function Prune(store as object, today as integer) as object
         days = {}
@@ -128,12 +170,23 @@ namespace YourTubeWatchStats
         end for
         store.c = kept
         store.sb = Int(store.sb + 0.5)
+        skips = {}
+        if IsAssociativeArray(store.k)
+            for each name in store.k
+                if IsNumber(store.k[name]) and store.k[name] > 0 and skips.Count() < MAX_SKIP_CATEGORIES
+                    skips[name] = Int(store.k[name])
+                end if
+            end for
+        end if
+        store.k = skips
         return store
     end function
 
-    ' { today, week, month, savedToday, savedWeek, savedTotal, topChannels: [{ name, seconds }] } (seconds)
+    ' { today, week, month, savedToday, savedWeek, savedTotal, topChannels: [{ name, seconds }],
+    '   skipTotal, skipCategories: [{ category, count }] } (seconds; skip counts are all-time)
     function Summary(store as object, today as integer, topCount = 5 as integer) as object
-        result = { today: 0, week: 0, month: 0, savedToday: 0, savedWeek: 0, savedTotal: Int(NumberAt([store.sb], 0)), topChannels: [] }
+        skips = SkipCounts(store)
+        result = { today: 0, week: 0, month: 0, savedToday: 0, savedWeek: 0, savedTotal: Int(NumberAt([store.sb], 0)), topChannels: [], skipTotal: skips.total, skipCategories: skips.categories }
         for each key in store.d
             day = key.ToInt()
             entry = store.d[key]
@@ -193,6 +246,18 @@ namespace YourTubeWatchStats
         return `${hours} h ${minutes} min`
     end function
 
+    ' 1 -> "1 skip", 12 -> "12 skips"
+    function FormatSkipCount(count as dynamic) as string
+        total = 0
+        if IsNumber(count)
+            total = Int(count)
+        end if
+        if total = 1
+            return "1 skip"
+        end if
+        return `${total} skips`
+    end function
+
     function Load() as object
         return Parse(RegistryUtils.Read(REGISTRY_KEY))
     end function
@@ -201,7 +266,8 @@ namespace YourTubeWatchStats
         RegistryUtils.Write(REGISTRY_KEY, FormatJson(Prune(store, Today())))
     end function
 
-    ' Called by the player when a SponsorBlock segment is skipped: counts the segment's length as time saved.
+    ' Called by the player when a SponsorBlock segment is skipped: counts the segment's length as time saved
+    ' and the skip under its category.
     function RecordSponsorBlockSkip(segment as dynamic) as void
         if not IsAssociativeArray(segment)
             return
@@ -215,7 +281,7 @@ namespace YourTubeWatchStats
         if seconds <= 0 or seconds > 3600
             return
         end if
-        Save(AddSaved(Load(), Today(), seconds))
+        Save(AddSkip(AddSaved(Load(), Today(), seconds), segment.category))
     end function
 
     function Reset() as void

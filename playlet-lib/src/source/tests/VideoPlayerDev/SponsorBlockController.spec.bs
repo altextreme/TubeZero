@@ -314,6 +314,104 @@ namespace Tests
             m.assertEqual(m.sb.OnPosition(110500), 120000)
         end function
 
+        ' YourTube: the start-of-video "Jump to highlight" prompt (poi_highlight set to Ask = manual_skip).
+        @describe("highlight prompt")
+
+        ' a highlight at 120s, padded to [115,125] as the segments job does, plus an auto sponsor at [3,8].
+        function SeedHighlight() as void
+            m.sb.notifications = CreateObject("roSGNode", "Group")
+            m.sb.SetSegments([
+                { start: 3.0, end: 8.0, option: "auto_skip", showNotification: false, UUID: "seg-s", category: "sponsor" }
+                { start: 115.0, end: 125.0, option: "manual_skip", showNotification: true, UUID: "seg-h", category: "poi_highlight", shortTitle: "Highlight", actionText: "Press OK to jump to it" }
+            ], invalid)
+            m.sb.timeline = SponsorBlock.BuildTimeline(m.sb.segments)
+        end function
+
+        @it("finds the highlight when the segments are stored")
+        function _()
+            m.SeedHighlight()
+            m.assertEqual(m.sb.highlightIndex, 1)
+        end function
+
+        @it("offers the prompt near the start with the chrome hidden, and OK jumps to the highlight")
+        function _()
+            m.SeedHighlight()
+            m.assertEqual(m.sb.OnPosition(1000, false), SponsorBlockController.NO_SKIP)
+            m.assertEqual(m.sb.manualSkipIndex, 1)
+            m.assertEqual(m.sb.notifications.getChildCount(), 1)
+            m.assertEqual(m.sb.TrySkip(1500), 120000)
+            m.assertEqual(m.sb.notifications.getChildCount(), 0)
+            ' one-shot
+            m.sb.OnPosition(2000, false)
+            m.assertEqual(m.sb.manualSkipIndex, -1)
+        end function
+
+        @it("does not offer the prompt while the chrome is up, and withdraws it when the chrome comes up")
+        function _()
+            m.SeedHighlight()
+            m.sb.OnPosition(1000, true)
+            m.assertEqual(m.sb.manualSkipIndex, -1)
+            m.sb.OnPosition(1500, false)
+            m.assertEqual(m.sb.manualSkipIndex, 1)
+            m.sb.OnPosition(2000, true)
+            m.assertEqual(m.sb.manualSkipIndex, -1)
+            m.assertEqual(m.sb.notifications.getChildCount(), 0)
+            m.sb.OnPosition(2500, false) ' chrome hidden again inside the window: offered again
+            m.assertEqual(m.sb.manualSkipIndex, 1)
+        end function
+
+        @it("withdraws the prompt after the start window and never offers it again")
+        function _()
+            m.SeedHighlight()
+            m.sb.OnPosition(9000, false)
+            m.assertEqual(m.sb.manualSkipIndex, 1)
+            m.sb.OnPosition(11000, false)
+            m.assertEqual(m.sb.manualSkipIndex, -1)
+            m.assertEqual(m.sb.notifications.getChildCount(), 0)
+            m.assertTrue(m.sb.highlightDone)
+            m.sb.OnSeek(1000)
+            m.sb.OnPosition(1000, false)
+            m.assertEqual(m.sb.manualSkipIndex, -1)
+        end function
+
+        @it("Back dismisses the prompt for good")
+        function _()
+            m.SeedHighlight()
+            m.sb.OnPosition(1000, false)
+            m.assertTrue(m.sb.DismissManual())
+            m.assertEqual(m.sb.notifications.getChildCount(), 0)
+            m.sb.OnPosition(1500, false)
+            m.assertEqual(m.sb.manualSkipIndex, -1)
+            m.assertEqual(m.sb.dismissedIndex, -1)
+        end function
+
+        @it("an auto-skip segment still skips while the prompt is up")
+        function _()
+            m.SeedHighlight()
+            m.sb.OnPosition(1000, false)
+            m.assertEqual(m.sb.OnPosition(4000, false), 8000)
+        end function
+
+        @it("never skips the highlight itself when playback reaches it")
+        function _()
+            m.SeedHighlight()
+            m.sb.highlightDone = true
+            m.assertEqual(m.sb.OnPosition(118000, false), SponsorBlockController.NO_SKIP)
+            m.assertEqual(m.sb.manualSkipIndex, -1)
+        end function
+
+        @it("no prompt for a highlight shown on the scrubber only")
+        function _()
+            m.sb.notifications = CreateObject("roSGNode", "Group")
+            m.sb.SetSegments([
+                { start: 115.0, end: 125.0, option: "show_in_seekbar", showNotification: false, UUID: "seg-h", category: "poi_highlight" }
+            ], invalid)
+            m.sb.timeline = SponsorBlock.BuildTimeline(m.sb.segments)
+            m.assertEqual(m.sb.highlightIndex, -1)
+            m.sb.OnPosition(1000, false)
+            m.assertEqual(m.sb.notifications.getChildCount(), 0)
+        end function
+
         @describe("chapter text")
 
         @it("returns the segment title while the cursor is inside a segment")
