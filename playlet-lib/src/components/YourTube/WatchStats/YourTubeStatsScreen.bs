@@ -14,11 +14,13 @@ function Init()
     m.top.findNode("MonthValue").text = YourTubeWatchStats.FormatDuration(summary.month)
 
     savedValue = "None yet"
+    savedDetail = "Time skipped past sponsors and other segments shows up here"
     if summary.savedTotal > 0
         savedValue = YourTubeWatchStats.FormatDuration(summary.savedTotal)
+        savedDetail = `${YourTubeWatchStats.FormatDuration(summary.savedWeek)} in the last 7 days, skipping sponsors and other segments`
     end if
     m.top.findNode("SavedValue").text = savedValue
-    m.top.findNode("SavedDetail").text = `${YourTubeWatchStats.FormatDuration(summary.savedWeek)} in the last 7 days, skipping sponsors and other segments`
+    m.top.findNode("SavedDetail").text = savedDetail
 
     ShowChannels(summary.topChannels)
 end function
