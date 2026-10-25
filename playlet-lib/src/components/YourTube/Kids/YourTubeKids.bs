@@ -261,27 +261,27 @@ namespace YourTubeKids
     end function
 
     ' True when the video (Invidious-style AA or a video ContentNode) is from an allowed channel.
-    function IsAllowedVideo(allowIndex as dynamic, video as dynamic) as boolean
-        if not IsAssociativeArray(allowIndex) or video = invalid
+    function IsAllowedVideo(allowLookup as dynamic, video as dynamic) as boolean
+        if not IsAssociativeArray(allowLookup) or video = invalid
             return false
         end if
         authorId = FieldString(video, "authorId")
-        if authorId <> "" and allowIndex.DoesExist("id:" + authorId)
+        if authorId <> "" and allowLookup.DoesExist("id:" + authorId)
             return true
         end if
         for each fieldName in ["author", "_author"]
             name = LCase(FieldString(video, fieldName).Trim())
-            if name <> "" and allowIndex.DoesExist("name:" + name)
+            if name <> "" and allowLookup.DoesExist("name:" + name)
                 return true
             end if
         end for
         return false
     end function
 
-    function FilterVideos(allowIndex as dynamic, videos as dynamic) as object
+    function FilterVideos(allowLookup as dynamic, videos as dynamic) as object
         result = []
         for each video in ValidArray(videos)
-            if IsAllowedVideo(allowIndex, video)
+            if IsAllowedVideo(allowLookup, video)
                 result.Push(video)
             end if
         end for
@@ -336,26 +336,26 @@ namespace YourTubeKids
     ' --- daily time limit -----------------------------------------------------------------------------------
 
     ' Starts a new day's count when the day changed. True when it did.
-    function RollDay(store as object, today as integer) as boolean
-        if Int(NumberOr(store.day, 0)) = today
+    function RollDay(store as object, dayNumber as integer) as boolean
+        if Int(NumberOr(store.day, 0)) = dayNumber
             return false
         end if
-        store.day = today
+        store.day = dayNumber
         store.used = 0
         store.bonus = 0
         return true
     end function
 
-    function AddUsed(store as object, today as integer, seconds as dynamic) as object
-        RollDay(store, today)
+    function AddUsed(store as object, dayNumber as integer, seconds as dynamic) as object
+        RollDay(store, dayNumber)
         if IsNumber(seconds) and seconds > 0 and seconds < 3600
             store.used = NumberOr(store.used, 0) + seconds
         end if
         return store
     end function
 
-    function AddBonus(store as object, today as integer, minutes as integer) as object
-        RollDay(store, today)
+    function AddBonus(store as object, dayNumber as integer, minutes as integer) as object
+        RollDay(store, dayNumber)
         if minutes > 0
             store.bonus = Int(NumberOr(store.bonus, 0)) + minutes * 60
         end if
@@ -363,14 +363,14 @@ namespace YourTubeKids
     end function
 
     ' Seconds left today, or -1 when there is no limit.
-    function RemainingSeconds(store as object, today as integer) as integer
+    function RemainingSeconds(store as object, dayNumber as integer) as integer
         limitMinutes = Int(NumberOr(store.lim, 0))
         if limitMinutes <= 0
             return -1
         end if
         used = 0
         bonus = 0
-        if Int(NumberOr(store.day, 0)) = today
+        if Int(NumberOr(store.day, 0)) = dayNumber
             used = NumberOr(store.used, 0)
             bonus = Int(NumberOr(store.bonus, 0))
         end if
@@ -381,8 +381,8 @@ namespace YourTubeKids
         return remaining
     end function
 
-    function IsTimeUp(store as object, today as integer) as boolean
-        return RemainingSeconds(store, today) = 0
+    function IsTimeUp(store as object, dayNumber as integer) as boolean
+        return RemainingSeconds(store, dayNumber) = 0
     end function
 
     ' Off -> 30 -> 60 -> 90 -> 120 -> Off

@@ -8,6 +8,8 @@ node tools/yourtube/check-components.mjs
 node tools/rm.js dist
 npm run build:web
 (cd playlet-lib && npx bsc --create-package --sourceMap=false --lintConfig ../config/bslint.jsonc && npm run postbuild --silent)
+# a local or parameter named like a namespace function compiles into a reference to that function
+node tools/yourtube/check-shadowed-names.js build/playlet-lib
 (cd playlet-app && npx bsc --create-package --sourceMap=false --lintConfig ../config/bslint.jsonc)
 
 mkdir -p out
