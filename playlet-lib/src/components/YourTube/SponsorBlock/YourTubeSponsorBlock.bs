@@ -92,12 +92,38 @@ namespace YourTubeSponsorBlock
         return Int((segment.start + segment.end) / 2 * 1000)
     end function
 
-    ' Whether the prompt should be up at `positionMs`: chrome hidden, near the start, highlight well ahead.
-    function ShouldOfferHighlight(positionMs as integer, targetMs as integer, chromeShown as boolean) as boolean
+    ' Where the video's own content starts (ms): the end of the segments that open the video (a "Non-Music"
+    ' intro, a sponsor at 0:00...), chained while each starts within a second of the last. 0 when none does.
+    ' The highlight window counts from here, so an intro's own "Press OK to skip" doesn't use it up.
+    function ContentStartMs(segments as dynamic) as integer
+        startMs = 0
+        if not IsArray(segments)
+            return 0
+        end if
+        moved = true
+        while moved
+            moved = false
+            for each segment in segments
+                if IsAssociativeArray(segment) and segment.category <> HIGHLIGHT_CATEGORY
+                    segStart = Int(ValidFloat(segment.start) * 1000)
+                    segEnd = Int(ValidFloat(segment.end) * 1000)
+                    if segStart <= startMs + 1000 and segEnd > startMs
+                        startMs = segEnd
+                        moved = true
+                    end if
+                end if
+            end for
+        end while
+        return startMs
+    end function
+
+    ' Whether the prompt should be up at `positionMs`: chrome hidden, within the window after `windowStartMs`
+    ' (see ContentStartMs), highlight well ahead.
+    function ShouldOfferHighlight(positionMs as integer, targetMs as integer, chromeShown as boolean, windowStartMs = 0 as integer) as boolean
         if chromeShown
             return false
         end if
-        if positionMs > HIGHLIGHT_WINDOW_MS
+        if positionMs > windowStartMs + HIGHLIGHT_WINDOW_MS
             return false
         end if
         return targetMs - positionMs >= HIGHLIGHT_MIN_LEAD_MS

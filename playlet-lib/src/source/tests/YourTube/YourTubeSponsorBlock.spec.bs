@@ -87,6 +87,9 @@ namespace Tests
             m.assertFalse(YourTubeSponsorBlock.ShouldOfferHighlight(10001, 120000, false))
             m.assertFalse(YourTubeSponsorBlock.ShouldOfferHighlight(1000, 120000, true))
             m.assertFalse(YourTubeSponsorBlock.ShouldOfferHighlight(1000, 3500, false))
+            ' the window counts from the end of an opening intro segment
+            m.assertTrue(YourTubeSponsorBlock.ShouldOfferHighlight(15000, 120000, false, 8000))
+            m.assertFalse(YourTubeSponsorBlock.ShouldOfferHighlight(18001, 120000, false, 8000))
         end function
 
     end class

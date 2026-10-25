@@ -54,6 +54,8 @@ namespace SponsorBlockController
         private highlightIndex as integer = -1
         ' YourTube: the highlight prompt is one-shot: done once jumped, dismissed or past the start window.
         private highlightDone as boolean = false
+        ' YourTube: the highlight window opens where the content starts (after an opening intro segment).
+        private highlightWindowStartMs as integer = 0
 
         function new(deps as object)
             m.jobQueue = deps.jobQueue
@@ -103,6 +105,7 @@ namespace SponsorBlockController
             m.segments = segments
             m.timeline = timeline
             m.highlightIndex = YourTubeSponsorBlock.FindHighlightIndex(segments)
+            m.highlightWindowStartMs = YourTubeSponsorBlock.ContentStartMs(segments)
             m.highlightDone = false
             if m.top <> invalid
                 m.top.seekMode = "accurate"
@@ -231,11 +234,11 @@ namespace SponsorBlockController
             end if
             highlight = m.segments[m.highlightIndex]
             armed = m.manualSkipIndex = m.highlightIndex
-            if not YourTubeSponsorBlock.ShouldOfferHighlight(positionMs, YourTubeSponsorBlock.HighlightTargetMs(highlight), chromeShown)
+            if not YourTubeSponsorBlock.ShouldOfferHighlight(positionMs, YourTubeSponsorBlock.HighlightTargetMs(highlight), chromeShown, m.highlightWindowStartMs)
                 if armed
                     m.WithdrawManual()
                 end if
-                if positionMs > YourTubeSponsorBlock.HIGHLIGHT_WINDOW_MS
+                if positionMs > m.highlightWindowStartMs + YourTubeSponsorBlock.HIGHLIGHT_WINDOW_MS
                     m.highlightDone = true
                 end if
                 return

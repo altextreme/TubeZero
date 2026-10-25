@@ -141,11 +141,11 @@ namespace YourTubeWatchStats
     end function
 
     ' Drops old days and channels and keeps the store small. Rounds to whole seconds.
-    function Prune(store as object, today as integer) as object
+    function Prune(store as object, dayNumber as integer) as object
         days = {}
         for each key in store.d
             day = key.ToInt()
-            if day > today - KEEP_DAYS and day <= today + 1
+            if day > dayNumber - KEEP_DAYS and day <= dayNumber + 1
                 entry = store.d[key]
                 days[key] = [Int(NumberAt(entry, 0) + 0.5), Int(NumberAt(entry, 1) + 0.5)]
             end if
@@ -156,7 +156,7 @@ namespace YourTubeWatchStats
         for each name in store.c
             entry = store.c[name]
             lastDay = Int(NumberAt(entry, 1))
-            if lastDay > today - KEEP_DAYS
+            if lastDay > dayNumber - KEEP_DAYS
                 channels.Push({ name: name, seconds: Int(NumberAt(entry, 0) + 0.5), lastDay: lastDay })
             end if
         end for
@@ -184,7 +184,7 @@ namespace YourTubeWatchStats
 
     ' { today, week, month, savedToday, savedWeek, savedTotal, topChannels: [{ name, seconds }],
     '   skipTotal, skipCategories: [{ category, count }] } (seconds; skip counts are all-time)
-    function Summary(store as object, today as integer, topCount = 5 as integer) as object
+    function Summary(store as object, dayNumber as integer, topCount = 5 as integer) as object
         skips = SkipCounts(store)
         result = { today: 0, week: 0, month: 0, savedToday: 0, savedWeek: 0, savedTotal: Int(NumberAt([store.sb], 0)), topChannels: [], skipTotal: skips.total, skipCategories: skips.categories }
         for each key in store.d
@@ -192,7 +192,7 @@ namespace YourTubeWatchStats
             entry = store.d[key]
             watched = NumberAt(entry, 0)
             saved = NumberAt(entry, 1)
-            age = today - day
+            age = dayNumber - day
             if age >= 0 and age < KEEP_DAYS
                 result.month += watched
                 if age < 7
