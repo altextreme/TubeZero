@@ -113,6 +113,40 @@ function OnItemFocused() as void
     m.global.ytNavCurrent = item.screen
 end function
 
+' YourTube: what moving the highlight does (OnItemFocused), for callers outside the nav: hide the current screen,
+' show (creating if needed) the target, mark it current and give it focus.
+function SelectRootScreen(screenName as string) as boolean
+    content = m.itemsList.content
+    if content = invalid
+        return false
+    end if
+    index = -1
+    for i = 0 to content.getChildCount() - 1
+        if content.getChild(i).screen = screenName
+            index = i
+            exit for
+        end if
+    end for
+    if index < 0
+        return false
+    end if
+
+    m.itemsList.jumpToItem = index
+    if m.lastItemFocused <> index
+        UnfocusItem(m.lastItemFocused)
+    end if
+    m.lastItemFocused = index
+    m.appController@.ShowRootScreen(screenName)
+    m.global.ytNavCurrent = screenName
+
+    screen = m.appController@.GetRootScreen(screenName)
+    if screen = invalid or not screen.focusable
+        return false
+    end if
+    NodeSetFocus(screen, true)
+    return true
+end function
+
 function UnfocusItem(index as integer) as void
     item = GetItem(index)
     if item = invalid

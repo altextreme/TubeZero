@@ -68,22 +68,9 @@ function OnEmptyStateSelected() as void
 end function
 
 ' YourTube: switch the nav rail to a root screen and hand it focus
+' (Search may not exist yet on a fresh launch, so the nav creates and shows it the way its own highlight does.)
 function NavigateToRootScreen(screenName as string) as void
-    itemsList = m.navBar.itemsList
-    content = itemsList.content
-    if content = invalid
-        return
-    end if
-    for i = 0 to content.getChildCount() - 1
-        if content.getChild(i).screen = screenName
-            itemsList.jumpToItem = i
-            screen = m.appController@.GetRootScreen(screenName)
-            if screen <> invalid
-                NodeSetFocus(screen, true)
-            end if
-            return
-        end if
-    end for
+    m.navBar@.SelectRootScreen(screenName)
 end function
 
 function OnRowListContent() as void

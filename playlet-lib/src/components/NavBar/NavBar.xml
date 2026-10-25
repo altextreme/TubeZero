@@ -1,6 +1,8 @@
 <!-- YourTube: white focus pill (was Playlet red); 52px item pitch so 10 items fit (was 66) -->
 <component name="NavBar" extends="Group" includes="AutoBind,Focus">
     <interface>
+        <!-- YourTube: switch to a root screen from elsewhere (Home search bar, empty-state buttons) -->
+        <function name="SelectRootScreen" />
         <field id="screensContainer" type="node" />
         <field id="appController" type="node" />
         <field id="content" type="node" alias="ItemsList.content" />
