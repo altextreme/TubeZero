@@ -21,6 +21,8 @@
     <children>
         <!-- YourTube: YouTube TV top bar; rows start below it (were at y=50). First shelf uses big 480x270 cards. -->
         <YourTubeTopBar id="topBar" />
+        <!-- YourTube: Home topic chips under the top bar (Home only; rows move down to y=156 while shown) -->
+        <YourTubeChipBar id="chipBar" translation="[90,106]" maxWidth="1110" visible="false" />
         <YourTubeEmptyState id="emptyState" visible="false" focusable="false" />
         <VideoRowList
             itemComponentName="RowCell"

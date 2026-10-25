@@ -137,6 +137,10 @@ function ExecuteJob() as void
             if response.result.sortOptions <> invalid
                 feedSource.state.sortOptions = response.result.sortOptions
             end if
+            ' YourTube: the signed-in home's topic chips, read by HomeScreen's chip row
+            if IsArray(response.result.chips)
+                feedSource.state.chips = response.result.chips
+            end if
 
             if addedItemCount > 0 or blockedCount > 0 ' YourTube: a page of only blocked cards isn't the end
                 pageType = feedSource.state.paginationType

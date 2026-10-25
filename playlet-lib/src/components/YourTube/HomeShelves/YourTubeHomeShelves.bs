@@ -1,5 +1,6 @@
 import "pkg:/components/Services/Innertube/BrowseEndpoint.bs"
 import "pkg:/components/Services/Innertube/Parser.bs"
+import "pkg:/components/YourTube/HomeChips/YourTubeHomeChips.bs"
 import "pkg:/source/utils/OptionUtils.bs"
 import "pkg:/source/utils/StringUtils.bs"
 import "pkg:/source/utils/Types.bs"
@@ -11,7 +12,8 @@ namespace YourTubeHomeShelves
     ' Browses browseId and returns { feeds: [{ title, items, continuation? }] } with one feed per shelf,
     ' empty shelves dropped. Follows the page's "more shelves" continuation until minShelves is reached
     ' or maxPages requests were made. options: accessToken, onBehalfOfUser, params, client ("tv"|"web"),
-    ' disableShorts, minShelves, maxPages.
+    ' disableShorts, minShelves, maxPages, collectChips (adds "chips" from the first page: the Home topic
+    ' chips), startContinuation (first request is this continuation, e.g. a topic chip's token).
     function Browse(browseId as string, options = invalid as object) as object
         clientType = Innertube.ClientType.Tv
         if OptionUtils.GetOrDefault(options, "client", "tv") = "web"
@@ -27,6 +29,12 @@ namespace YourTubeHomeShelves
             requestOptions.Append(options)
         end if
         requestOptions.Delete("continuation")
+        startContinuation = OptionUtils.GetOrDefault(options, "startContinuation", "")
+        if not StringUtils.IsNullOrEmpty(startContinuation)
+            requestOptions.continuation = startContinuation
+        end if
+        collectChips = OptionUtils.GetOrDefault(options, "collectChips", false)
+        chips = invalid
 
         feeds = []
         cacheControl = invalid
@@ -49,6 +57,9 @@ namespace YourTubeHomeShelves
             end if
             if cacheControl = invalid
                 cacheControl = Innertube.ParseResponseForCacheControl(response)
+            end if
+            if collectChips and chips = invalid
+                chips = YourTubeHomeChips.Parse(response.Json())
             end if
 
             context = {
@@ -77,6 +88,9 @@ namespace YourTubeHomeShelves
         }
         if cacheControl <> invalid
             result["cache-control"] = cacheControl
+        end if
+        if IsArray(chips)
+            result["chips"] = chips
         end if
         return result
     end function

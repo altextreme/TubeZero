@@ -1,0 +1,162 @@
+import "pkg:/components/YourTube/YourTubeJson.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: topic chips for the Home screen ("All", "Music", "Gaming"...).
+' Signed in, YouTube's home page carries a chip bar (chipCloudChipRenderer on WEB, chipViewModel on newer
+' layouts); each chip's continuation token reloads the page for that topic. Signed out (or when YouTube sends
+' none) Home shows fixed chips that filter to its own category rows.
+namespace YourTubeHomeChips
+
+    const MAX_CHIPS = 16
+    const MAX_DEPTH = 16
+
+    ' Every chip in the response, in order: [{ title, continuation, isSelected }]. The current chip ("All")
+    ' usually has no token; it is kept with an empty continuation.
+    function Parse(responseData as dynamic) as object
+        chips = []
+        CollectChips(responseData, chips, 0)
+        return chips
+    end function
+
+    function CollectChips(node as dynamic, chips as object, depth as integer) as void
+        if depth > MAX_DEPTH or chips.Count() >= MAX_CHIPS
+            return
+        end if
+        if YourTubeJson.IsArr(node)
+            for each child in node
+                CollectChips(child, chips, depth + 1)
+            end for
+            return
+        end if
+        if not YourTubeJson.IsAA(node)
+            return
+        end if
+
+        chip = invalid
+        renderer = node["chipCloudChipRenderer"]
+        if YourTubeJson.IsAA(renderer)
+            chip = {
+                title: YourTubeJson.RunsText(renderer["text"])
+                continuation: YourTubeJson.AsString(YourTubeJson.Dig(renderer, ["navigationEndpoint", "continuationCommand", "token"]))
+                isSelected: ValidBool(renderer["isSelected"])
+            }
+        end if
+        viewModel = node["chipViewModel"]
+        if YourTubeJson.IsAA(viewModel)
+            chip = {
+                title: YourTubeJson.AsString(viewModel["text"])
+                continuation: YourTubeJson.AsString(YourTubeJson.Dig(viewModel, ["tapCommand", "innertubeCommand", "continuationCommand", "token"]))
+                isSelected: ValidBool(viewModel["selected"])
+            }
+        end if
+        if chip <> invalid
+            ' Chips that do something else (open a panel, a search) have no continuation and aren't selected
+            if chip.title <> "" and (chip.continuation <> "" or chip.isSelected)
+                chips.Push(chip)
+            end if
+            return
+        end if
+
+        for each key in node
+            CollectChips(node[key], chips, depth + 1)
+        end for
+    end function
+
+    ' The Home chip row from YouTube's chips: "All" first (Home's normal rows), then each topic with a token.
+    ' Returns [] when YouTube sent no usable topic chips (Home then uses FixedChips).
+    function BuildServerChips(serverChips as object) as object
+        chips = []
+        if not IsArray(serverChips)
+            return chips
+        end if
+        seen = {}
+        for each chip in serverChips
+            if not IsAssociativeArray(chip)
+                continue for
+            end if
+            title = ValidString(chip.title)
+            token = ValidString(chip.continuation)
+            key = LCase(title)
+            if title = "" or token = "" or seen.DoesExist(key) or key = "all"
+                continue for
+            end if
+            seen[key] = true
+            chips.Push({
+                title: title
+                continuation: token
+            })
+        end for
+        if chips.Count() = 0
+            return chips
+        end if
+        chips.Unshift({
+            title: "All"
+            continuation: ""
+        })
+        return chips
+    end function
+
+    ' Fixed chips: each lists the Home layout row ids it shows (Settings > Edit home screen ids).
+    function FixedChips() as object
+        return [{
+            title: "All"
+            rows: []
+        }, {
+            title: "Live"
+            rows: ["subscriptions_live", "trending_livestreams"]
+        }, {
+            title: "Music"
+            rows: ["music"]
+        }, {
+            title: "Gaming"
+            rows: ["trending_gaming"]
+        }, {
+            title: "News"
+            rows: ["news"]
+        }, {
+            title: "Sports"
+            rows: ["sports"]
+        }, {
+            title: "Podcasts"
+            rows: ["podcasts"]
+        }, {
+            title: "Learning"
+            rows: ["learning"]
+        }]
+    end function
+
+    ' The rows of feeds (a parsed home layout) whose id is in rowIds, in rowIds order.
+    function FilterFeeds(feeds as object, rowIds as object) as object
+        result = []
+        if not IsArray(feeds) or not IsArray(rowIds)
+            return result
+        end if
+        for each rowId in rowIds
+            for each feed in feeds
+                if IsAssociativeArray(feed) and ValidString(feed.id) = rowId
+                    result.Push(feed)
+                    exit for
+                end if
+            end for
+        end for
+        return result
+    end function
+
+    ' One Home row for a YouTube topic chip: the signed-in home reloaded with the chip's token.
+    function CreateChipFeed(title as string, continuation as string, index as integer) as object
+        return {
+            title: title
+            id: `yt_home_chip_${index}`
+            feedSources: [{
+                id: `yt_home_chip_${index}`
+                title: title
+                apiType: "Invidious"
+                endpoint: "yt_home_shelves"
+                queryParams: {
+                    chip: continuation
+                }
+            }]
+        }
+    end function
+
+end namespace

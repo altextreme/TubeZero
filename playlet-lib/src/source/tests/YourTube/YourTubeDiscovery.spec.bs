@@ -1,6 +1,7 @@
 ' YourTube: discovery features (channel search, Home chips, Subscriptions filters, live now, search chips).
 ' Fixtures are signed-out WEB responses captured with youtubei.js (raw execute) into fixtures/yourtube/.
 import "pkg:/components/YourTube/ChannelSearch/YourTubeChannelSearch.bs"
+import "pkg:/components/YourTube/HomeChips/YourTubeHomeChips.bs"
 import "pkg:/source/services/HttpClient.bs"
 import "pkg:/source/utils/StringUtils.bs"
 
@@ -51,6 +52,77 @@ namespace Tests
             m.assertEqual(result.items.Count(), 0)
             m.assertInvalid(result.continuation)
             m.assertInvalid(YourTubeChannelSearch.GetSearchTabContent(invalid))
+        end function
+
+        @describe("YourTubeHomeChips.Parse")
+
+        @it("reads chipCloudChipRenderer chips with their continuation tokens")
+        function _()
+            chips = YourTubeHomeChips.Parse(m.Fixture("chips.json")["search"])
+            m.assertEqual(chips.Count(), 6)
+            m.assertEqual(chips[0].title, "All")
+            m.assertTrue(chips[0].isSelected)
+            m.assertEqual(chips[0].continuation, "")
+            m.assertEqual(chips[1].title, "Shorts")
+            m.assertFalse(chips[1].isSelected)
+            m.assertTrue(Len(chips[1].continuation) > 20)
+        end function
+
+        @it("reads chipViewModel chips")
+        function _()
+            chips = YourTubeHomeChips.Parse(m.Fixture("chips.json")["channelVideos"])
+            m.assertEqual(chips.Count(), 3)
+            m.assertEqual(chips[0].title, "Latest")
+            m.assertTrue(chips[0].isSelected)
+            m.assertEqual(chips[1].title, "Popular")
+            m.assertTrue(Len(chips[1].continuation) > 20)
+        end function
+
+        @it("returns no chips for pages without a chip bar")
+        function _()
+            m.assertEqual(YourTubeHomeChips.Parse(m.Fixture("channel-search.json")).Count(), 0)
+            m.assertEqual(YourTubeHomeChips.Parse(invalid).Count(), 0)
+        end function
+
+        @describe("YourTubeHomeChips.BuildServerChips")
+
+        @it("puts All first and keeps topics with a token")
+        function _()
+            chips = YourTubeHomeChips.BuildServerChips(YourTubeHomeChips.Parse(m.Fixture("chips.json")["search"]))
+            m.assertEqual(chips.Count(), 6)
+            m.assertEqual(chips[0].title, "All")
+            m.assertEqual(chips[0].continuation, "")
+            m.assertEqual(chips[1].title, "Shorts")
+            m.assertEqual(chips[5].title, "Live")
+        end function
+
+        @it("returns nothing when only the selected chip has no token")
+        function _()
+            chips = YourTubeHomeChips.BuildServerChips([{ title: "All", continuation: "", isSelected: true }])
+            m.assertEqual(chips.Count(), 0)
+            m.assertEqual(YourTubeHomeChips.BuildServerChips(invalid).Count(), 0)
+        end function
+
+        @describe("YourTubeHomeChips fixed chips")
+
+        @it("filters a home layout to the chip's rows in chip order")
+        function _()
+            feeds = [{ id: "recommended" }, { id: "trending_livestreams" }, { id: "music" }, { id: "subscriptions_live" }]
+            live = YourTubeHomeChips.FixedChips()[1]
+            m.assertEqual(live.title, "Live")
+            rows = YourTubeHomeChips.FilterFeeds(feeds, live.rows)
+            m.assertEqual(rows.Count(), 2)
+            m.assertEqual(rows[0].id, "subscriptions_live")
+            m.assertEqual(rows[1].id, "trending_livestreams")
+            m.assertEqual(YourTubeHomeChips.FilterFeeds(feeds, ["nope"]).Count(), 0)
+        end function
+
+        @it("builds a topic row that reloads the signed-in home with the chip token")
+        function _()
+            feed = YourTubeHomeChips.CreateChipFeed("Music", "TOKEN", 2)
+            m.assertEqual(feed.title, "Music")
+            m.assertEqual(feed.feedSources[0].endpoint, "yt_home_shelves")
+            m.assertEqual(feed.feedSources[0].queryParams.chip, "TOKEN")
         end function
 
     end class

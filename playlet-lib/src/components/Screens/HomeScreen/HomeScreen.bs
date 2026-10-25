@@ -2,6 +2,7 @@ import "HomeScreenUtils.bs"
 import "pkg:/components/ContextMenu/ContextMenuUtils.bs"
 import "pkg:/components/Navigation/Navigation.bs"
 import "pkg:/components/Services/BookmarksService/BookmarksServiceUtils.bs" ' YourTube: bookmarks on the You screen
+import "pkg:/components/YourTube/HomeChips/YourTubeHomeChips.bs" ' YourTube: Home chip row
 import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/Locale.bs"
 import "pkg:/source/utils/RemoteKeys.bs"
@@ -14,11 +15,26 @@ function Init()
     m.topBar = m.top.FindNode("topBar")
     m.emptyState = m.top.FindNode("emptyState")
     m.restoreRowIndex = invalid ' YourTube
+    ' YourTube: Home topic chips
+    m.chipBar = m.top.FindNode("chipBar")
+    m.chips = []
+    m.activeChip = 0
+    m.chipsEnabled = false
+    m.recommendedRow = invalid
 end function
 
 function OnNodeReady()
     SetNavigation(invalid, RemoteKeys.Back, m.navBar)
     SetNavigation(invalid, RemoteKeys.Left, m.navBar)
+    ' YourTube: Home's chip row sits between the top bar and the rows: Up from the first row reaches the chips,
+    ' Up again the top bar. Registered first so they win; the chip bar isn't focusable on the You screen.
+    SetNavigation(m.rowList, RemoteKeys.Up, m.chipBar)
+    SetNavigation(m.emptyState, RemoteKeys.Up, m.chipBar)
+    SetNavigation(m.chipBar, RemoteKeys.Up, m.topBar)
+    SetNavigation(m.chipBar, RemoteKeys.Down, m.emptyState)
+    SetNavigation(m.chipBar, RemoteKeys.Down, m.rowList)
+    SetNavigation(m.topBar, RemoteKeys.Down, m.chipBar)
+    InitChips()
     ' YourTube: Up from the first row reaches the top bar; OK there opens Search
     SetNavigation(m.rowList, RemoteKeys.Up, m.topBar)
     SetNavigation(m.emptyState, RemoteKeys.Up, m.topBar)
@@ -44,6 +60,9 @@ function OnNodeReady()
 end function
 
 function OnHomeLayoutChange() as void
+    ' YourTube: the layout's rows are the "All" chip
+    m.activeChip = 0
+    m.chipBar.activeIndex = 0
     feeds = HomeScreenUtils.GetFeed(m.top.feedFile, m.preferences)
     ' YourTube: You screen = its rows, then one row per bookmark group
     if m.top.includeBookmarks and m.bookmarksService <> invalid
@@ -126,6 +145,105 @@ function OnRowListContent() as void
         m.restoreRowIndex = invalid
     end if
     UpdateEmptyState()
+    WatchRecommendedRow() ' YourTube: topic chips arrive with the Recommended row
+end function
+
+' YourTube: Home chip row. Fixed chips (All, Live, Music, Gaming...) filter Home to those category rows;
+' once the signed-in Recommended row loads with YouTube's topic chips, those replace them and each reloads
+' Home for its topic. Only on Home (the You screen extends HomeScreen with its own feedFile).
+function InitChips() as void
+    m.chipsEnabled = m.top.feedFile = "libpkg:/config/default_home_layout.yaml"
+    m.chipBar.visible = m.chipsEnabled
+    m.chipBar.focusable = m.chipsEnabled
+    if not m.chipsEnabled
+        return
+    end if
+    m.rowList.translation = [0, 156]
+    SetChips(YourTubeHomeChips.FixedChips())
+    m.chipBar.ObserveField("selected", FuncName(OnChipSelected))
+    if m.profilesService <> invalid
+        m.profilesService.ObserveFieldScoped("currentProfileChanged", FuncName(OnProfileChangedChips))
+    end if
+end function
+
+function SetChips(chips as object) as void
+    m.chips = chips
+    titles = []
+    for each chip in chips
+        titles.Push(chip.title)
+    end for
+    m.chipBar.chips = titles
+    if m.activeChip >= chips.Count()
+        m.activeChip = 0
+    end if
+    m.chipBar.activeIndex = m.activeChip
+end function
+
+function OnChipSelected() as void
+    index = m.chipBar.selected
+    if index < 0 or index >= m.chips.Count()
+        return
+    end if
+    if index = 0
+        OnHomeLayoutChange()
+        return
+    end if
+    m.activeChip = index
+    m.chipBar.activeIndex = index
+    chip = m.chips[index]
+    if IsArray(chip.rows)
+        ' Every category row of the layout file, even ones turned off in Settings > Edit home screen
+        allRows = HomeScreenUtils.GetFeed(m.top.feedFile, {})
+        m.rowList.feeds = YourTubeHomeChips.FilterFeeds(allRows, chip.rows)
+    else
+        m.rowList.feeds = [YourTubeHomeChips.CreateChipFeed(chip.title, ValidString(chip.continuation), index)]
+    end if
+end function
+
+function OnProfileChangedChips() as void
+    ' New account: back to the fixed chips until its Recommended row brings YouTube's
+    m.activeChip = 0
+    SetChips(YourTubeHomeChips.FixedChips())
+    OnHomeLayoutChange()
+end function
+
+function WatchRecommendedRow() as void
+    if not m.chipsEnabled
+        return
+    end if
+    if m.recommendedRow <> invalid
+        m.recommendedRow.UnobserveFieldScoped("feedSources")
+        m.recommendedRow = invalid
+    end if
+    content = m.rowList.content
+    if content = invalid
+        return
+    end if
+    for each row in content.getChildren(-1, 0)
+        if row.hasField("feedSources") and IsArray(row.feedSources) and row.feedSources.Count() > 0
+            feedSource = row.feedSources[0]
+            if IsAssociativeArray(feedSource) and ValidString(feedSource.id) = "yt_home_shelves"
+                m.recommendedRow = row
+                row.ObserveFieldScoped("feedSources", FuncName(OnRecommendedFeedSources))
+                OnRecommendedFeedSources()
+                return
+            end if
+        end if
+    end for
+end function
+
+function OnRecommendedFeedSources() as void
+    if m.recommendedRow = invalid or m.activeChip <> 0
+        return
+    end if
+    feedSources = m.recommendedRow.feedSources
+    if not IsArray(feedSources) or feedSources.Count() = 0 or not IsAssociativeArray(feedSources[0].state)
+        return
+    end if
+    serverChips = YourTubeHomeChips.BuildServerChips(feedSources[0].state.chips)
+    if serverChips.Count() > 0
+        SetChips(serverChips)
+    end if
 end function
 
 function UpdateEmptyState() as void

@@ -11,6 +11,8 @@ namespace Http
     '                            returns the first shelf as items plus every other shelf in "shelves";
     '                            VideoRowListRowContentJob turns each into its own row. With
     '                            ?continuation= it pages one shelf (same shape as auth_recommended).
+    '                            The first page also returns YouTube's topic "chips" (Home chip row);
+    '                            ?chip=<token> loads the home for that topic in the same shape.
     '   GET .../yourtube/browse  a category page (e.g. the News or Sports destination channel) with all
     '                            its shelves mixed into one row: ?browseId=&params=&client=tv|web&max=&skip=a,b
     class YourTubeHomeShelvesRouter extends HttpRouter
@@ -64,6 +66,13 @@ namespace Http
 
             options.minShelves = 14
             options.maxPages = 3
+            ' YourTube: Home topic chips. ?chip= reloads the home for one topic; otherwise collect the chips.
+            chip = request.query.chip
+            if not StringUtils.IsNullOrEmpty(chip)
+                options.startContinuation = chip
+            else
+                options.collectChips = true
+            end if
             result = YourTubeHomeShelves.Browse("FEwhat_to_watch", options)
             if result.error <> invalid
                 response.Json(result)
@@ -89,6 +98,9 @@ namespace Http
                 shelves.Push(feeds[i])
             end for
             body["shelves"] = shelves
+            if IsArray(result.chips) and result.chips.Count() > 0
+                body["chips"] = result.chips
+            end if
             response.Json(body)
             return true
         end function

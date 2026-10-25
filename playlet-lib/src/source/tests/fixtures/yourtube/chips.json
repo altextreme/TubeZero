@@ -1,0 +1,249 @@
+{
+ "search": {
+  "header": {
+   "searchHeaderRenderer": {
+    "chipBar": {
+     "chipCloudRenderer": {
+      "chips": [
+       {
+        "chipCloudChipRenderer": {
+         "style": {
+          "styleType": "STYLE_HOME_FILTER"
+         },
+         "text": {
+          "simpleText": "All"
+         },
+         "isSelected": true,
+         "location": "CHIP_LOCATION_SEARCH_RESULTS"
+        }
+       },
+       {
+        "chipCloudChipRenderer": {
+         "style": {
+          "styleType": "STYLE_HOME_FILTER"
+         },
+         "text": {
+          "simpleText": "Shorts"
+         },
+         "navigationEndpoint": {
+          "continuationCommand": {
+           "token": "Es0FEgVtdXNpYxrABUVvc0VrZ0dIQkRxWEFSS1FBU2hoSUhsdmRYUjFZbVZmYzJodmNuUnpYMlJsWm1sdWFYUnBiMjRnT25SNWNHVTZjaUFvYmlCNWIzVjBkV0psWDJac1lXZGZhR0Z6WDNCeVpXMXBaWEpsWDNacFpHVnZYMjFsZEdGa1lYUmhQVEVnT25SNWNHVTZjaWtnS0c0Z2VXOTFkSFZpWlY5bWJHRm5YMmhoYzE5c2FYWmxYM04wY21WaGJWOXRaWFJoWkdGMFlUMHhJRHAwZVhCbE9uSXBLVGdCWUJwSzZnSUtGUW9GYlhWemFXUHlBUVVLQTBGc2JOZ0NBYmdEWVFxbEFmSUJDQW9HVTJodmNuUnp3Z0tRQVNoaElIbHZkWFIxWW1WZmMyaHZjblJ6WDJSbFptbHVhWFJwYjI0Z09uUjVjR1U2Y2lBb2JpQjViM1YwZFdKbFgyWnNZV2RmYUdGelgzQnlaVzFwWlhKbFgzWnBaR1Z2WDIxbGRHRmtZWFJoUFRFZ09uUjVjR1U2Y2lrZ0tHNGdlVzkxZEhWaVpWOW1iR0ZuWDJoaGMxOXNhWFpsWDNOMGNtVmhiVjl0WlhSaFpHRjBZVDB4SURwMGVYQmxPbklwS2ZnQ0FiZ0RHZ29XOGdFTENnbFZibmRoZEdOb1pXVEtBZ0lZQWJnREhBbzY4Z0VJQ2daV2FXUmxiM1BDQWhwNWIzVjBkV0psWDNacFpHVnZYM0JoWjJVZ09uUjVjR1U2Y3VnQ0FhZ0RBYmdEU01BREFjZ0RBZEFEQVFvYllBZnlBUk1LRVZKbFkyVnVkR3g1SUhWd2JHOWhaR1ZrdUFNSENqYnlBUVlLQkV4cGRtWENBaWQ1YjNWMGRXSmxYMnhwZG1WZlluSnZZV1JqWVhOMFgzTjBZWFIxY3owd0lEcDBlWEJsT25LNEF3UVlDM2dBkAEBGIHg6BgiC3NlYXJjaC1wYWdl",
+           "request": "CONTINUATION_REQUEST_TYPE_SEARCH",
+           "command": {
+            "showReloadUiCommand": {
+             "targetId": "search-page"
+            }
+           }
+          }
+         },
+         "isSelected": false,
+         "location": "CHIP_LOCATION_SEARCH_RESULTS"
+        }
+       },
+       {
+        "chipCloudChipRenderer": {
+         "style": {
+          "styleType": "STYLE_HOME_FILTER"
+         },
+         "text": {
+          "simpleText": "Unwatched"
+         },
+         "navigationEndpoint": {
+          "continuationCommand": {
+           "token": "EpEEEgVtdXNpYxqEBEV2a0NrZ0gxQWpvR0dnSVlBV0FjU3VvQ0NoVUtCVzExYzJsajhnRUZDZ05CYkd6WUFnRzRBMkVLcFFIeUFRZ0tCbE5vYjNKMGM4SUNrQUVvWVNCNWIzVjBkV0psWDNOb2IzSjBjMTlrWldacGJtbDBhVzl1SURwMGVYQmxPbklnS0c0Z2VXOTFkSFZpWlY5bWJHRm5YMmhoYzE5d2NtVnRhV1Z5WlY5MmFXUmxiMTl0WlhSaFpHRjBZVDB4SURwMGVYQmxPbklwSUNodUlIbHZkWFIxWW1WZlpteGhaMTlvWVhOZmJHbDJaVjl6ZEhKbFlXMWZiV1YwWVdSaGRHRTlNU0E2ZEhsd1pUcHlLU240QWdHNEF4b0tGdklCQ3dvSlZXNTNZWFJqYUdWa3lnSUNHQUc0QXh3S092SUJDQW9HVm1sa1pXOXp3Z0lhZVc5MWRIVmlaVjkyYVdSbGIxOXdZV2RsSURwMGVYQmxPbkxvQWdHb0F3RzRBMGpBQXdISUF3SFFBd0VLRzJBSDhnRVRDaEZTWldObGJuUnNlU0IxY0d4dllXUmxaTGdEQndvMjhnRUdDZ1JNYVhabHdnSW5lVzkxZEhWaVpWOXNhWFpsWDJKeWIyRmtZMkZ6ZEY5emRHRjBkWE05TUNBNmRIbHdaVHB5dUFNRUdBdDRBQSUzRCUzRJABARiB4OgYIgtzZWFyY2gtcGFnZQ%3D%3D",
+           "request": "CONTINUATION_REQUEST_TYPE_SEARCH",
+           "command": {
+            "showReloadUiCommand": {
+             "targetId": "search-page"
+            }
+           }
+          }
+         },
+         "isSelected": false,
+         "location": "CHIP_LOCATION_SEARCH_RESULTS"
+        }
+       },
+       {
+        "chipCloudChipRenderer": {
+         "style": {
+          "styleType": "STYLE_HOME_FILTER"
+         },
+         "text": {
+          "simpleText": "Videos"
+         },
+         "navigationEndpoint": {
+          "continuationCommand": {
+           "token": "ErsEEgVtdXNpYxquBEVwc0RrZ0dYQXpvb0VocDViM1YwZFdKbFgzWnBaR1Z2WDNCaFoyVWdPblI1Y0dVNmNpZ0JVQUZnU0dnQmNBRjRBVXJxQWdvVkNnVnRkWE5wWV9JQkJRb0RRV3hzMkFJQnVBTmhDcVVCOGdFSUNnWlRhRzl5ZEhQQ0FwQUJLR0VnZVc5MWRIVmlaVjl6YUc5eWRITmZaR1ZtYVc1cGRHbHZiaUE2ZEhsd1pUcHlJQ2h1SUhsdmRYUjFZbVZmWm14aFoxOW9ZWE5mY0hKbGJXbGxjbVZmZG1sa1pXOWZiV1YwWVdSaGRHRTlNU0E2ZEhsd1pUcHlLU0FvYmlCNWIzVjBkV0psWDJac1lXZGZhR0Z6WDJ4cGRtVmZjM1J5WldGdFgyMWxkR0ZrWVhSaFBURWdPblI1Y0dVNmNpa3AtQUlCdUFNYUNoYnlBUXNLQ1ZWdWQyRjBZMmhsWk1vQ0FoZ0J1QU1jQ2pyeUFRZ0tCbFpwWkdWdmM4SUNHbmx2ZFhSMVltVmZkbWxrWlc5ZmNHRm5aU0E2ZEhsd1pUcHk2QUlCcUFNQnVBTkl3QU1CeUFNQjBBTUJDaHRnQl9JQkV3b1JVbVZqWlc1MGJIa2dkWEJzYjJGa1pXUzRBd2NLTnZJQkJnb0VUR2wyWmNJQ0ozbHZkWFIxWW1WZmJHbDJaVjlpY205aFpHTmhjM1JmYzNSaGRIVnpQVEFnT25SNWNHVTZjcmdEQkJnTGVBQSUzRJABARiB4OgYIgtzZWFyY2gtcGFnZQ%3D%3D",
+           "request": "CONTINUATION_REQUEST_TYPE_SEARCH",
+           "command": {
+            "showReloadUiCommand": {
+             "targetId": "search-page"
+            }
+           }
+          }
+         },
+         "isSelected": false,
+         "location": "CHIP_LOCATION_SEARCH_RESULTS"
+        }
+       },
+       {
+        "chipCloudChipRenderer": {
+         "style": {
+          "styleType": "STYLE_HOME_FILTER"
+         },
+         "text": {
+          "simpleText": "Recently uploaded"
+         },
+         "navigationEndpoint": {
+          "continuationCommand": {
+           "token": "EosEEgVtdXNpYxr-A0V2Y0NrZ0h6QWpvRUlBZGdCMHJxQWdvVkNnVnRkWE5wWV9JQkJRb0RRV3hzMkFJQnVBTmhDcVVCOGdFSUNnWlRhRzl5ZEhQQ0FwQUJLR0VnZVc5MWRIVmlaVjl6YUc5eWRITmZaR1ZtYVc1cGRHbHZiaUE2ZEhsd1pUcHlJQ2h1SUhsdmRYUjFZbVZmWm14aFoxOW9ZWE5mY0hKbGJXbGxjbVZmZG1sa1pXOWZiV1YwWVdSaGRHRTlNU0E2ZEhsd1pUcHlLU0FvYmlCNWIzVjBkV0psWDJac1lXZGZhR0Z6WDJ4cGRtVmZjM1J5WldGdFgyMWxkR0ZrWVhSaFBURWdPblI1Y0dVNmNpa3AtQUlCdUFNYUNoYnlBUXNLQ1ZWdWQyRjBZMmhsWk1vQ0FoZ0J1QU1jQ2pyeUFRZ0tCbFpwWkdWdmM4SUNHbmx2ZFhSMVltVmZkbWxrWlc5ZmNHRm5aU0E2ZEhsd1pUcHk2QUlCcUFNQnVBTkl3QU1CeUFNQjBBTUJDaHRnQl9JQkV3b1JVbVZqWlc1MGJIa2dkWEJzYjJGa1pXUzRBd2NLTnZJQkJnb0VUR2wyWmNJQ0ozbHZkWFIxWW1WZmJHbDJaVjlpY205aFpHTmhjM1JmYzNSaGRIVnpQVEFnT25SNWNHVTZjcmdEQkJnTGVBQSUzRJABARiB4OgYIgtzZWFyY2gtcGFnZQ%3D%3D",
+           "request": "CONTINUATION_REQUEST_TYPE_SEARCH",
+           "command": {
+            "showReloadUiCommand": {
+             "targetId": "search-page"
+            }
+           }
+          }
+         },
+         "isSelected": false,
+         "location": "CHIP_LOCATION_SEARCH_RESULTS"
+        }
+       },
+       {
+        "chipCloudChipRenderer": {
+         "style": {
+          "styleType": "STYLE_HOME_FILTER"
+         },
+         "text": {
+          "simpleText": "Live"
+         },
+         "navigationEndpoint": {
+          "continuationCommand": {
+           "token": "Er8EEgVtdXNpYxqyBEVwNERrZ0dhQXpvckVpZDViM1YwZFdKbFgyeHBkbVZmWW5KdllXUmpZWE4wWDNOMFlYUjFjejB3SURwMGVYQmxPbkpnQkVycUFnb1ZDZ1Z0ZFhOcFlfSUJCUW9EUVd4czJBSUJ1QU5oQ3FVQjhnRUlDZ1pUYUc5eWRIUENBcEFCS0dFZ2VXOTFkSFZpWlY5emFHOXlkSE5mWkdWbWFXNXBkR2x2YmlBNmRIbHdaVHB5SUNodUlIbHZkWFIxWW1WZlpteGhaMTlvWVhOZmNISmxiV2xsY21WZmRtbGtaVzlmYldWMFlXUmhkR0U5TVNBNmRIbHdaVHB5S1NBb2JpQjViM1YwZFdKbFgyWnNZV2RmYUdGelgyeHBkbVZmYzNSeVpXRnRYMjFsZEdGa1lYUmhQVEVnT25SNWNHVTZjaWtwLUFJQnVBTWFDaGJ5QVFzS0NWVnVkMkYwWTJobFpNb0NBaGdCdUFNY0NqcnlBUWdLQmxacFpHVnZjOElDR25sdmRYUjFZbVZmZG1sa1pXOWZjR0ZuWlNBNmRIbHdaVHB5NkFJQnFBTUJ1QU5Jd0FNQnlBTUIwQU1CQ2h0Z0JfSUJFd29SVW1WalpXNTBiSGtnZFhCc2IyRmtaV1M0QXdjS052SUJCZ29FVEdsMlpjSUNKM2x2ZFhSMVltVmZiR2wyWlY5aWNtOWhaR05oYzNSZmMzUmhkSFZ6UFRBZ09uUjVjR1U2Y3JnREJCZ0xlQUElM0SQAQEYgeDoGCILc2VhcmNoLXBhZ2U%3D",
+           "request": "CONTINUATION_REQUEST_TYPE_SEARCH",
+           "command": {
+            "showReloadUiCommand": {
+             "targetId": "search-page"
+            }
+           }
+          }
+         },
+         "isSelected": false,
+         "location": "CHIP_LOCATION_SEARCH_RESULTS"
+        }
+       }
+      ],
+      "nextButton": {
+       "buttonRenderer": {
+        "style": "STYLE_DEFAULT",
+        "size": "SIZE_DEFAULT",
+        "isDisabled": false,
+        "icon": {
+         "iconType": "CHEVRON_RIGHT"
+        },
+        "accessibility": {
+         "label": "Next"
+        }
+       }
+      },
+      "previousButton": {
+       "buttonRenderer": {
+        "style": "STYLE_DEFAULT",
+        "size": "SIZE_DEFAULT",
+        "isDisabled": false,
+        "icon": {
+         "iconType": "CHEVRON_LEFT"
+        },
+        "accessibility": {
+         "label": "Previous"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "channelVideos": {
+  "contents": {
+   "twoColumnBrowseResultsRenderer": {
+    "tabs": [
+     {
+      "tabRenderer": {
+       "content": {
+        "richGridRenderer": {
+         "header": {
+          "chipBarViewModel": {
+           "chips": [
+            {
+             "chipViewModel": {
+              "text": "Latest",
+              "selected": true,
+              "displayType": "CHIP_VIEW_MODEL_DISPLAY_TYPE_UNSPECIFIED",
+              "tapCommand": {
+               "innertubeCommand": {
+                "continuationCommand": {
+                 "token": "4qmFsgJkEhhVQ0JKeWNzbWR1dllFTDgzUl9VNEpyaVEaSDhnWXVHaXg2S2tJb0NpUTJZelF3WTJWaU5DMHdNREF3TFRJeVlUWXRPV0ptWVMweE5HTXhOR1ZtTWpFMU56QVlCQSUzRCUzRA%3D%3D",
+                 "request": "CONTINUATION_REQUEST_TYPE_BROWSE",
+                 "command": {
+                  "showReloadUiCommand": {
+                   "targetId": "6c40ceb4-0000-22a6-9bfa-14c14ef21570"
+                  }
+                 }
+                }
+               }
+              }
+             }
+            },
+            {
+             "chipViewModel": {
+              "text": "Popular",
+              "selected": false,
+              "displayType": "CHIP_VIEW_MODEL_DISPLAY_TYPE_UNSPECIFIED",
+              "tapCommand": {
+               "innertubeCommand": {
+                "continuationCommand": {
+                 "token": "4qmFsgJkEhhVQ0JKeWNzbWR1dllFTDgzUl9VNEpyaVEaSDhnWXVHaXg2S2tJb0NpUTJZelF3WTJWaU5DMHdNREF3TFRJeVlUWXRPV0ptWVMweE5HTXhOR1ZtTWpFMU56QVlBZyUzRCUzRA%3D%3D",
+                 "request": "CONTINUATION_REQUEST_TYPE_BROWSE",
+                 "command": {
+                  "showReloadUiCommand": {
+                   "targetId": "6c40ceb4-0000-22a6-9bfa-14c14ef21570"
+                  }
+                 }
+                }
+               }
+              }
+             }
+            },
+            {
+             "chipViewModel": {
+              "text": "Oldest",
+              "selected": false,
+              "displayType": "CHIP_VIEW_MODEL_DISPLAY_TYPE_UNSPECIFIED",
+              "tapCommand": {
+               "innertubeCommand": {
+                "continuationCommand": {
+                 "token": "4qmFsgJkEhhVQ0JKeWNzbWR1dllFTDgzUl9VNEpyaVEaSDhnWXVHaXg2S2tJb0NpUTJZelF3WTJWaU5DMHdNREF3TFRJeVlUWXRPV0ptWVMweE5HTXhOR1ZtTWpFMU56QVlCUSUzRCUzRA%3D%3D",
+                 "request": "CONTINUATION_REQUEST_TYPE_BROWSE",
+                 "command": {
+                  "showReloadUiCommand": {
+                   "targetId": "6c40ceb4-0000-22a6-9bfa-14c14ef21570"
+                  }
+                 }
+                }
+               }
+              }
+             }
+            }
+           ]
+          }
+         }
+        }
+       }
+      }
+     }
+    ]
+   }
+  }
+ }
+}
