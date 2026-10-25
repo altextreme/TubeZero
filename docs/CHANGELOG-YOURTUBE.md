@@ -95,6 +95,23 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   exactly as before, and with the controls up Left/Right scrub as before. Settings > Playback > Quick 10-second
   skip (`playback.quick_skip`, on by default).
 - The title and channel now sit above the action row (it grew to the left under them).
+### Discovery: channel page, chips, live now (not yet checked on the TV)
+- Channel page restyled like the YouTube TV app: dimmed banner, round avatar, name and handle/subscriber line,
+  Subscribe and Play all chips, tab chips (search, Videos, Shorts, Live, Playlists...) and the selected tab as a
+  3-column grid. Focusing the grid slides the header up. Play all plays the loaded Videos tab, else the first page
+  of the channel's uploads. Sort options stay in the long-press menu. Works signed out.
+- Search inside a channel: the search chip opens a keyboard; results (InnerTube browse on the channel with the
+  search tab's params and a query, route `/api/v1/yourtube/channel-search`) become a tab showing the query.
+- Home chip row under the top bar. Signed in, YouTube's topic chips from the home page reload Home for that topic;
+  otherwise (or when YouTube sends none) All, Live, Music, Gaming, News, Sports, Podcasts and Learning filter Home to
+  those rows. Up from the first row reaches the chips, Up again the top bar.
+- Subscriptions filter chips: All, Today, Unwatched, Live now, Videos, Shorts (client-side on the loaded videos;
+  Live now asks the server on YouTube accounts).
+- "Live now from your subscriptions": first Home row and a titled row above the Subscriptions grid, from the live
+  streams in the newest subscriptions pages (route `/api/v1/yourtube/subscriptions-live`). Hidden when nobody is live.
+- Search results: Upload date, Type, Duration and Sort chips under the results row; OK cycles the value and searches
+  again (same filters as the Filters dialog).
+- `YourTubeChipBar`: the shared chip row (resting `#272727`, light focused / current chip).
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote
