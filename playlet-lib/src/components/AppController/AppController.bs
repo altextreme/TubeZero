@@ -19,7 +19,12 @@ function OnNodeReady()
     NodeSetFocus(m.top.root, true)
 end function
 
-function PushScreen(node as object)
+function PushScreen(node as object) as void
+    ' YourTube: in Kids mode only the Kids screens open (no channel or playlist pages, menus, live player...)
+    if ValidBool(m.global.ytKidsActive) and node <> invalid and not node.subtype().StartsWith("YourTubeKids")
+        LogInfo("Kids mode: not opening", node.subtype())
+        return
+    end if
     m.stack.appendChild(node)
     FocusTopScreen(invalid)
 end function
@@ -78,7 +83,10 @@ function ShowRootScreen(screenName as string) as void
     screen.visible = true
     if not m.firstScreenCalled
         m.firstScreenCalled = true
-        NodeSetFocus(screen, true)
+        ' YourTube: unless a screen was pushed first (the Kids home when the app starts in Kids mode)
+        if m.stack = invalid or m.stack.getChildCount() <= 1
+            NodeSetFocus(screen, true)
+        end if
     end if
 end function
 
@@ -98,6 +106,10 @@ function OnKeyEvent(key as string, press as boolean) as boolean
     end if
 
     if key = RemoteKeys.OptionsLongPress and press
+        ' YourTube: no queue view in Kids mode
+        if ValidBool(m.global.ytKidsActive)
+            return true
+        end if
         LogInfo("Opening VideoQueueView")
         VideoQueueViewUtils.Open(m.top.videoQueue, m.top)
         return true

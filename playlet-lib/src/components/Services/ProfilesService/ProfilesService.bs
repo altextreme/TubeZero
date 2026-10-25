@@ -155,7 +155,7 @@ function GetProfilesDto(includeAccessToken as boolean) as object
     profileNodes = m.profilesContent.getChildren(-1, 0)
 
     for each profileNode in profileNodes
-        if profileNode.type = "login"
+        if profileNode.type = "login" or profileNode.type = "kids" ' YourTube: kids card
             continue for
         end if
 

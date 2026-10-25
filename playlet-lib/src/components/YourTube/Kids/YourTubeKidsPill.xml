@@ -1,0 +1,17 @@
+<!--
+    TubeZero Kids: a focusable pill button (dark, light when focused, like the top bar and the Notifications pill).
+    Set `text`; OK raises `selected`.
+-->
+<component name="YourTubeKidsPill" extends="Group">
+    <interface>
+        <field id="text" type="string" onChange="Layout" />
+        <field id="selected" type="boolean" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Poster id="Pill" uri="pkg:/images/yt-pill-dark.$$RES$$.9.png" height="45">
+            <Label id="PillLabel" color="0xEBEBEBFF" height="45" vertAlign="center" translation="[22,0]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="19" />
+            </Label>
+        </Poster>
+    </children>
+</component>

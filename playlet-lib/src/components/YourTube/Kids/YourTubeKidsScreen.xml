@@ -1,0 +1,44 @@
+<!--
+    TubeZero Kids: the Kids home. Pushed on the app stack by YourTubeKidsService while Kids mode is on, so it covers
+    the nav rail and the root screens (no Search, Subscriptions, You, Live, Settings or Profile). One row per
+    allowed channel (its uploads) and playlist. Up from the first row reaches the "Parent" pill (PIN, then the
+    parent menu); Back asks to exit the app, which starts in Kids mode again.
+-->
+<component name="YourTubeKidsScreen" extends="Group" includes="AutoBind,Focus,Disposable">
+    <interface>
+        <field id="appController" type="node" bind="/AppController" />
+    </interface>
+    <children>
+        <Rectangle width="1280" height="720" color="0x0F0F0FFF" />
+        <Poster id="Logo" width="106" height="42" translation="[90,36]" uri="pkg:/images/logo-dark.png" />
+        <Poster id="KidsBadge" uri="pkg:/images/yt-pill-light.$$RES$$.9.png" blendColor="0xFFC83DFF" width="78" height="34" translation="[208,40]">
+            <Label text="Kids" color="0x161616FF" width="78" height="34" horizAlign="center" vertAlign="center">
+                <Font role="font" uri="font:BoldSystemFontFile" size="19" />
+            </Label>
+        </Poster>
+        <Label id="TimeLabel" width="460" horizAlign="right" color="0xAAAAAAFF" translation="[590,46]">
+            <Font role="font" uri="font:SystemFontFile" size="20" />
+        </Label>
+        <YourTubeKidsPill id="ParentPill" text="Parent" translation="[1078,34]" />
+        <Label id="EmptyLabel" visible="false" width="900" wrap="true" color="0xAAAAAAFF" translation="[90,200]"
+            text="Nothing to watch yet. Ask a parent to add channels in Kid settings.">
+            <Font role="font" uri="font:SystemFontFile" size="24" />
+        </Label>
+        <VideoRowList
+            itemComponentName="RowCell"
+            id="rowList"
+            translation="[0,110]"
+            numRows="2"
+            rowitemSize="[[350,196]]"
+            rowItemSpacing="[[25,0]]"
+            rowHeights="[326]"
+            itemSize="[1280,326]"
+            itemSpacing="[0,65]"
+            rowLabelOffset="[[90,20]]"
+            focusXOffset="[90]"
+            showRowLabel="[true]"
+            rowFocusAnimationStyle="floatingfocus"
+            variableWidthItems="true"
+            focusBitmapUri="pkg:/images/focus-glow-padding-30.$$RES$$.9.png" />
+    </children>
+</component>

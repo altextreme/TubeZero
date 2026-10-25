@@ -1,0 +1,454 @@
+import "pkg:/source/utils/CryptoUtils.bs"
+import "pkg:/source/utils/RegistryUtils.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+' TubeZero: Kids profile, a local mode limited to an allowlist of channels and playlists, with no search, an
+' optional daily time limit and a PIN to leave. Kept on this TV only, in one registry value (yourtube_kids):
+'   { v: 1, on: bool, pin: sha256(salt:pin), salt, ch: [{ id, name }], pl: [{ id, name }],
+'     lim: dailyMinutes (0 = off), day: localDay, used: secondsWatchedOnDay, bonus: extraSecondsOnDay,
+'     fails: wrongPinsInARow, lockUntil: epochSeconds }
+' The PIN itself is never stored or logged, only its salted hash.
+namespace YourTubeKids
+
+    const REGISTRY_KEY = "yourtube_kids"
+    const MAX_ENTRIES = 40
+    const MAX_NAME = 60
+    const PIN_LENGTH = 4
+    ' After this many wrong PINs in a row, PIN entry is locked for LOCK_SECONDS (a 4-digit PIN is easy to guess)
+    const MAX_FAILS = 5
+    const LOCK_SECONDS = 60
+
+    function LimitChoices() as object
+        return [0, 30, 60, 90, 120]
+    end function
+
+    function NewStore() as object
+        return { v: 1, on: false, pin: "", salt: "", ch: [], pl: [], lim: 0, day: 0, used: 0, bonus: 0, fails: 0, lockUntil: 0 }
+    end function
+
+    function NumberOr(value as dynamic, fallback as dynamic) as dynamic
+        if IsNumber(value)
+            return value
+        end if
+        return fallback
+    end function
+
+    function CleanEntries(list as dynamic) as object
+        result = []
+        seen = {}
+        for each entry in ValidArray(list)
+            if IsAssociativeArray(entry) and IsString(entry.id) and entry.id <> "" and not seen.DoesExist(entry.id)
+                seen[entry.id] = true
+                result.Push({ id: entry.id, name: CleanName(entry.name, entry.id) })
+            end if
+            if result.Count() >= MAX_ENTRIES
+                exit for
+            end if
+        end for
+        return result
+    end function
+
+    function CleanName(name as dynamic, fallback as string) as string
+        text = ValidString(name).Trim()
+        if text = ""
+            text = fallback
+        end if
+        if text.Len() > MAX_NAME
+            text = text.Left(MAX_NAME)
+        end if
+        return text
+    end function
+
+    function Parse(raw as dynamic) as object
+        store = NewStore()
+        if not IsString(raw) or raw = ""
+            return store
+        end if
+        parsed = StringUtils.ParseJsonSafe(raw)
+        if not IsAssociativeArray(parsed)
+            return store
+        end if
+        store.on = ValidBool(parsed.on)
+        store.pin = ValidString(parsed.pin)
+        store.salt = ValidString(parsed.salt)
+        store.ch = CleanEntries(parsed.ch)
+        store.pl = CleanEntries(parsed.pl)
+        store.lim = Int(NumberOr(parsed.lim, 0))
+        store.day = Int(NumberOr(parsed.day, 0))
+        store.used = Int(NumberOr(parsed.used, 0))
+        store.bonus = Int(NumberOr(parsed.bonus, 0))
+        store.fails = Int(NumberOr(parsed.fails, 0))
+        store.lockUntil = Int(NumberOr(parsed.lockUntil, 0))
+        ' Kids mode can't be on without a PIN to leave it
+        if store.pin = ""
+            store.on = false
+        end if
+        return store
+    end function
+
+    function Serialize(store as object) as string
+        return FormatJson({
+            v: 1
+            on: store.on = true
+            pin: ValidString(store.pin)
+            salt: ValidString(store.salt)
+            ch: store.ch
+            pl: store.pl
+            lim: Int(NumberOr(store.lim, 0))
+            day: Int(NumberOr(store.day, 0))
+            used: Int(NumberOr(store.used, 0) + 0.5)
+            bonus: Int(NumberOr(store.bonus, 0))
+            fails: Int(NumberOr(store.fails, 0))
+            lockUntil: Int(NumberOr(store.lockUntil, 0))
+        })
+    end function
+
+    ' --- PIN ------------------------------------------------------------------------------------------------
+
+    function IsValidPin(pin as dynamic) as boolean
+        if not IsString(pin) or pin.Len() <> PIN_LENGTH
+            return false
+        end if
+        for i = 0 to pin.Len() - 1
+            code = Asc(pin.Mid(i, 1))
+            if code < 48 or code > 57
+                return false
+            end if
+        end for
+        return true
+    end function
+
+    function HashPin(pin as string, salt as string) as string
+        return CryptoUtils.GetSha256(`tubezero-kids:${salt}:${pin}`)
+    end function
+
+    function HasPin(store as object) as boolean
+        return ValidString(store.pin) <> ""
+    end function
+
+    function SetPin(store as object, pin as string, salt as string) as boolean
+        if not IsValidPin(pin) or salt = ""
+            return false
+        end if
+        store.salt = salt
+        store.pin = HashPin(pin, salt)
+        store.fails = 0
+        store.lockUntil = 0
+        return true
+    end function
+
+    ' Seconds until PIN entry unlocks again (0 = not locked).
+    function LockedSeconds(store as object, nowSec as integer) as integer
+        lockUntil = Int(NumberOr(store.lockUntil, 0))
+        if lockUntil > nowSec
+            return lockUntil - nowSec
+        end if
+        return 0
+    end function
+
+    ' Checks a PIN and counts wrong tries: { ok, locked, waitSeconds }. While locked every try fails.
+    function CheckPin(store as object, pin as dynamic, nowSec as integer) as object
+        lockedFor = LockedSeconds(store, nowSec)
+        if lockedFor > 0
+            return { ok: false, locked: true, waitSeconds: lockedFor }
+        end if
+        if HasPin(store) and IsValidPin(pin) and HashPin(pin, ValidString(store.salt)) = store.pin
+            store.fails = 0
+            store.lockUntil = 0
+            return { ok: true, locked: false, waitSeconds: 0 }
+        end if
+        store.fails = Int(NumberOr(store.fails, 0)) + 1
+        if store.fails >= MAX_FAILS
+            store.fails = 0
+            store.lockUntil = nowSec + LOCK_SECONDS
+            return { ok: false, locked: true, waitSeconds: LOCK_SECONDS }
+        end if
+        return { ok: false, locked: false, waitSeconds: 0 }
+    end function
+
+    ' --- allowlist ------------------------------------------------------------------------------------------
+
+    function EntryCount(store as object) as integer
+        return store.ch.Count() + store.pl.Count()
+    end function
+
+    function IndexOf(list as object, id as string) as integer
+        for i = 0 to list.Count() - 1
+            if list[i].id = id
+                return i
+            end if
+        end for
+        return -1
+    end function
+
+    function HasChannel(store as object, id as dynamic) as boolean
+        return IsString(id) and id <> "" and IndexOf(store.ch, id) >= 0
+    end function
+
+    function HasPlaylist(store as object, id as dynamic) as boolean
+        return IsString(id) and id <> "" and IndexOf(store.pl, id) >= 0
+    end function
+
+    ' "added", "exists", "full" or "invalid"
+    function AddEntry(store as object, kind as string, id as dynamic, name as dynamic) as string
+        if not IsString(id) or id.Trim() = ""
+            return "invalid"
+        end if
+        id = id.Trim()
+        list = store.ch
+        if kind = "playlist"
+            list = store.pl
+        end if
+        if IndexOf(list, id) >= 0
+            return "exists"
+        end if
+        if EntryCount(store) >= MAX_ENTRIES
+            return "full"
+        end if
+        list.Push({ id: id, name: CleanName(name, id) })
+        return "added"
+    end function
+
+    function AddChannel(store as object, id as dynamic, name as dynamic) as string
+        return AddEntry(store, "channel", id, name)
+    end function
+
+    function AddPlaylist(store as object, id as dynamic, name as dynamic) as string
+        return AddEntry(store, "playlist", id, name)
+    end function
+
+    function RemoveEntry(store as object, kind as string, id as string) as boolean
+        list = store.ch
+        if kind = "playlist"
+            list = store.pl
+        end if
+        index = IndexOf(list, id)
+        if index < 0
+            return false
+        end if
+        list.Delete(index)
+        return true
+    end function
+
+    ' A compact lookup for the allowed channels, kept in m.global.ytKidsAllow so the player and the queue can
+    ' check videos without a callFunc: { "id:UC..": true, "name:bluey": true }.
+    function AllowIndex(store as object) as object
+        index = {}
+        for each entry in store.ch
+            index["id:" + entry.id] = true
+            name = LCase(ValidString(entry.name).Trim())
+            if name <> "" and name <> LCase(entry.id)
+                index["name:" + name] = true
+            end if
+        end for
+        return index
+    end function
+
+    function FieldString(item as dynamic, fieldName as string) as string
+        value = invalid
+        if type(item) = "roSGNode"
+            if item.hasField(fieldName)
+                value = item.getField(fieldName)
+            end if
+        else if IsAssociativeArray(item)
+            value = item[fieldName]
+        end if
+        if IsString(value)
+            return value
+        end if
+        return ""
+    end function
+
+    ' True when the video (Invidious-style AA or a video ContentNode) is from an allowed channel.
+    function IsAllowedVideo(allowIndex as dynamic, video as dynamic) as boolean
+        if not IsAssociativeArray(allowIndex) or video = invalid
+            return false
+        end if
+        authorId = FieldString(video, "authorId")
+        if authorId <> "" and allowIndex.DoesExist("id:" + authorId)
+            return true
+        end if
+        for each fieldName in ["author", "_author"]
+            name = LCase(FieldString(video, fieldName).Trim())
+            if name <> "" and allowIndex.DoesExist("name:" + name)
+                return true
+            end if
+        end for
+        return false
+    end function
+
+    function FilterVideos(allowIndex as dynamic, videos as dynamic) as object
+        result = []
+        for each video in ValidArray(videos)
+            if IsAllowedVideo(allowIndex, video)
+                result.Push(video)
+            end if
+        end for
+        return result
+    end function
+
+    ' One feed row per allowed channel (its uploads) and playlist, in the order they were added.
+    function BuildFeeds(store as object) as object
+        feeds = []
+        for each entry in store.ch
+            feeds.Push({
+                title: entry.name
+                feedSources: [{
+                    id: "kids_channel_" + entry.id
+                    title: entry.name
+                    apiType: "Invidious"
+                    endpoint: "channel_videos"
+                    optional: true
+                    pathParams: { ucid: entry.id }
+                }]
+            })
+        end for
+        for each entry in store.pl
+            feeds.Push({
+                title: entry.name
+                feedSources: [{
+                    id: "kids_playlist_" + entry.id
+                    title: entry.name
+                    apiType: "Invidious"
+                    endpoint: "playlist"
+                    optional: true
+                    pathParams: { plid: entry.id }
+                }]
+            })
+        end for
+        return feeds
+    end function
+
+    ' The channel of a card (video, channel or playlist with an author): { id, name } or invalid.
+    function ChannelOfItem(item as dynamic) as dynamic
+        id = FieldString(item, "authorId").Trim()
+        if id = ""
+            return invalid
+        end if
+        name = FieldString(item, "_author").Trim()
+        if name = ""
+            name = FieldString(item, "author").Trim()
+        end if
+        return { id: id, name: CleanName(name, id) }
+    end function
+
+    ' --- daily time limit -----------------------------------------------------------------------------------
+
+    ' Starts a new day's count when the day changed. True when it did.
+    function RollDay(store as object, today as integer) as boolean
+        if Int(NumberOr(store.day, 0)) = today
+            return false
+        end if
+        store.day = today
+        store.used = 0
+        store.bonus = 0
+        return true
+    end function
+
+    function AddUsed(store as object, today as integer, seconds as dynamic) as object
+        RollDay(store, today)
+        if IsNumber(seconds) and seconds > 0 and seconds < 3600
+            store.used = NumberOr(store.used, 0) + seconds
+        end if
+        return store
+    end function
+
+    function AddBonus(store as object, today as integer, minutes as integer) as object
+        RollDay(store, today)
+        if minutes > 0
+            store.bonus = Int(NumberOr(store.bonus, 0)) + minutes * 60
+        end if
+        return store
+    end function
+
+    ' Seconds left today, or -1 when there is no limit.
+    function RemainingSeconds(store as object, today as integer) as integer
+        limitMinutes = Int(NumberOr(store.lim, 0))
+        if limitMinutes <= 0
+            return -1
+        end if
+        used = 0
+        bonus = 0
+        if Int(NumberOr(store.day, 0)) = today
+            used = NumberOr(store.used, 0)
+            bonus = Int(NumberOr(store.bonus, 0))
+        end if
+        remaining = Int(limitMinutes * 60 + bonus - used)
+        if remaining < 0
+            remaining = 0
+        end if
+        return remaining
+    end function
+
+    function IsTimeUp(store as object, today as integer) as boolean
+        return RemainingSeconds(store, today) = 0
+    end function
+
+    ' Off -> 30 -> 60 -> 90 -> 120 -> Off
+    function NextLimit(minutes as integer) as integer
+        choices = LimitChoices()
+        for i = 0 to choices.Count() - 1
+            if choices[i] = minutes
+                return choices[(i + 1) mod choices.Count()]
+            end if
+        end for
+        return choices[0]
+    end function
+
+    ' 0 -> "Off", 30 -> "30 min", 60 -> "1 h", 90 -> "1 h 30 min"
+    function FormatMinutes(minutes as integer) as string
+        if minutes <= 0
+            return "Off"
+        end if
+        hours = Int(minutes / 60)
+        rest = minutes - hours * 60
+        if hours = 0
+            return `${rest} min`
+        end if
+        if rest = 0
+            return `${hours} h`
+        end if
+        return `${hours} h ${rest} min`
+    end function
+
+    ' "45 min left today", "Less than a minute left", "" when there is no limit
+    function FormatRemaining(seconds as integer) as string
+        if seconds < 0
+            return ""
+        end if
+        if seconds < 60
+            return "Less than a minute left"
+        end if
+        return FormatMinutes(Int((seconds + 59) / 60)) + " left today"
+    end function
+
+    ' --- storage --------------------------------------------------------------------------------------------
+
+    function Today() as integer
+        date = CreateObject("roDateTime")
+        date.ToLocalTime()
+        return Int(date.AsSeconds() / 86400)
+    end function
+
+    function NowSeconds() as integer
+        return CreateObject("roDateTime").AsSeconds()
+    end function
+
+    function NewSalt() as string
+        return CreateObject("roDeviceInfo").GetRandomUUID()
+    end function
+
+    function Load() as object
+        return Parse(RegistryUtils.Read(REGISTRY_KEY))
+    end function
+
+    function Save(store as object) as void
+        RegistryUtils.Write(REGISTRY_KEY, Serialize(store))
+    end function
+
+    function Reset() as void
+        RegistryUtils.Delete(REGISTRY_KEY)
+    end function
+
+end namespace

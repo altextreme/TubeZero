@@ -1,0 +1,21 @@
+<!--
+    TubeZero Kids: "Time's up" screen, pushed over the Kids home (playback stopped) when today's limit is used up.
+    Only the "Parent" pill works (PIN, then more time or leave Kids mode); Back asks to exit the app. It closes by
+    itself when a new day starts.
+-->
+<component name="YourTubeKidsTimesUpScreen" extends="Group" includes="Focus">
+    <children>
+        <Rectangle width="1280" height="720" color="0x0F0F0FFF" />
+        <Poster uri="pkg:/images/white-circle.png" blendColor="0xFFC83DFF" width="140" height="140" translation="[570,140]">
+            <Poster uri="pkg:/images/icons/ms/history.png" width="72" height="72" translation="[34,34]" blendColor="0x161616FF" />
+        </Poster>
+        <Label text="Time's up for today!" width="1280" horizAlign="center" color="0xF1F1F1FF" translation="[0,320]">
+            <Font role="font" uri="font:BoldSystemFontFile" size="44" />
+        </Label>
+        <Label text="Great watching. TubeZero Kids will be back tomorrow." width="1280" horizAlign="center" color="0xAAAAAAFF" translation="[0,390]">
+            <Font role="font" uri="font:SystemFontFile" size="24" />
+        </Label>
+        <YourTubeKidsPill id="ParentPill" text="Parent" translation="[586,480]" />
+        <Timer id="DayTimer" duration="60" repeat="true" />
+    </children>
+</component>

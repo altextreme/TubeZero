@@ -1,0 +1,609 @@
+import "pkg:/components/ContextMenu/ContextMenuUtils.bs"
+import "pkg:/components/Dialog/DialogUtils.bs"
+import "pkg:/components/YourTube/Kids/YourTubeKids.bs"
+import "pkg:/components/YourTube/YourTubeText.bs"
+import "pkg:/source/utils/Logging.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+' TubeZero Kids: see YourTubeKidsService.xml
+
+' Writes from the watch-time hook are batched: at most one registry write a minute (or when time runs out).
+const SAVE_INTERVAL_MS = 60000
+
+function Init()
+    m.global.addFields({ yourtubeKids: m.top, ytKidsActive: false, ytKidsAllow: {} })
+    m.store = YourTubeKids.Load()
+    ' what the open PIN prompt is for ("setup1", "setup2", "verify"), and what to do once it is verified
+    m.pinPurpose = ""
+    m.afterVerify = ""
+    m.verifyTitle = ""
+    ' "setup" or "change": what the two new-PIN prompts are for. The first entry is kept only until it is confirmed.
+    m.setupKind = "setup"
+    m.newPin = ""
+    m.parentActions = []
+    m.profileActions = []
+    m.deferred = []
+    m.saveClock = CreateObject("roTimespan")
+    m.deferTimer = m.top.findNode("DeferTimer")
+    m.deferTimer.observeField("fire", FuncName(OnDeferTimer))
+    m.focusTimer = m.top.findNode("FocusTimer")
+    m.focusTimer.observeField("fire", FuncName(OnFocusTimer))
+    ApplyState()
+end function
+
+function OnNodeReady()
+end function
+
+' --- state ------------------------------------------------------------------------------------------------
+
+function ApplyState() as void
+    active = m.store.on = true
+    m.global.ytKidsActive = active
+    m.global.ytKidsAllow = YourTubeKids.AllowIndex(m.store)
+    m.top.active = active
+    m.top.remainingSeconds = YourTubeKids.RemainingSeconds(m.store, YourTubeKids.Today())
+    m.top.changed = m.top.changed + 1
+end function
+
+function SaveStore() as void
+    YourTubeKids.Save(m.store)
+    m.saveClock.Mark()
+    ApplyState()
+end function
+
+'' For the Kids screens. callFunc target, hence the unused parameter. Never includes the PIN hash.
+function GetState(_unused as dynamic) as object
+    today = YourTubeKids.Today()
+    YourTubeKids.RollDay(m.store, today)
+    remaining = YourTubeKids.RemainingSeconds(m.store, today)
+    return {
+        active: m.store.on = true
+        hasPin: YourTubeKids.HasPin(m.store)
+        channels: m.store.ch
+        playlists: m.store.pl
+        feeds: YourTubeKids.BuildFeeds(m.store)
+        limitMinutes: m.store.lim
+        limitText: YourTubeKids.FormatMinutes(m.store.lim)
+        remainingSeconds: remaining
+        remainingText: YourTubeKids.FormatRemaining(remaining)
+        usedText: YourTubeKids.FormatMinutes(Int(m.store.used / 60))
+    }
+end function
+
+function IsTimeUp(_unused as dynamic) as boolean
+    return m.store.on = true and YourTubeKids.IsTimeUp(m.store, YourTubeKids.Today())
+end function
+
+' --- screens on the app stack -----------------------------------------------------------------------------
+
+function StackNode() as dynamic
+    appController = m.top.appController
+    if appController = invalid
+        return invalid
+    end if
+    return appController.stack
+end function
+
+function FindOnStack(subtypeName as string) as dynamic
+    stack = StackNode()
+    if stack = invalid
+        return invalid
+    end if
+    for i = stack.getChildCount() - 1 to 0 step -1
+        child = stack.getChild(i)
+        if child <> invalid and child.subtype() = subtypeName
+            return child
+        end if
+    end for
+    return invalid
+end function
+
+' Removes the Kids screens (all of them, or one kind) and gives focus to what is left on top.
+function RemoveKidsScreens(onlySubtype = "" as string) as void
+    stack = StackNode()
+    if stack = invalid
+        return
+    end if
+    for i = stack.getChildCount() - 1 to 1 step -1
+        child = stack.getChild(i)
+        if child = invalid
+            continue for
+        end if
+        name = child.subtype()
+        if (onlySubtype = "" and name.StartsWith("YourTubeKids")) or name = onlySubtype
+            if child.hasField("dispose")
+                child.dispose = true
+            end if
+            stack.removeChildIndex(i)
+        end if
+    end for
+    m.top.appController@.FocusTopScreen()
+end function
+
+' Leaves only the root screen (nav + root screens) on the stack, e.g. before Kids mode starts.
+function PopToRoot() as void
+    stack = StackNode()
+    if stack = invalid
+        return
+    end if
+    while stack.getChildCount() > 1
+        stack.removeChildIndex(stack.getChildCount() - 1)
+    end while
+end function
+
+function PushKidsScreen(subtypeName as string, bind as boolean) as object
+    existing = FindOnStack(subtypeName)
+    if existing <> invalid
+        m.top.appController@.FocusTopScreen()
+        return existing
+    end if
+    screen = CreateObject("roSGNode", subtypeName)
+    m.top.appController@.PushScreen(screen)
+    if bind
+        screen@.BindNode()
+    end if
+    return screen
+end function
+
+function ShowKidsHome() as void
+    PushKidsScreen("YourTubeKidsScreen", true)
+end function
+
+function ShowTimesUp() as void
+    if FindOnStack("YourTubeKidsTimesUpScreen") <> invalid
+        return
+    end if
+    ClosePlayer()
+    PushKidsScreen("YourTubeKidsTimesUpScreen", false)
+end function
+
+function OpenSettings() as void
+    PushKidsScreen("YourTubeKidsSettingsScreen", false)
+end function
+
+function ClosePlayer() as void
+    videoQueue = m.top.videoQueue
+    if videoQueue <> invalid and videoQueue.player <> invalid
+        videoQueue.closePlayer = true
+    end if
+end function
+
+' --- entering and leaving ---------------------------------------------------------------------------------
+
+'' Called by MainScene once the scene is bound: the app starts in Kids mode when it was on. callFunc target.
+function StartIfActive(_unused as dynamic) as void
+    if m.store.on <> true
+        return
+    end if
+    LogInfo("Starting in Kids mode")
+    ShowKidsHome()
+    if IsTimeUp(invalid)
+        ShowTimesUp()
+    end if
+    m.focusTimer.control = "start"
+end function
+
+function OnFocusTimer() as void
+    stack = StackNode()
+    if stack = invalid or m.store.on <> true or DialogUtils.GetCurrentDialog() <> invalid
+        return
+    end if
+    top = stack.getChild(stack.getChildCount() - 1)
+    if top <> invalid and top.subtype().StartsWith("YourTubeKids") and not top.isInFocusChain()
+        m.top.appController@.FocusTopScreen()
+    end if
+end function
+
+function StartKids(_unused as dynamic) as void
+    if not YourTubeKids.HasPin(m.store)
+        return
+    end if
+    if YourTubeKids.EntryCount(m.store) = 0
+        DialogUtils.ShowDialogEx({
+            title: "Add something first"
+            message: [
+                "Kids mode only shows the channels and playlists you allow, and the list is empty."
+                "Long-press any video, channel or playlist card and choose ""Add channel to Kids"" or ""Add playlist to Kids""."
+            ]
+        })
+        return
+    end if
+    ClosePlayer()
+    PopToRoot()
+    m.store.on = true
+    YourTubeKids.RollDay(m.store, YourTubeKids.Today())
+    SaveStore()
+    LogInfo("Kids mode on")
+    ShowKidsHome()
+    if IsTimeUp(invalid)
+        ShowTimesUp()
+    end if
+end function
+
+function LeaveKids(_unused as dynamic) as void
+    m.store.on = false
+    SaveStore()
+    LogInfo("Kids mode off")
+    ClosePlayer()
+    RemoveKidsScreens()
+    ShowToast("Left Kids mode")
+end function
+
+' --- dialogs ----------------------------------------------------------------------------------------------
+
+function ShowToast(text as string) as void
+    library = m.global.yourtubeLibrary
+    if library <> invalid
+        library@.ShowToast(text)
+    end if
+end function
+
+' Runs `action` just after the dialog that triggered it has closed and handed focus back.
+function Defer(action as string) as void
+    m.deferred.Push(action)
+    m.deferTimer.control = "start"
+end function
+
+function OnDeferTimer() as void
+    if m.deferred.Count() = 0
+        return
+    end if
+    action = m.deferred.Shift()
+    if m.deferred.Count() > 0
+        m.deferTimer.control = "start"
+    end if
+    RunAction(action)
+end function
+
+function RunAction(action as string) as void
+    if action = "start"
+        StartKids(invalid)
+    else if action = "leave"
+        LeaveKids(invalid)
+    else if action = "settings"
+        OpenSettings()
+    else if action = "setup"
+        BeginNewPin("setup")
+    else if action = "change"
+        BeginNewPin("change")
+    else if action = "more15"
+        GiveMoreTime(15)
+    else if action = "more30"
+        GiveMoreTime(30)
+    else if action = "turnOff"
+        TurnOff()
+    else if action = "verifySettings"
+        Verify("settings", "Kid settings")
+    else if action = "pin"
+        HandlePin()
+    end if
+end function
+
+' Shows a dialog whose buttons map to actions (run with Defer).
+function ShowChoice(title as string, message as object, labels as object, actions as object, kind as string) as void
+    dialog = DialogUtils.ShowDialogEx({ title: title, message: message, buttons: labels })
+    if dialog = invalid
+        return
+    end if
+    if kind = "parent"
+        m.parentActions = actions
+        dialog.observeField("buttonSelected", FuncName(OnParentChoice))
+    else
+        m.profileActions = actions
+        dialog.observeField("buttonSelected", FuncName(OnProfileChoice))
+    end if
+end function
+
+function OnParentChoice(event as object) as void
+    RunChoice(m.parentActions, event.getData())
+end function
+
+function OnProfileChoice(event as object) as void
+    RunChoice(m.profileActions, event.getData())
+end function
+
+function RunChoice(actions as object, index as dynamic) as void
+    if not IsInt(index) or index < 0 or index >= actions.Count()
+        return
+    end if
+    action = actions[index]
+    if action <> ""
+        Defer(action)
+    end if
+end function
+
+'' The "Kids" card on the Profile screen. callFunc target, hence the unused parameter.
+function OpenFromProfile(_unused as dynamic) as void
+    if not YourTubeKids.HasPin(m.store)
+        ShowChoice("Kids profile", [
+            "Kids mode shows only the channels and playlists you allow. It has no search, no comments and no way out without your PIN, and it can stop after a daily time limit."
+            "First choose a 4-digit PIN. It is needed to leave Kids mode and to change its settings."
+        ], ["Set up", "Cancel"], ["setup", ""], "profile")
+        return
+    end if
+    count = YourTubeKids.EntryCount(m.store)
+    summary = `${count} channels and playlists allowed. Daily limit: ${YourTubeKids.FormatMinutes(m.store.lim)}.`
+    if count = 1
+        summary = `1 channel or playlist allowed. Daily limit: ${YourTubeKids.FormatMinutes(m.store.lim)}.`
+    end if
+    ShowChoice("Kids profile", [summary, "Leaving Kids mode needs your PIN."], ["Start Kids mode", "Kid settings", "Cancel"], ["start", "verifySettings", ""], "profile")
+end function
+
+'' The "Parent" pill on the Kids home and Time's up screens: PIN first. callFunc target.
+function OpenParentMenu(_unused as dynamic) as void
+    Verify("parent", "Parent")
+end function
+
+function ShowParentMenu() as void
+    labels = ["Leave Kids mode", "Kid settings"]
+    actions = ["leave", "settings"]
+    if m.store.lim > 0
+        labels.Append(["15 more minutes today", "30 more minutes today"])
+        actions.Append(["more15", "more30"])
+    end if
+    labels.Push("Cancel")
+    actions.Push("")
+    remaining = YourTubeKids.RemainingSeconds(m.store, YourTubeKids.Today())
+    message = ["Kids mode is on."]
+    if remaining >= 0
+        message = [`Daily limit ${YourTubeKids.FormatMinutes(m.store.lim)}. ${YourTubeKids.FormatRemaining(remaining)}.`]
+    end if
+    ShowChoice("Parent", message, labels, actions, "parent")
+end function
+
+function ShowSetupDone() as void
+    ShowChoice("Kids profile is ready", [
+        "Now pick what your kids can watch: long-press any video, channel or playlist card and choose ""Add channel to Kids"" or ""Add playlist to Kids""."
+        "Then start Kids mode from the Kids card on the Profile screen. You can set a daily time limit in Kid settings."
+    ], ["Kid settings", "OK"], ["settings", ""], "profile")
+end function
+
+' --- PIN prompts ------------------------------------------------------------------------------------------
+
+function PromptPin(purpose as string, title as string, message as string) as void
+    m.pinPurpose = purpose
+    current = DialogUtils.GetCurrentDialog()
+    if current <> invalid
+        current.close = true
+    end if
+    dialog = CreateObject("roSGNode", "StandardPinPadDialog")
+    dialog.title = title
+    dialog.message = [message]
+    dialog.buttons = ["OK", "Cancel"]
+    pinPad = invalid
+    if dialog.hasField("pinPad")
+        pinPad = dialog.pinPad
+    end if
+    if pinPad <> invalid
+        if pinPad.hasField("pinLength")
+            pinPad.pinLength = YourTubeKids.PIN_LENGTH
+        end if
+        if pinPad.hasField("secureMode")
+            pinPad.secureMode = true
+        end if
+    end if
+    dialog.observeFieldScoped("buttonSelected", FuncName(OnPinButton))
+    m.top.getScene().dialog = dialog
+end function
+
+function PinOf(dialog as object) as string
+    if dialog.hasField("pin") and IsString(dialog.pin)
+        return dialog.pin
+    end if
+    if dialog.hasField("pinPad") and dialog.pinPad <> invalid and dialog.pinPad.hasField("pin")
+        return ValidString(dialog.pinPad.pin)
+    end if
+    return ""
+end function
+
+function OnPinButton(event as object) as void
+    dialog = event.getRoSGNode()
+    dialog.unobserveFieldScoped("buttonSelected")
+    index = event.getData()
+    m.enteredPin = PinOf(dialog)
+    dialog.close = true
+    if index <> 0
+        m.enteredPin = ""
+        m.newPin = ""
+        m.pinPurpose = ""
+        return
+    end if
+    Defer("pin")
+end function
+
+function BeginNewPin(kind as string) as void
+    m.setupKind = kind
+    m.newPin = ""
+    title = "Choose a Kids PIN"
+    if kind = "change"
+        title = "New Kids PIN"
+    end if
+    PromptPin("setup1", title, "Enter 4 digits. You'll need them to leave Kids mode.")
+end function
+
+function Verify(afterVerify as string, title as string) as void
+    m.afterVerify = afterVerify
+    m.verifyTitle = title
+    lockedFor = YourTubeKids.LockedSeconds(m.store, YourTubeKids.NowSeconds())
+    if lockedFor > 0
+        ShowLocked(lockedFor)
+        return
+    end if
+    PromptPin("verify", title, "Enter the Kids PIN.")
+end function
+
+function ShowLocked(seconds as integer) as void
+    DialogUtils.ShowDialogEx({
+        title: "Too many tries"
+        message: [`Wait ${seconds} seconds, then try the PIN again.`]
+    })
+end function
+
+function HandlePin() as void
+    pin = ValidString(m.enteredPin)
+    m.enteredPin = ""
+    purpose = m.pinPurpose
+    m.pinPurpose = ""
+
+    if purpose = "setup1"
+        if not YourTubeKids.IsValidPin(pin)
+            PromptPin("setup1", "Choose a Kids PIN", "The PIN needs exactly 4 digits. Try again.")
+            return
+        end if
+        m.newPin = pin
+        PromptPin("setup2", "Confirm the PIN", "Enter the same 4 digits again.")
+    else if purpose = "setup2"
+        if pin <> m.newPin
+            m.newPin = ""
+            PromptPin("setup1", "Choose a Kids PIN", "Those didn't match. Choose 4 digits again.")
+            return
+        end if
+        m.newPin = ""
+        YourTubeKids.SetPin(m.store, pin, YourTubeKids.NewSalt())
+        SaveStore()
+        if m.setupKind = "change"
+            ShowToast("Kids PIN changed")
+        else
+            ShowSetupDone()
+        end if
+    else if purpose = "verify"
+        result = YourTubeKids.CheckPin(m.store, pin, YourTubeKids.NowSeconds())
+        YourTubeKids.Save(m.store) ' wrong-try count and lock
+        if result.ok
+            after = m.afterVerify
+            m.afterVerify = ""
+            if after = "parent"
+                ShowParentMenu()
+            else if after = "settings"
+                OpenSettings()
+            end if
+        else if result.locked
+            ShowLocked(result.waitSeconds)
+        else
+            PromptPin("verify", m.verifyTitle, "That PIN isn't right. Try again.")
+        end if
+    end if
+end function
+
+' --- Kid settings actions ---------------------------------------------------------------------------------
+
+function RemoveEntry(kind as string, id as string) as boolean
+    removed = YourTubeKids.RemoveEntry(m.store, kind, id)
+    if removed
+        SaveStore()
+    end if
+    return removed
+end function
+
+function CycleLimit(_unused as dynamic) as integer
+    m.store.lim = YourTubeKids.NextLimit(m.store.lim)
+    SaveStore()
+    return m.store.lim
+end function
+
+function ChangePin(_unused as dynamic) as void
+    BeginNewPin("change")
+end function
+
+function ConfirmTurnOff(_unused as dynamic) as void
+    ShowChoice("Remove the Kids profile?", ["This deletes the Kids PIN, the allowed channels and playlists and the time limit, and leaves Kids mode."], ["Remove", "Cancel"], ["turnOff", ""], "parent")
+end function
+
+function TurnOff() as void
+    ClosePlayer()
+    m.store = YourTubeKids.NewStore()
+    YourTubeKids.Reset()
+    ApplyState()
+    RemoveKidsScreens()
+    ShowToast("Kids profile removed")
+end function
+
+function GiveMoreTime(minutes as integer) as void
+    YourTubeKids.AddBonus(m.store, YourTubeKids.Today(), minutes)
+    SaveStore()
+    if not IsTimeUp(invalid)
+        RemoveKidsScreens("YourTubeKidsTimesUpScreen")
+    end if
+    ShowToast(`${minutes} more minutes today`)
+end function
+
+' --- watch time -------------------------------------------------------------------------------------------
+
+'' YourTubeWatchStatsTracker reports Kids-mode playing time here (seconds, batched).
+function AddKidsWatchTime(seconds as dynamic) as void
+    if m.store.on <> true or not IsNumber(seconds)
+        return
+    end if
+    today = YourTubeKids.Today()
+    YourTubeKids.AddUsed(m.store, today, seconds)
+    timeUp = YourTubeKids.IsTimeUp(m.store, today)
+    if timeUp or m.saveClock.TotalMilliseconds() >= SAVE_INTERVAL_MS
+        SaveStore()
+    else
+        m.top.remainingSeconds = YourTubeKids.RemainingSeconds(m.store, today)
+    end if
+    if timeUp
+        LogInfo("Kids daily time limit reached")
+        ShowTimesUp()
+    end if
+end function
+
+' --- long-press menu --------------------------------------------------------------------------------------
+
+function GetContextMenuOptionsForItem(item as object) as object
+    options = []
+    if item = invalid or m.store.on = true
+        return options
+    end if
+    channel = YourTubeKids.ChannelOfItem(item)
+    if item.type = "playlist" and not StringUtils.IsNullOrEmpty(item.playlistId) and not YourTubeKids.HasPlaylist(m.store, item.playlistId)
+        options.push(ContextMenuUtils.CreateOption("Add playlist to Kids", m.top, "AddPlaylistToKids", [item]))
+    end if
+    if channel <> invalid
+        if YourTubeKids.HasChannel(m.store, channel.id)
+            options.push(ContextMenuUtils.CreateOption("Remove channel from Kids", m.top, "RemoveChannelFromKids", [item]))
+        else
+            options.push(ContextMenuUtils.CreateOption("Add channel to Kids", m.top, "AddChannelToKids", [item]))
+        end if
+    end if
+    return options
+end function
+
+function AddChannelToKids(item as object) as void
+    channel = YourTubeKids.ChannelOfItem(item)
+    if channel = invalid
+        return
+    end if
+    ReportAdd(YourTubeKids.AddChannel(m.store, channel.id, channel.name), channel.name)
+end function
+
+function AddPlaylistToKids(item as object) as void
+    if item = invalid
+        return
+    end if
+    title = YourTubeKids.CleanName(YourTubeText.Clean(ValidString(item.title)).text, ValidString(item.playlistId))
+    ReportAdd(YourTubeKids.AddPlaylist(m.store, item.playlistId, title), title)
+end function
+
+function RemoveChannelFromKids(item as object) as void
+    channel = YourTubeKids.ChannelOfItem(item)
+    if channel <> invalid and RemoveEntry("channel", channel.id)
+        ShowToast(`Removed ${channel.name} from Kids`)
+    end if
+end function
+
+function ReportAdd(result as string, name as string) as void
+    if result = "added"
+        SaveStore()
+        if YourTubeKids.HasPin(m.store)
+            ShowToast(`Added ${name} to Kids`)
+        else
+            ShowToast(`Added ${name} to Kids. Set up the Kids card on the Profile screen.`)
+        end if
+    else if result = "exists"
+        ShowToast(`${name} is already in Kids`)
+    else if result = "full"
+        ShowToast(`Kids can have up to ${YourTubeKids.MAX_ENTRIES} channels and playlists`)
+    end if
+end function

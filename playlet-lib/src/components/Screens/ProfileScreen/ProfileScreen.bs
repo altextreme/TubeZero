@@ -54,7 +54,7 @@ function UpdateSignedOutHint() as void
     content = m.profileRowList.content
     profileCount = 0
     if content <> invalid and content.getChildCount() > 0
-        profileCount = content.getChild(0).getChildCount() - 1
+        profileCount = content.getChild(0).getChildCount() - 2 ' YourTube: minus "Add account" and "Kids"
     end if
     m.signedOutHint.visible = profileCount <= 0
 end function
@@ -103,6 +103,13 @@ function OnRowItemSelected() as void
     index = m.profileRowList.rowItemSelected[1]
     row = m.profileRowList.content.GetChild(0)
     selectedProfile = row.GetChild(index)
+    ' YourTube: Kids card - set up, start Kids mode or open Kid settings
+    if selectedProfile.type = "kids"
+        if m.global.yourtubeKids <> invalid
+            m.global.yourtubeKids@.OpenFromProfile()
+        end if
+        return
+    end if
     if selectedProfile.type = "login"
         backendTypeSelectionView = BackendTypeSelectionViewUtils.Open(m.appController)
         backendTypeSelectionView.observeFieldScoped("selectedBackendType", FuncName(OnBackEndSelected))

@@ -1,0 +1,120 @@
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+' TubeZero Kids: see YourTubeKidsScreen.xml
+
+function Init()
+    m.top.focusable = true
+    m.rowList = m.top.findNode("rowList")
+    m.rowList.screen = m.top
+    m.parentPill = m.top.findNode("ParentPill")
+    m.timeLabel = m.top.findNode("TimeLabel")
+    m.emptyLabel = m.top.findNode("EmptyLabel")
+    m.feedsKey = invalid
+    m.parentPill.observeField("selected", FuncName(OnParentSelected))
+end function
+
+function OnNodeReady()
+    m.rowList@.BindNode()
+    m.service = m.global.yourtubeKids
+    if m.service <> invalid
+        m.service.observeFieldScoped("changed", FuncName(Refresh))
+        m.service.observeFieldScoped("remainingSeconds", FuncName(UpdateTime))
+    end if
+    Refresh()
+end function
+
+function Refresh() as void
+    if m.service = invalid
+        return
+    end if
+    state = m.service@.GetState()
+    UpdateTime()
+
+    ' Reload the rows only when the list itself changed (not on every time update)
+    key = ""
+    for each feed in state.feeds
+        key += feed.feedSources[0].id + "|"
+    end for
+    if m.feedsKey <> invalid and key = m.feedsKey
+        return
+    end if
+    m.feedsKey = key
+
+    hasRows = state.feeds.Count() > 0
+    m.emptyLabel.visible = not hasRows
+    m.rowList.visible = hasRows
+    m.rowList.focusable = hasRows
+    m.rowList.feeds = state.feeds
+    if not hasRows and m.top.isInFocusChain()
+        NodeSetFocus(m.parentPill, true)
+    end if
+end function
+
+function UpdateTime() as void
+    if m.service = invalid
+        return
+    end if
+    remaining = m.service.remainingSeconds
+    if remaining < 0
+        m.timeLabel.text = ""
+    else if remaining < 60
+        m.timeLabel.text = "Less than a minute left"
+    else
+        minutes = Int((remaining + 59) / 60)
+        hours = Int(minutes / 60)
+        rest = minutes - hours * 60
+        if hours = 0
+            m.timeLabel.text = `${rest} min left today`
+        else if rest = 0
+            m.timeLabel.text = `${hours} h left today`
+        else
+            m.timeLabel.text = `${hours} h ${rest} min left today`
+        end if
+    end if
+end function
+
+function OnParentSelected() as void
+    if m.service <> invalid
+        m.service@.OpenParentMenu()
+    end if
+end function
+
+function OnFocusChange() as void
+    if not m.top.focus
+        return
+    end if
+    if m.rowList.focusable
+        NodeSetFocus(m.rowList, true)
+    else
+        NodeSetFocus(m.parentPill, true)
+    end if
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if not press
+        return false
+    end if
+    if key = RemoteKeys.Up and m.rowList.isInFocusChain()
+        NodeSetFocus(m.parentPill, true)
+        return true
+    end if
+    if (key = RemoteKeys.Down or key = RemoteKeys.Left) and m.parentPill.hasFocus() and m.rowList.focusable
+        NodeSetFocus(m.rowList, true)
+        return true
+    end if
+    ' Search and the options key do nothing here (no way out to other screens)
+    if key = RemoteKeys.Options
+        return true
+    end if
+    return false
+end function
+
+function OnDispose()
+    if m.service <> invalid
+        m.service.unobserveFieldScoped("changed")
+        m.service.unobserveFieldScoped("remainingSeconds")
+    end if
+    m.rowList.dispose = true
+end function

@@ -1,0 +1,35 @@
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+' TubeZero Kids: see YourTubeKidsPill.xml
+
+function Init()
+    m.top.focusable = true
+    m.pill = m.top.findNode("Pill")
+    m.pillLabel = m.top.findNode("PillLabel")
+    m.top.ObserveField("focusedChild", FuncName(OnFocusedChildChange))
+    Layout()
+end function
+
+function Layout() as void
+    m.pillLabel.text = m.top.text
+    m.pill.width = m.pillLabel.localBoundingRect().width + 44
+end function
+
+function OnFocusedChildChange() as void
+    if m.top.hasFocus()
+        m.pill.uri = "pkg:/images/yt-pill-light.$$RES$$.9.png"
+        m.pillLabel.color = "#161616FF"
+    else
+        m.pill.uri = "pkg:/images/yt-pill-dark.$$RES$$.9.png"
+        m.pillLabel.color = "#EBEBEBFF"
+    end if
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press and key = RemoteKeys.Ok
+        m.top.selected = true
+        return true
+    end if
+    return false
+end function

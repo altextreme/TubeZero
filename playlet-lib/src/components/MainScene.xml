@@ -7,6 +7,8 @@
         <YourTubeLiveService id="YourTubeLiveService" />
         <!-- YourTube: save to playlist, Not interested, Watch Later edits (m.global.yourtubeLibrary) -->
         <YourTubeLibraryService id="YourTubeLibraryService" />
+        <!-- YourTube: Kids profile - allowlist, PIN, daily limit (m.global.yourtubeKids) -->
+        <YourTubeKidsService id="YourTubeKidsService" />
         <AppController id="AppController"
             screensContainer="bind:./AppScreens"
             root="bind:./AppRoot"

@@ -38,6 +38,8 @@ const HAS_ANNOUNCEMENT = false
 function MainSceneContainerChanged()
     AutoBindSceneGraph()
     StartWebServer()
+    ' YourTube: back into Kids mode if it was on when the app closed
+    StartKidsModeIfActive()
     HideLoadingScreen()
     InitEcpArgs()
     if HAS_ANNOUNCEMENT
@@ -48,6 +50,14 @@ function MainSceneContainerChanged()
         m.scene.signalBeacon("AppLaunchComplete")
     end if
     CopyLoadingMessagesToCache()
+end function
+
+' YourTube: Kids profile (YourTubeKidsService)
+function StartKidsModeIfActive() as void
+    kids = m.top.findNode("YourTubeKidsService")
+    if kids <> invalid
+        kids@.StartIfActive()
+    end if
 end function
 
 function StartWebServer()

@@ -1,5 +1,11 @@
+import "pkg:/source/utils/Types.bs" ' YourTube
+
 namespace ChannelUtils
-    function Open(contentNode as object, appController = invalid as object)
+    function Open(contentNode as object, appController = invalid as object) as void
+        ' YourTube: Kids mode never leaves the Kids home for other pages
+        if ValidBool(m.global.ytKidsActive)
+            return
+        end if
         channelView = CreateObject("roSGNode", "ChannelView")
         if appController = invalid
             appController = m.appController

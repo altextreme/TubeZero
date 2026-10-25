@@ -29,6 +29,12 @@ function ProcessArguments(args as object) as void
         return
     end if
 
+    ' YourTube: deep links and voice "play ..." don't start videos in Kids mode
+    if ValidBool(m.global.ytKidsActive)
+        LogInfo("Kids mode: ignoring launch/input arguments")
+        return
+    end if
+
     ' YourTube: Stream Caster links (u=url, f=hls|dash|mp4, t=title) play in the stream player
     if not StringUtils.IsNullOrEmpty(args.u)
         m.global.yourtubeLive.playRequest = args

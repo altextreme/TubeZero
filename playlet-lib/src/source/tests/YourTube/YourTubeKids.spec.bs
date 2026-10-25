@@ -1,0 +1,238 @@
+' TubeZero Kids: allowlist, PIN check and daily time accounting (pure functions; no registry access)
+import "pkg:/components/YourTube/Kids/YourTubeKids.bs"
+
+namespace Tests
+
+    @suite
+    class YourTubeKidsTests extends Rooibos.BaseTestSuite
+
+        @describe("YourTubeKids PIN")
+
+        @it("accepts exactly four digits")
+        function _()
+            m.assertTrue(YourTubeKids.IsValidPin("0427"))
+            m.assertFalse(YourTubeKids.IsValidPin("123"))
+            m.assertFalse(YourTubeKids.IsValidPin("12345"))
+            m.assertFalse(YourTubeKids.IsValidPin("12a4"))
+            m.assertFalse(YourTubeKids.IsValidPin(""))
+            m.assertFalse(YourTubeKids.IsValidPin(invalid))
+        end function
+
+        @it("stores only a salted hash and checks the PIN against it")
+        function _()
+            store = YourTubeKids.NewStore()
+            m.assertTrue(YourTubeKids.SetPin(store, "2580", "salt-a"))
+            m.assertNotEqual(store.pin, "2580")
+            m.assertEqual(store.pin.Len(), 64)
+            m.assertTrue(YourTubeKids.CheckPin(store, "2580", 1000).ok)
+            m.assertFalse(YourTubeKids.CheckPin(store, "2581", 1000).ok)
+
+            other = YourTubeKids.NewStore()
+            YourTubeKids.SetPin(other, "2580", "salt-b")
+            m.assertNotEqual(other.pin, store.pin)
+        end function
+
+        @it("refuses a bad PIN when setting it")
+        function _()
+            store = YourTubeKids.NewStore()
+            m.assertFalse(YourTubeKids.SetPin(store, "12", "salt"))
+            m.assertFalse(YourTubeKids.HasPin(store))
+        end function
+
+        @it("locks PIN entry after five wrong tries, then unlocks")
+        function _()
+            store = YourTubeKids.NewStore()
+            YourTubeKids.SetPin(store, "1111", "s")
+            for i = 1 to YourTubeKids.MAX_FAILS - 1
+                result = YourTubeKids.CheckPin(store, "0000", 100)
+                m.assertFalse(result.ok)
+                m.assertFalse(result.locked)
+            end for
+            result = YourTubeKids.CheckPin(store, "0000", 100)
+            m.assertTrue(result.locked)
+            m.assertEqual(result.waitSeconds, YourTubeKids.LOCK_SECONDS)
+            ' even the right PIN fails while locked
+            m.assertFalse(YourTubeKids.CheckPin(store, "1111", 110).ok)
+            m.assertEqual(YourTubeKids.LockedSeconds(store, 110), YourTubeKids.LOCK_SECONDS - 10)
+            m.assertTrue(YourTubeKids.CheckPin(store, "1111", 100 + YourTubeKids.LOCK_SECONDS).ok)
+            m.assertEqual(store.fails, 0)
+        end function
+
+        @it("a right PIN resets the wrong-try count")
+        function _()
+            store = YourTubeKids.NewStore()
+            YourTubeKids.SetPin(store, "1234", "s")
+            YourTubeKids.CheckPin(store, "9999", 5)
+            YourTubeKids.CheckPin(store, "9999", 5)
+            m.assertEqual(store.fails, 2)
+            m.assertTrue(YourTubeKids.CheckPin(store, "1234", 5).ok)
+            m.assertEqual(store.fails, 0)
+        end function
+
+        @describe("YourTubeKids allowlist")
+
+        @it("adds channels and playlists once each, up to the cap")
+        function _()
+            store = YourTubeKids.NewStore()
+            m.assertEqual(YourTubeKids.AddChannel(store, "UC1", "Bluey"), "added")
+            m.assertEqual(YourTubeKids.AddChannel(store, "UC1", "Bluey"), "exists")
+            m.assertEqual(YourTubeKids.AddPlaylist(store, "PL1", "Songs"), "added")
+            m.assertEqual(YourTubeKids.AddChannel(store, "", "Nobody"), "invalid")
+            m.assertEqual(YourTubeKids.EntryCount(store), 2)
+            for i = 3 to YourTubeKids.MAX_ENTRIES
+                YourTubeKids.AddChannel(store, `UC${i}`, `Channel ${i}`)
+            end for
+            m.assertEqual(YourTubeKids.AddChannel(store, "UCmore", "More"), "full")
+            m.assertEqual(YourTubeKids.EntryCount(store), YourTubeKids.MAX_ENTRIES)
+        end function
+
+        @it("removes entries")
+        function _()
+            store = YourTubeKids.NewStore()
+            YourTubeKids.AddChannel(store, "UC1", "A")
+            YourTubeKids.AddPlaylist(store, "PL1", "B")
+            m.assertTrue(YourTubeKids.RemoveEntry(store, "channel", "UC1"))
+            m.assertFalse(YourTubeKids.RemoveEntry(store, "channel", "UC1"))
+            m.assertFalse(YourTubeKids.HasChannel(store, "UC1"))
+            m.assertTrue(YourTubeKids.HasPlaylist(store, "PL1"))
+        end function
+
+        @it("allows videos from allowed channels by id or name")
+        function _()
+            store = YourTubeKids.NewStore()
+            YourTubeKids.AddChannel(store, "UCbluey", "Bluey - Official Channel")
+            allow = YourTubeKids.AllowIndex(store)
+            m.assertTrue(YourTubeKids.IsAllowedVideo(allow, { videoId: "a", authorId: "UCbluey", author: "x" }))
+            m.assertTrue(YourTubeKids.IsAllowedVideo(allow, { videoId: "b", author: "bluey - official channel" }))
+            m.assertFalse(YourTubeKids.IsAllowedVideo(allow, { videoId: "c", authorId: "UCother", author: "Other" }))
+            m.assertFalse(YourTubeKids.IsAllowedVideo(allow, { videoId: "d" }))
+            m.assertFalse(YourTubeKids.IsAllowedVideo(invalid, { authorId: "UCbluey" }))
+
+            filtered = YourTubeKids.FilterVideos(allow, [{ authorId: "UCother" }, { authorId: "UCbluey" }, invalid])
+            m.assertEqual(filtered.Count(), 1)
+            m.assertEqual(filtered[0].authorId, "UCbluey")
+        end function
+
+        @it("builds one Home row per channel and playlist")
+        function _()
+            store = YourTubeKids.NewStore()
+            YourTubeKids.AddChannel(store, "UC1", "Bluey")
+            YourTubeKids.AddPlaylist(store, "PL1", "Songs")
+            feeds = YourTubeKids.BuildFeeds(store)
+            m.assertEqual(feeds.Count(), 2)
+            m.assertEqual(feeds[0].title, "Bluey")
+            m.assertEqual(feeds[0].feedSources[0].endpoint, "channel_videos")
+            m.assertEqual(feeds[0].feedSources[0].pathParams.ucid, "UC1")
+            m.assertEqual(feeds[1].feedSources[0].endpoint, "playlist")
+            m.assertEqual(feeds[1].feedSources[0].pathParams.plid, "PL1")
+        end function
+
+        @it("reads the channel of a card")
+        function _()
+            channel = YourTubeKids.ChannelOfItem({ type: "video", authorId: "UC9", _author: "Nine" })
+            m.assertEqual(channel.id, "UC9")
+            m.assertEqual(channel.name, "Nine")
+            m.assertInvalid(YourTubeKids.ChannelOfItem({ type: "video", _author: "No id" }))
+        end function
+
+        @describe("YourTubeKids daily limit")
+
+        @it("counts time per day and runs out at the limit")
+        function _()
+            store = YourTubeKids.NewStore()
+            today = 20000
+            m.assertEqual(YourTubeKids.RemainingSeconds(store, today), -1)
+            m.assertFalse(YourTubeKids.IsTimeUp(store, today))
+            store.lim = 30
+            YourTubeKids.AddUsed(store, today, 600)
+            m.assertEqual(YourTubeKids.RemainingSeconds(store, today), 1200)
+            YourTubeKids.AddUsed(store, today, 1199)
+            m.assertFalse(YourTubeKids.IsTimeUp(store, today))
+            YourTubeKids.AddUsed(store, today, 5)
+            m.assertTrue(YourTubeKids.IsTimeUp(store, today))
+            m.assertEqual(YourTubeKids.RemainingSeconds(store, today), 0)
+        end function
+
+        @it("starts each day from zero")
+        function _()
+            store = YourTubeKids.NewStore()
+            store.lim = 30
+            YourTubeKids.AddUsed(store, 100, 1800)
+            m.assertTrue(YourTubeKids.IsTimeUp(store, 100))
+            m.assertFalse(YourTubeKids.IsTimeUp(store, 101))
+            m.assertEqual(YourTubeKids.RemainingSeconds(store, 101), 1800)
+            YourTubeKids.AddUsed(store, 101, 60)
+            m.assertEqual(store.used, 60)
+        end function
+
+        @it("adds parent bonus time for today only")
+        function _()
+            store = YourTubeKids.NewStore()
+            store.lim = 30
+            YourTubeKids.AddUsed(store, 7, 1800)
+            YourTubeKids.AddBonus(store, 7, 15)
+            m.assertEqual(YourTubeKids.RemainingSeconds(store, 7), 900)
+            YourTubeKids.AddUsed(store, 8, 0)
+            m.assertEqual(store.bonus, 0)
+        end function
+
+        @it("ignores bogus durations")
+        function _()
+            store = YourTubeKids.NewStore()
+            YourTubeKids.AddUsed(store, 1, -5)
+            YourTubeKids.AddUsed(store, 1, 99999)
+            YourTubeKids.AddUsed(store, 1, invalid)
+            m.assertEqual(store.used, 0)
+        end function
+
+        @it("cycles the limit choices")
+        function _()
+            m.assertEqual(YourTubeKids.NextLimit(0), 30)
+            m.assertEqual(YourTubeKids.NextLimit(30), 60)
+            m.assertEqual(YourTubeKids.NextLimit(120), 0)
+            m.assertEqual(YourTubeKids.NextLimit(45), 0)
+            m.assertEqual(YourTubeKids.FormatMinutes(0), "Off")
+            m.assertEqual(YourTubeKids.FormatMinutes(30), "30 min")
+            m.assertEqual(YourTubeKids.FormatMinutes(60), "1 h")
+            m.assertEqual(YourTubeKids.FormatMinutes(90), "1 h 30 min")
+            m.assertEqual(YourTubeKids.FormatRemaining(-1), "")
+            m.assertEqual(YourTubeKids.FormatRemaining(30), "Less than a minute left")
+            m.assertEqual(YourTubeKids.FormatRemaining(61), "2 min left today")
+        end function
+
+        @describe("YourTubeKids storage")
+
+        @it("round-trips the store and never turns on without a PIN")
+        function _()
+            store = YourTubeKids.NewStore()
+            YourTubeKids.SetPin(store, "4321", "salt")
+            YourTubeKids.AddChannel(store, "UC1", "A")
+            store.on = true
+            store.lim = 60
+            YourTubeKids.AddUsed(store, 50, 120.4)
+            parsed = YourTubeKids.Parse(YourTubeKids.Serialize(store))
+            m.assertTrue(parsed.on)
+            m.assertEqual(parsed.lim, 60)
+            m.assertEqual(parsed.used, 120)
+            m.assertEqual(parsed.day, 50)
+            m.assertTrue(YourTubeKids.CheckPin(parsed, "4321", 0).ok)
+            m.assertEqual(parsed.ch[0].name, "A")
+
+            noPin = YourTubeKids.Parse(`{"on":true,"ch":[{"id":"UC1","name":"A"}]}`)
+            m.assertFalse(noPin.on)
+            m.assertEqual(noPin.ch.Count(), 1)
+        end function
+
+        @it("survives junk")
+        function _()
+            m.assertFalse(YourTubeKids.Parse("not json").on)
+            m.assertEqual(YourTubeKids.Parse(invalid).ch.Count(), 0)
+            parsed = YourTubeKids.Parse(`{"ch":[{"id":""},{"name":"x"},"y",{"id":"UC2"},{"id":"UC2"}],"lim":"bad"}`)
+            m.assertEqual(parsed.ch.Count(), 1)
+            m.assertEqual(parsed.ch[0].name, "UC2")
+            m.assertEqual(parsed.lim, 0)
+        end function
+
+    end class
+
+end namespace

@@ -27,6 +27,9 @@
             <ContentNode>
                 <ProfileContentNode type="login">
                 </ProfileContentNode>
+                <!-- YourTube: "Kids" card after "Add account" (YourTubeKidsService, not a real profile) -->
+                <ProfileContentNode type="kids" id="yourtube-kids">
+                </ProfileContentNode>
             </ContentNode>
         </ContentNode>
     </children>

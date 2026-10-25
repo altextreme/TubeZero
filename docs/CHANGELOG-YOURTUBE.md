@@ -26,6 +26,27 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   defaults, and the highlight's old "Show in Seekbar" becomes "Ask" ("Off" stays off).
 - Your stats: a "Segments skipped" tile with the all-time number of skips and the three most skipped categories
   (`k` in the `yourtube_watch_stats` registry value; highlight jumps are not counted).
+- Kids profile (TubeZero side, not YouTube Kids): a "Kids" card after "Add account" on the Profile screen. The first
+  time it explains the mode and asks for a 4-digit PIN twice (Roku's PIN pad). Kids mode shows only the channels and
+  playlists a parent allowed: long-press any video, channel or playlist card (outside Kids mode) > "Add channel to
+  Kids" / "Add playlist to Kids" ("Remove channel from Kids" when it is already there).
+  - The Kids home (`YourTubeKidsScreen`) is pushed over the whole app, so the nav rail (Search, Shorts,
+    Subscriptions, You, Live, Settings, Profile) is out of reach. One row per channel (its uploads) and playlist.
+    Up from the first row reaches the "Parent" pill: PIN, then Leave Kids mode, Kid settings or 15/30 more minutes.
+    Back asks to exit the app; the app starts in Kids mode again while it is on.
+  - Kid settings (after the PIN): start/leave Kids mode, daily limit (Off, 30, 60, 90, 120 min), change PIN,
+    remove allowed channels/playlists, remove the Kids profile.
+  - Restrictions while on: no long-press menus, no channel or playlist pages and nothing else pushed on the app
+    stack except the Kids screens (AppController.PushScreen), no queue view, autoplay / Up next and the player's
+    Related row only use videos from allowed channels, the player's Comments/chat, Like, Dislike, Save and Subscribe
+    buttons are off, deep links (ECP / voice) and YouTube-app casting (Lounge setPlaylist) are ignored, and the phone
+    web remote gets 403 on every route that needs pairing (playback, queue, profiles, preferences...), paired or
+    not, and can't pair new phones.
+  - Daily limit: `YourTubeWatchStatsTracker` also reports Kids-mode playing time (every 15 s) to
+    `YourTubeKidsService`; when the day's limit is used up, playback stops and a "Time's up" screen covers the Kids
+    home until a parent adds time with the PIN or a new day starts.
+  - Stored only on this TV in one registry value (`yourtube_kids`): a salted SHA-256 of the PIN (never the PIN), the
+    allowlist (up to 40), the limit and today's count. Five wrong PINs lock PIN entry for a minute.
 
 ### Personal extras and polish (not yet checked on the TV)
 - Phone pairing: account and playback routes on the phone web server (every POST/PUT/DELETE except DIAL, DRM

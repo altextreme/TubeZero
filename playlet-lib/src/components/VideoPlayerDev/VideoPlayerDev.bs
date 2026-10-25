@@ -617,6 +617,13 @@ end function
 
 ' Run the action for the focused button.
 function ActivateButton(index as integer) as void
+    ' YourTube: Kids mode has no comments, live chat, likes, saves or subscribes
+    if ValidBool(m.global.ytKidsActive) and index >= PlayerCoordinatorLogic.PlayerButton.Comments and index <= PlayerCoordinatorLogic.PlayerButton.Subscribe
+        if m.global.yourtubeLibrary <> invalid
+            m.global.yourtubeLibrary@.ShowToast("Not available in Kids mode")
+        end if
+        return
+    end if
     if index = PlayerCoordinatorLogic.PlayerButton.PlayPause
         TogglePlayPause()
     else if index = PlayerCoordinatorLogic.PlayerButton.Minimize
@@ -662,6 +669,10 @@ function OpenRelated() as boolean
         return false
     end if
     videos = ValidAssociativeArray(content.metadata).recommendedVideos
+    ' YourTube: in Kids mode the row only lists videos from the allowed channels
+    if ValidBool(m.global.ytKidsActive)
+        videos = YourTubeKids.FilterVideos(m.global.ytKidsAllow, videos)
+    end if
     if not IsArray(videos) or videos.Count() = 0
         return false
     end if

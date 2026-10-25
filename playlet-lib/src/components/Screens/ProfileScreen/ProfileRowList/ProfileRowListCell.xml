@@ -20,6 +20,8 @@
         <!-- YourTube: focus ring and name color -->
         <field id="ringColor" type="color" alias="circlePoster.blendColor" />
         <field id="usernameColor" type="color" alias="UsernameLabel.color" />
+        <!-- YourTube: dark letter on the yellow Kids card -->
+        <field id="letterColor" type="color" alias="LetterLabel.color" />
     </interface>
     <children>
         <Font id="normalFont" uri="font:SystemFontFile" size="24" />

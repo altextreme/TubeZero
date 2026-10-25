@@ -1,10 +1,22 @@
 import "pkg:/source/utils/Logging.bs"
+import "pkg:/source/utils/Types.bs" ' YourTube
 import "pkg:/components/YourTube/YourTubeText.bs"
 
 namespace ContextMenuUtils
     function Open(providers as object, appController as object, item as object) as object
         if item = invalid
             return invalid
+        end if
+        ' YourTube: no long-press menu in Kids mode (it leads to channels, queues and account actions)
+        if ValidBool(m.global.ytKidsActive)
+            return invalid
+        end if
+        ' YourTube: "Add channel to Kids" / "Add playlist to Kids" on every menu (YourTubeKidsService)
+        if m.global.yourtubeKids <> invalid
+            withKids = []
+            withKids.Append(providers)
+            withKids.Push(m.global.yourtubeKids)
+            providers = withKids
         end if
 
         options = GetOptions(item, providers)

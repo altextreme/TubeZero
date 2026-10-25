@@ -1,0 +1,137 @@
+import "pkg:/components/Dialog/DialogUtils.bs"
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+' TubeZero Kids: see YourTubeKidsSettingsScreen.xml
+
+function Init()
+    m.top.focusable = true
+    m.list = m.top.findNode("ItemsList")
+    m.statusLabel = m.top.findNode("StatusLabel")
+    m.todayLabel = m.top.findNode("TodayLabel")
+    m.actions = []
+    m.pendingRemove = invalid
+    m.list.observeField("itemSelected", FuncName(OnItemSelected))
+    m.service = m.global.yourtubeKids
+    if m.service <> invalid
+        m.service.observeFieldScoped("changed", FuncName(Rebuild))
+    end if
+    Rebuild()
+end function
+
+function Rebuild() as void
+    if m.service = invalid
+        return
+    end if
+    state = m.service@.GetState()
+    m.actions = []
+    labels = []
+
+    if state.active
+        labels.Push("Leave Kids mode")
+        m.actions.Push({ action: "leave" })
+    else
+        labels.Push("Start Kids mode")
+        m.actions.Push({ action: "start" })
+    end if
+    labels.Push(`Daily time limit: ${state.limitText}`)
+    m.actions.Push({ action: "limit" })
+    labels.Push("Change PIN")
+    m.actions.Push({ action: "pin" })
+    for each entry in state.channels
+        labels.Push(`Remove channel: ${entry.name}`)
+        m.actions.Push({ action: "remove", kind: "channel", id: entry.id, name: entry.name })
+    end for
+    for each entry in state.playlists
+        labels.Push(`Remove playlist: ${entry.name}`)
+        m.actions.Push({ action: "remove", kind: "playlist", id: entry.id, name: entry.name })
+    end for
+    labels.Push("Remove Kids profile")
+    m.actions.Push({ action: "turnOff" })
+
+    focused = m.list.itemFocused
+    content = CreateObject("roSGNode", "ContentNode")
+    for each text in labels
+        item = content.createChild("ContentNode")
+        item.title = text
+    end for
+    m.list.content = content
+    if focused > 0
+        if focused >= labels.Count()
+            focused = labels.Count() - 1
+        end if
+        m.list.jumpToItem = focused
+    end if
+
+    count = state.channels.Count() + state.playlists.Count()
+    status = "Kids mode is off"
+    if state.active
+        status = "Kids mode is on"
+    end if
+    m.statusLabel.text = `${status}. ${count} allowed.`
+    if state.limitMinutes > 0
+        m.todayLabel.text = `Watched today: ${state.usedText}. ${state.remainingText}.`
+    else
+        m.todayLabel.text = "No daily time limit."
+    end if
+end function
+
+function OnItemSelected() as void
+    index = m.list.itemSelected
+    if index < 0 or index >= m.actions.Count() or m.service = invalid
+        return
+    end if
+    entry = m.actions[index]
+    action = entry.action
+    if action = "start"
+        m.service@.StartKids()
+    else if action = "leave"
+        m.service@.LeaveKids()
+    else if action = "limit"
+        m.service@.CycleLimit()
+    else if action = "pin"
+        m.service@.ChangePin()
+    else if action = "turnOff"
+        m.service@.ConfirmTurnOff()
+    else if action = "remove"
+        m.pendingRemove = entry
+        dialog = DialogUtils.ShowDialogEx({
+            title: `Remove ${entry.name}?`
+            message: [`Kids mode won't show this ${entry.kind} any more.`]
+            buttons: ["Remove", "Cancel"]
+        })
+        if dialog <> invalid
+            dialog.observeField("buttonSelected", FuncName(OnRemoveDialog))
+        end if
+    end if
+end function
+
+function OnRemoveDialog(event as object) as void
+    entry = m.pendingRemove
+    m.pendingRemove = invalid
+    if event.getData() <> 0 or entry = invalid or m.service = invalid
+        return
+    end if
+    m.service@.RemoveEntry(entry.kind, entry.id)
+end function
+
+function OnFocusChange() as void
+    if m.top.focus
+        NodeSetFocus(m.list, true)
+    end if
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press and key = RemoteKeys.Back
+        if m.service <> invalid
+            m.service.unobserveFieldScoped("changed")
+            m.service.appController@.PopScreen()
+        end if
+        return true
+    end if
+    if press and key = RemoteKeys.Options
+        return true
+    end if
+    return false
+end function

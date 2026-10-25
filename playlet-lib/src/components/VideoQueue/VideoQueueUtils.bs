@@ -1,3 +1,4 @@
+import "pkg:/components/YourTube/Kids/YourTubeKids.bs" ' YourTube
 import "pkg:/components/Services/Invidious/InvidiousToContentNode.bs"
 import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/Logging.bs"
@@ -170,8 +171,16 @@ namespace VideoQueueUtils
         end if
 
         queueContent = videoQueue.content
+        ' YourTube: in Kids mode autoplay only picks videos from the allowed channels
+        kidsAllow = invalid
+        if ValidBool(m.global.ytKidsActive)
+            kidsAllow = ValidAssociativeArray(m.global.ytKidsAllow)
+        end if
         for each recommendedVideo in recommendedVideos
             if recommendedVideo = invalid
+                continue for
+            end if
+            if kidsAllow <> invalid and not YourTubeKids.IsAllowedVideo(kidsAllow, recommendedVideo)
                 continue for
             end if
             videoId = recommendedVideo.videoId

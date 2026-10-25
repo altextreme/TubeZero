@@ -1,0 +1,40 @@
+import "pkg:/components/Web/WebServer/Http/HttpRouter.bs"
+import "pkg:/components/YourTube/Pairing/YourTubePairing.bs"
+import "pkg:/source/utils/Types.bs"
+
+namespace Http
+
+    ' TubeZero Kids: while Kids mode is on, the phone web remote can't act on the TV at all: every route that
+    ' needs a paired phone (YourTubePairing.RouteNeedsPairing: playback, queue, profiles, preferences, home
+    ' layout, bookmarks, registry...) answers 403, paired or not. The TV's own requests (DASH, license, the
+    ' built-in backend) are not affected. Casting from the YouTube app is refused in LoungeVideoQueue.
+    class YourTubeKidsMiddleware extends HttpRouter
+
+        function new()
+            super()
+        end function
+
+        @all("*")
+        function BlockInKidsMode(context as object) as boolean
+            globalNode = GetGlobalAA().global
+            if globalNode = invalid or not ValidBool(globalNode.ytKidsActive)
+                return false
+            end if
+            request = context.request
+            ' no new phones either (the pairing code dialog would pop up over the Kids home)
+            pairing = UCase(request.method) = "POST" and request.route.StartsWith("/api/pair")
+            if not pairing and not YourTubePairing.RouteNeedsPairing(request.method, request.route)
+                return false
+            end if
+            response = context.response
+            response.Json({
+                error: "kids_mode"
+                message: "Kids mode is on. The phone remote is off until a parent leaves Kids mode on the TV."
+            })
+            response.http_code = 403
+            return true
+        end function
+
+    end class
+
+end namespace

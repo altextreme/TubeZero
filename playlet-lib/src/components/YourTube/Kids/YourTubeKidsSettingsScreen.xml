@@ -1,0 +1,42 @@
+<!--
+    TubeZero Kids: "Kid settings", opened after the PIN (Profile > Kids card, or the parent menu in Kids mode).
+    Start or leave Kids mode, the daily time limit (Off, 30, 60, 90, 120 min), change the PIN, remove allowed
+    channels and playlists, or remove the whole Kids profile. Back closes it.
+-->
+<component name="YourTubeKidsSettingsScreen" extends="Group" includes="Focus">
+    <children>
+        <Rectangle width="1280" height="720" color="0x0F0F0FFF" />
+        <Label text="Kid settings" color="0xF1F1F1FF" translation="[104,40]">
+            <Font role="font" uri="font:BoldSystemFontFile" size="30" />
+        </Label>
+        <LabelList
+            id="ItemsList"
+            translation="[104,110]"
+            itemSize="[700,52]"
+            itemSpacing="[0,4]"
+            numRows="10"
+            color="0xEBEBEBFF"
+            focusedColor="0x161616FF"
+            focusBitmapUri="pkg:/images/white.$$RES$$.9.png"
+            focusBitmapBlendColor="0xF1F1F1FF"
+            vertFocusAnimationStyle="floatingFocus">
+            <Font role="font" uri="font:SystemFontFile" size="22" />
+            <Font role="focusedFont" uri="font:MediumSystemFontFile" size="22" />
+        </LabelList>
+        <Rectangle width="352" height="440" translation="[840,110]" color="0x212121FF">
+            <Label id="StatusLabel" width="304" wrap="true" color="0xF1F1F1FF" translation="[24,22]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="22" />
+            </Label>
+            <Label id="TodayLabel" width="304" wrap="true" color="0xAAAAAAFF" translation="[24,96]">
+                <Font role="font" uri="font:SystemFontFile" size="19" />
+            </Label>
+            <Label width="304" wrap="true" color="0xAAAAAAFF" translation="[24,180]"
+                text="To add channels and playlists: outside Kids mode, long-press any video, channel or playlist card and choose &quot;Add channel to Kids&quot; or &quot;Add playlist to Kids&quot;. OK on a channel or playlist here removes it.">
+                <Font role="font" uri="font:SystemFontFile" size="19" />
+            </Label>
+        </Rectangle>
+        <Label text="Kids settings are kept on this TV only. The phone remote and casting are off while Kids mode is on." width="1100" wrap="true" translation="[104,656]" color="0x717171FF">
+            <Font role="font" uri="font:SystemFontFile" size="18" />
+        </Label>
+    </children>
+</component>

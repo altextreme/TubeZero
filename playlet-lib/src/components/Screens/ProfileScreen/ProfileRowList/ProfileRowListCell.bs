@@ -4,6 +4,7 @@ import "pkg:/source/utils/StringUtils.bs"
 function Init()
     m.normalFont = m.top.findNode("normalFont")
     m.boldFont = m.top.findNode("boldFont")
+    m.defaultLetterColor = m.top.letterColor ' YourTube
 end function
 
 function OnContentSet() as void
@@ -12,6 +13,7 @@ function OnContentSet() as void
         return
     end if
 
+    m.top.letterColor = m.defaultLetterColor ' YourTube: the Kids card changes it
     if content.type = "login"
         ' YourTube: "Add account" tile, a plus in a dark circle (was a white avatar labelled Login)
         m.top.circlePosterInnerUri = "pkg:/images/white-circle.png"
@@ -21,6 +23,23 @@ function OnContentSet() as void
         m.top.username = "Add account"
         m.top.serverUrl = ""
         m.top.crownVisible = false
+        return
+    end if
+
+    ' YourTube: "Kids" card (YourTubeKidsService), a yellow circle with a K
+    if content.type = "kids"
+        m.top.circlePosterInnerUri = "pkg:/images/white-circle.png"
+        m.top.backendTypePosterUri = ""
+        m.top.circlePosterInnerBlendColor = "#FFC83DFF"
+        m.top.letter = "K"
+        m.top.letterColor = "#161616FF"
+        m.top.username = "Kids"
+        m.top.serverUrl = "TubeZero Kids"
+        m.top.crownVisible = false
+        kids = m.global.yourtubeKids
+        if kids <> invalid and kids.active
+            m.top.serverUrl = "Kids mode on"
+        end if
         return
     end if
 

@@ -1,0 +1,43 @@
+<!--
+    TubeZero Kids: owns the Kids profile (YourTubeKids store) and every flow around it - setup and PIN prompts,
+    entering and leaving Kids mode, the Kids home screen, the parent menu, Kid settings, the daily time limit and
+    the "Time's up" screen. Lives in MainScene and registers itself as m.global.yourtubeKids. It also mirrors the
+    state for code that can't callFunc cheaply (the player, the video queue, Lounge and the web server task):
+        m.global.ytKidsActive  - true while Kids mode is on
+        m.global.ytKidsAllow   - YourTubeKids.AllowIndex of the allowed channels
+    As a context menu provider (ContextMenuUtils adds it to every menu) it offers "Add channel to Kids" /
+    "Add playlist to Kids" outside Kids mode.
+-->
+<component name="YourTubeKidsService" extends="Node" includes="AutoBind,ContextMenuProvider">
+    <interface>
+        <field id="appController" type="node" bind="/AppController" />
+        <field id="videoQueue" type="node" bind="/VideoQueue" />
+        <field id="active" type="boolean" />
+        <!-- seconds left today, -1 when there is no limit -->
+        <field id="remainingSeconds" type="integer" value="-1" />
+        <!-- bumped after every change to the store, so open Kids screens refresh -->
+        <field id="changed" type="integer" alwaysNotify="true" />
+        <function name="StartIfActive" />
+        <function name="OpenFromProfile" />
+        <function name="OpenParentMenu" />
+        <function name="AddChannelToKids" />
+        <function name="AddPlaylistToKids" />
+        <function name="RemoveChannelFromKids" />
+        <function name="AddKidsWatchTime" />
+        <function name="GetState" />
+        <function name="StartKids" />
+        <function name="LeaveKids" />
+        <function name="RemoveEntry" />
+        <function name="CycleLimit" />
+        <function name="ChangePin" />
+        <function name="ConfirmTurnOff" />
+        <function name="GiveMoreTime" />
+        <function name="IsTimeUp" />
+    </interface>
+    <children>
+        <!-- runs the next step of a flow just after the current dialog has closed -->
+        <Timer id="DeferTimer" duration="0.15" />
+        <!-- after start-up in Kids mode, makes sure the Kids screen ends up with focus -->
+        <Timer id="FocusTimer" duration="1" />
+    </children>
+</component>

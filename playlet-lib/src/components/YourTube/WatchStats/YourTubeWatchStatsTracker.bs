@@ -6,6 +6,8 @@ import "pkg:/source/utils/Types.bs"
 ' A longer gap between ticks is a stall or a suspended app, not watching.
 const MAX_TICK_SECONDS = 3
 const FLUSH_SECONDS = 60
+' TubeZero Kids: Kids-mode playing time goes to YourTubeKidsService in batches this size (the daily limit)
+const KIDS_FLUSH_SECONDS = 15
 
 function Init()
     m.player = invalid
@@ -13,6 +15,7 @@ function Init()
     m.lastTickMs = -1
     m.pending = 0.0
     m.pendingChannel = ""
+    m.kidsPending = 0.0
 end function
 
 function OnPlayerChange() as void
@@ -48,6 +51,12 @@ function OnPlayerPosition() as void
             if m.pending >= FLUSH_SECONDS
                 Flush()
             end if
+            if ValidBool(m.global.ytKidsActive)
+                m.kidsPending += delta
+                if m.kidsPending >= KIDS_FLUSH_SECONDS
+                    FlushKids()
+                end if
+            end if
         end if
     end if
     m.lastTickMs = nowMs
@@ -75,7 +84,20 @@ function ChannelName(content as dynamic) as string
     return ValidString(content.secondaryTitle)
 end function
 
+function FlushKids() as void
+    if m.kidsPending <= 0
+        return
+    end if
+    seconds = m.kidsPending
+    m.kidsPending = 0.0
+    kids = m.global.yourtubeKids
+    if kids <> invalid
+        kids@.AddKidsWatchTime(seconds)
+    end if
+end function
+
 function Flush() as void
+    FlushKids()
     if m.pending <= 0
         return
     end if

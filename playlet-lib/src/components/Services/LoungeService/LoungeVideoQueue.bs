@@ -13,6 +13,11 @@ namespace LoungeVideoQueue
     end function
 
     function HandleLoungePlaylist(videoQueueNode as object, invService as object, playlistData as object) as void
+        ' YourTube: casting from the YouTube app can't start videos in Kids mode
+        if ValidBool(m.global.ytKidsActive)
+            LogInfo("Kids mode: ignoring cast playlist")
+            return
+        end if
         videoIds = playlistData[FIELD_VIDEO_IDS]
         if StringUtils.IsNullOrEmpty(videoIds)
             videoQueueNode.clearQueue = true

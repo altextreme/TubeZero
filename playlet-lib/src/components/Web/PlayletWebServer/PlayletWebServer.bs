@@ -28,6 +28,7 @@ import "pkg:/components/YourTube/LiveNow/YourTubeLiveNowRouter.bs" ' YourTube
 import "pkg:/components/YourTube/Live/YourTubeLiveRouter.bs"
 import "pkg:/components/YourTube/Shorts/YourTubeShortsRouter.bs"
 import "pkg:/components/YourTube/Pairing/YourTubePairingRouter.bs"
+import "pkg:/components/YourTube/Kids/YourTubeKidsMiddleware.bs" ' YourTube
 
 function Init()
 end function
@@ -75,6 +76,8 @@ function SetupRoutes(server as object)
     ]))
     ' YourTube: account and playback routes need a paired phone (YourTubePairing.RouteNeedsPairing)
     server.UseRouter(new Http.YourTubePairingMiddleware())
+    ' YourTube: the phone remote is off in Kids mode (same routes as pairing, paired or not)
+    server.UseRouter(new Http.YourTubeKidsMiddleware())
     if server.settings.WebSocketsEnabled
         server.UseRouter(new Http.WebSocketMiddleware())
     end if
