@@ -145,7 +145,7 @@ namespace Tests
             m.assertTrue(Abs(fill.clippingRect.x - 0.9 * 1136.8679) < 0.5) ' proportional, not pinned
             m.assertTrue(Abs(m.top.findNode("playhead").translation[0] - (0.9 * 1136.8679 - 6)) < 0.5)
             m.assertEqual(m.top.findNode("currentLabel").text, Tr(Locale.VideoPlayer.RewindLiveTv))
-            m.assertEqual(m.top.findNode("remainingLabel").text, "0:01")
+            m.assertEqual(m.top.findNode("remainingLabel").text, "-0:01") ' YourTube: "-M:SS"
             m.assertFalse(m.top.findNode("bullet").visible)
             m.assertFalse(m.top.findNode("liveLabel").visible)
         end function
@@ -222,8 +222,41 @@ namespace Tests
             m.assertEqual(m.top.findNode("remainingLabel").text, "")
             ' releasing the latch swaps to the offset
             m.top.forceLiveBadge = false
-            m.assertFalse(m.top.findNode("bullet").visible)
-            m.assertEqual(m.top.findNode("remainingLabel").text, "0:17")
+            ' YourTube: ...next to the grey "Go live" pill (was: the badge hidden)
+            m.assertEqual(m.top.findNode("liveLabel").text, Tr(Locale.VideoPlayer.GoLive))
+            m.assertEqual(m.top.findNode("remainingLabel").text, "-0:17")
+        end function
+
+        @it("YourTube: idle behind the edge shows -M:SS beside a grey Go live pill that brightens with the bar focus")
+        function _()
+            m.top.isLive = true
+            m.top.transportMode = TransportController.Mode.Idle
+            m.top.forceLiveBadge = false
+            m.top.focused = false
+            m.top.atLiveEdge = false
+            m.top.cursorMs = 3600000
+            m.top.liveOffsetMs = 135000
+            bullet = m.top.findNode("bullet")
+            lbl = m.top.findNode("liveLabel")
+            remaining = m.top.findNode("remainingLabel")
+            m.assertTrue(bullet.visible)
+            m.assertTrue(lbl.visible)
+            m.assertEqual(lbl.text, Tr(Locale.VideoPlayer.GoLive))
+            m.AssertBlend(bullet.blendColor, &h9E9E9EFF)
+            m.assertEqual(remaining.text, "-2:15")
+            m.assertTrue(Abs((lbl.translation[0] + lbl.boundingRect().width) - 1144) < 2, "pill right edge pinned to the track end")
+            m.assertTrue(remaining.translation[0] + 120 < bullet.translation[0], "the time sits left of the pill")
+            m.AssertBlend(lbl.color, &hAAAAAAFF)
+            m.top.focused = true
+            m.AssertBlend(lbl.color, &hEBEBEBFF)
+            m.top.focused = false
+            ' back at the edge: the red LIVE badge, time cleared and back in its own slot
+            m.top.atLiveEdge = true
+            m.top.liveOffsetMs = 0
+            m.assertEqual(lbl.text, Tr(Locale.RowCell.Live))
+            m.AssertBlend(bullet.blendColor, &hD53E5AFF)
+            m.assertEqual(remaining.text, "")
+            m.assertEqual(remaining.translation[0], 1024.0)
         end function
 
         @it("an active live transport shows the TIME, never the badge — even at the edge or latched")

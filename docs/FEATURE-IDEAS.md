@@ -247,7 +247,7 @@ What the code already has that the ideas below build on (and what it lacks):
 
 ### Live
 - DVR rewind on live streams, using `PostLiveDvrInfo` / `GetLiveTimeline` (already in Innertube), with a "Go live"
-  button. **M**
+  button. **M** *Round 2: the rewind already existed; the "Go live" pill (OK on the bar while behind) is added.*
 - Upcoming streams and premieres with "Notify me" (`notification/add_upcoming_event_reminder`) and a countdown. **S–M**
 - Chat position and opacity settings, and a Super Chat ticker. **S**
 - Live tab: pull a channel's live URL automatically, and add M3U playlist import for favorites. **S–M**

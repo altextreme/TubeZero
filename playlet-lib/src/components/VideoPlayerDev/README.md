@@ -124,5 +124,9 @@ the content loads becomes the content-load seek.
   (`TransportController.JumpCursor`); both keys did nothing during a scrub before.
 - **Up next card**: over the last 10s (idle, chrome hidden, no panel open) OK plays the next video now and Back
   cancels autoplay for this video. The SponsorBlock OK-to-skip / Back-dismiss still come first.
+- **Go live**: on live, idle and behind the edge (`atLiveEdge` false, the reveal "LIVE" hold not running), the
+  bar's right end reads "-M:SS" beside a grey "Go live" pill, and OK on the bar tier
+  (`OkAction.GoLive`) seeks to the edge through `ForceIdleSeek(LIVE_EDGE_SEEK_MS, false)` (resumes a paused
+  stream) and fades the chrome. At the edge OK keeps toggling the chrome. No brain state was added.
 - Buttons 7-9 (CC, Description, Settings) open YourTubeDialog sheets or the description side panel; see
   `components/YourTube/PlayerSettings` and `components/YourTube/Description`.

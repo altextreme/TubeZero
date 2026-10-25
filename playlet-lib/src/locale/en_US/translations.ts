@@ -1009,6 +1009,11 @@
         <source>Rewind live TV</source>
         <translation>Rewind live TV</translation>
     </message>
+    <!-- YourTube: the live pill while behind the edge -->
+    <message>
+        <source>Go live</source>
+        <translation>Go live</translation>
+    </message>
     <message>
         <source>Video load error</source>
         <translation>Video load error</translation>

@@ -884,6 +884,60 @@ namespace Tests
             m.assertFalse(snap.forceLiveBadge, "the transport releases the hold — time shows, not ● LIVE")
         end function
 
+        ' YourTube: "Go live". Rewound and resumed behind the edge, the bar shows "-M:SS" + a grey "Go live" pill;
+        ' OK on the bar tier then seeks to the live edge (the sentinel) and plays, and the chrome fades.
+        function RewindAndRevealBehindLive() as void
+            m.top.callFunc("TestSetLive", 43200000) ' 12h stream at the edge, 4h window
+            m.top.callFunc("TestKey", RemoteKeys.Left, true) ' rewind 5s (LiveDvr, frozen)
+            m.top.callFunc("TestKey", RemoteKeys.Left, false)
+            m.top.callFunc("TestKey", RemoteKeys.Left, true) ' another 5s
+            m.top.callFunc("TestKey", RemoteKeys.Left, false)
+            m.top.callFunc("TestKey", RemoteKeys.Ok, true) ' commit: resume 10s behind the edge
+            m.top.callFunc("TestFinishChromeFadeOut")
+            m.top.callFunc("TestKey", RemoteKeys.Up, true) ' reveal (idle) -> bar tier, ● LIVE hold starts
+        end function
+
+        @it("YourTube: OK on the bar while behind the live edge goes live (sentinel seek + resume, chrome fades)")
+        function _()
+            m.RewindAndRevealBehindLive()
+            m.top.callFunc("TestFireLiveBadgeHold")
+            behind = m.Snap()
+            m.assertEqual(behind.transportMode, TransportController.Mode.Idle)
+            m.assertFalse(behind.brain.atLiveEdge, "10s behind the edge")
+            m.assertTrue(behind.chromeShown)
+            m.assertEqual(behind.focusTarget, PlayerCoordinatorLogic.FocusTarget.Bar)
+            m.assertTrue(behind.liveBadgeShown, "the pill shows")
+            m.assertEqual(behind.barRemainingText, "-0:10")
+
+            m.top.callFunc("TestKey", RemoteKeys.Ok, true)
+            after = m.Snap()
+            m.assertEqual(after.transportMode, TransportController.Mode.Idle)
+            m.assertEqual(Int(m.top.seek), 999999, "the live-edge seek")
+            m.assertEqual(after.control, VideoControl.Resume, "goes live playing, even from a pause")
+            m.assertTrue(after.brain.atLiveEdge)
+            m.assertTrue(after.chromeFadingOut, "the chrome fades as an edge-reaching commit's does")
+            m.assertTrue(PlayerInvariants.CheckBrain(after.brain).ok, "brain invariants hold")
+        end function
+
+        @it("YourTube: OK during the red ● LIVE reveal hold, or at the edge, still just toggles the chrome")
+        function _()
+            m.RewindAndRevealBehindLive()
+            seekBefore = m.top.seek
+            m.top.callFunc("TestKey", RemoteKeys.Ok, true) ' hold still running: the bar reads ● LIVE
+            snap = m.Snap()
+            m.assertTrue(snap.chromeFadingOut, "OK hid the chrome")
+            m.assertEqual(m.top.seek, seekBefore, "no go-live seek while the badge reads LIVE")
+
+            m.top.callFunc("TestSetLive", 43200000) ' at the edge
+            m.top.callFunc("TestFinishChromeFadeOut")
+            m.top.callFunc("TestKey", RemoteKeys.Up, true)
+            m.top.callFunc("TestFireLiveBadgeHold")
+            seekBefore = m.top.seek
+            m.top.callFunc("TestKey", RemoteKeys.Ok, true)
+            m.assertTrue(m.Snap().chromeFadingOut)
+            m.assertEqual(m.top.seek, seekBefore)
+        end function
+
         ' The button tier remembers its highlighted button across a buttons->bar->buttons round-trip; only a
         ' fresh reveal (the row was hidden) resets the highlight to play/pause. A fresh reveal lands on the bar
         ' tier by default, so reaching the buttons takes an explicit Up first.

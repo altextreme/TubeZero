@@ -492,7 +492,9 @@ function OnOkPress() as boolean
 
     ' the OK/Select state machine while idle: VOD pauses/resumes/reveals by play + HUD state, live toggles the HUD.
     chromeShown = (m.chromeMode = ChromeMode.Shown or m.chromeMode = ChromeMode.FadingIn)
-    action = PlayerCoordinatorLogic.OkActionInIdle(m.top.state, chromeShown, m.transport.isLive)
+    ' YourTube: "behind" exactly when the bar shows the grey "Go live" pill (not during the red ● LIVE reveal hold).
+    behindLive = m.transport.isLive and not m.transport.atLiveEdge and not m.liveBadgeHoldActive
+    action = PlayerCoordinatorLogic.OkActionInIdle(m.top.state, chromeShown, m.transport.isLive, behindLive)
     LogDebug("OK idle: state=", m.top.state, " chromeShown=", chromeShown, " isLive=", m.transport.isLive, " action=", action)
     ApplyOkAction(action)
     return true
@@ -516,9 +518,22 @@ function ApplyOkAction(action as integer) as void
         HideChrome()
     else if action = PlayerCoordinatorLogic.OkAction.ToggleChrome
         ToggleChromeOrPause()
+    else if action = PlayerCoordinatorLogic.OkAction.GoLive ' YourTube
+        GoLive()
     else
         ShowChrome() ' reveal
     end if
+end function
+
+' YourTube: "Go live" — the idle live jump to the edge, through the brain's external-seek path (the edge
+' sentinel; resumes a paused stream), then the chrome fades as an edge-reaching commit's does.
+function GoLive() as void
+    LogInfo("Go live: offsetMs=", m.transport.liveOffsetMs)
+    CancelLiveBadgeHold()
+    m.largePause.cancel = true
+    m.transport.ForceIdleSeek(TransportController.LIVE_EDGE_SEEK_MS, false)
+    ApplyTransport()
+    HideChrome()
 end function
 
 ' Play — commit if a transport is active, else toggle play/pause (LargePause on the pause edge).

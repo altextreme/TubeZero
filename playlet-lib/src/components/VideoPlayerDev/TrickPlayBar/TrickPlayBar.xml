@@ -69,6 +69,8 @@
             <Font role="font" uri="font:SystemFontFile" size="16" />
         </Label>
         <!-- LIVE bullet: shown only at the edge. -->
+        <!-- YourTube: the bullet + badge also show, grey, as "Go live" while idle behind the edge; the right
+             label then reads "-M:SS" just left of it. Text and colours are set in code. -->
         <Poster id="bullet" visible="false"
             uri="/RokuOS/Artwork/SceneGraph/FixedTheme/Base/FHD/icon_inline_unselected_bullet.webp"
             translation="[1056, 24]" blendColor="0xD53E5AFF" loadDisplayMode="noScale" />

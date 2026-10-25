@@ -6,6 +6,14 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 
 ## Unreleased: TubeZero
 
+### Round 2 (not yet checked on the TV)
+- Live "Go live": the player already rewound live streams inside the DVR window (Left/Right step 5s, Rewind/Fast
+  forward scan, Instant replay, over the window the DASH manifest advertises from `GetLiveTimeline`). New: while
+  playing behind the live edge, the bar's right end shows the time behind as "-2:15" beside a grey bullet and
+  "Go live" (brighter while the bar holds focus); OK on the bar seeks to the live edge, resumes a paused stream and
+  fades the controls. At the edge it stays the red-bullet "LIVE", and OK there still hides the controls. During
+  the 1.6s "LIVE" flash on reveal, OK still hides the controls (it does what the bar shows). The time during a
+  rewind is "-M:SS" too. No new button: the row keeps its 10 buttons and indexes.
 ### Personal extras and polish (not yet checked on the TV)
 - Phone pairing: account and playback routes on the phone web server (every POST/PUT/DELETE except DIAL, DRM
   licenses, the built-in Invidious backend and `/api/pair*`; plus GET `/watch`, `/api/view/open`,

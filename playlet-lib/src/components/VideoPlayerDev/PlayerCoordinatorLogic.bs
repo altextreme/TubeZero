@@ -26,6 +26,7 @@ namespace PlayerCoordinatorLogic
         Pause = 1 ' pause, show the large pause poster, keep the HUD up
         Resume = 2 ' resume, hide the pause poster, hide the HUD
         ToggleChrome = 3 ' live: toggle the HUD, never pause
+        GoLive = 4 ' YourTube: live, HUD up and behind the edge -> seek to the live edge and play
     end enum
 
     enum SafetyAction
@@ -83,8 +84,13 @@ namespace PlayerCoordinatorLogic
     end function
 
     ' The OK/Select outcome while idle. chromeShown means the HUD is shown or fading in.
-    function OkActionInIdle(state as string, chromeShown as boolean, isLive as boolean) as integer
+    ' YourTube: behindLive = the bar shows the grey "Go live" pill (live, idle, behind the edge); OK with the
+    ' HUD up then goes live. The coordinator only asks while the bar tier holds focus (the buttons own OK).
+    function OkActionInIdle(state as string, chromeShown as boolean, isLive as boolean, behindLive = false as boolean) as integer
         if isLive
+            if chromeShown and behindLive
+                return OkAction.GoLive
+            end if
             return OkAction.ToggleChrome
         end if
         if state = VideoState.Playing

@@ -76,6 +76,17 @@ namespace Tests
             m.assertEqual(PlayerCoordinatorLogic.OkActionInIdle("paused", true, true), PlayerCoordinatorLogic.OkAction.ToggleChrome)
         end function
 
+        ' YourTube: the "Go live" pill
+        @it("live behind the edge with the HUD up -> go live; hidden or at the edge -> toggle the HUD")
+        function _()
+            m.assertEqual(PlayerCoordinatorLogic.OkActionInIdle("playing", true, true, true), PlayerCoordinatorLogic.OkAction.GoLive)
+            m.assertEqual(PlayerCoordinatorLogic.OkActionInIdle("paused", true, true, true), PlayerCoordinatorLogic.OkAction.GoLive)
+            m.assertEqual(PlayerCoordinatorLogic.OkActionInIdle("playing", false, true, true), PlayerCoordinatorLogic.OkAction.ToggleChrome)
+            m.assertEqual(PlayerCoordinatorLogic.OkActionInIdle("playing", true, true, false), PlayerCoordinatorLogic.OkAction.ToggleChrome)
+            ' behindLive means nothing on VOD
+            m.assertEqual(PlayerCoordinatorLogic.OkActionInIdle("playing", true, false, true), PlayerCoordinatorLogic.OkAction.Pause)
+        end function
+
         ' =========================================================================================
         ' BackActionFor — the Back ladder (P-total over transportMode x chromeMode)
         ' =========================================================================================
