@@ -87,6 +87,9 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   come from `/next` (signed out too); dislikes from Return YouTube Dislike (`returnyoutubedislikeapi.com/votes`,
   estimates), behind the new Settings > Return YouTube Dislike > Show dislike counts (`ryd.enabled`, on by
   default). Credited on the About screen.
+- Most replayed: faint bars above the scrubber from the `/next` heatmap (VOD, when the video has one). While
+  scrubbing, Up jumps the cursor to the next most-replayed peak and Down to the previous one (OK commits there as
+  usual). `TransportController.JumpCursor` moves the scrub cursor.
 - The title and channel now sit above the action row (it grew to the left under them).
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)

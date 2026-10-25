@@ -38,6 +38,12 @@ function Init()
     for each field in ["chapterStartsMs", "durationMs", "isLive"]
         m.top.ObserveField(field, FuncName(LayoutChapterTicks))
     end for
+    ' YourTube: most-replayed bars, likewise
+    m.heatmapBars = m.top.findNode("heatmapBars")
+    m.heatmapKey = ""
+    for each field in ["heatmap", "durationMs", "isLive"]
+        m.top.ObserveField(field, FuncName(LayoutHeatmap))
+    end for
 
     Repaint()
 end function
@@ -243,6 +249,44 @@ function LayoutChapterTicks() as void
             tick.height = 5
             tick.color = "#161616FF"
             tick.translation = [x - 1.5, 3.5]
+        end if
+    end for
+end function
+
+' YourTube: one faint bar per heat marker (YouTube sends 100), up to HEAT_MAX_H tall, bottoms just above the
+' track. VOD only. Rebuilt only when the inputs change.
+const HEAT_MAX_H = 10
+function LayoutHeatmap() as void
+    markers = m.top.heatmap
+    durationMs = m.top.durationMs
+    if m.top.isLive or not IsArray(markers) or durationMs <= 0
+        markers = []
+    end if
+    key = durationMs.ToStr() + ":" + markers.Count().ToStr()
+    if markers.Count() > 0
+        key = key + ":" + FormatJson(markers[0]) + FormatJson(markers[markers.Count() - 1])
+    end if
+    if key = m.heatmapKey
+        return
+    end if
+    m.heatmapKey = key
+    m.heatmapBars.removeChildrenIndex(m.heatmapBars.getChildCount(), 0)
+    for each marker in markers
+        if IsAssociativeArray(marker)
+            x = ValidInt(marker.startMs) / durationMs * 1144
+            w = ValidInt(marker.durationMs) / durationMs * 1144 - 1
+            if w < 1
+                w = 1
+            end if
+            intensity = ValidFloat(marker.intensity)
+            h = Int(1 + intensity * (HEAT_MAX_H - 1))
+            if x < 1144
+                bar = m.heatmapBars.createChild("Rectangle")
+                bar.width = w
+                bar.height = h
+                bar.color = "#EBEBEB59"
+                bar.translation = [x, 1.5 - h]
+            end if
         end if
     end for
 end function

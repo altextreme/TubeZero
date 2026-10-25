@@ -237,6 +237,18 @@ namespace Tests
         ' =========================================================================================
         ' SCAN (VOD Fwd/Rev) — free-run / ladder / wrap / flip / commit / clamp / keyUp no-op
         ' =========================================================================================
+        @it("YourTube: JumpCursor moves the scrub cursor (clamped) and keeps the scrub; ignored at idle")
+        function _()
+            m.t.JumpCursor(100000)
+            m.assertEqual(m.t.cursorMs, 60000, "idle: no-op")
+            m.t.HandleCommand(TransportController.Command.Right)
+            m.t.JumpCursor(150000)
+            m.assertEqual(m.t.cursorMs, 150000)
+            m.assertEqual(m.t.transportMode, TransportController.Mode.Scrub)
+            m.t.JumpCursor(999999)
+            m.assertEqual(m.t.cursorMs, 210000, "clamped to the duration")
+        end function
+
         @describe("scan")
 
         @it("enter latches a continuous scan at L1 with the ffx1 glyph")

@@ -23,8 +23,12 @@
         <field id="chapterText" type="string" alias="chapterLabel.text" />
         <!-- YourTube: YouTube chapter starts (ms, after 0): drawn as small gaps in the track -->
         <field id="chapterStartsMs" type="array" />
+        <!-- YourTube: most-replayed heat markers [{ startMs, durationMs, intensity 0..1 }]: faint bars above the track -->
+        <field id="heatmap" type="array" />
     </interface>
     <children>
+        <!-- YourTube: most-replayed bars, rising from just above the track (built in code from heatmap) -->
+        <Group id="heatmapBars" />
         <!-- YourTube: thin 5px track centred in the 12px band, red-to-pink fill (reference/04-player.png). -->
         <Poster id="trackBg"
             uri="pkg:/images/yt-rounded.$$RES$$.9.png"

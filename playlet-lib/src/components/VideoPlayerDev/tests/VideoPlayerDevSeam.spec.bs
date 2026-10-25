@@ -1174,6 +1174,29 @@ namespace Tests
             m.assertEqual(m.Snap().chapterText, "Sponsor")
         end function
 
+        @it("while scrubbing, Up/Down jump the cursor to the next/previous most-replayed peak")
+        function _()
+            m.top.duration = 100
+            heat = []
+            for i = 0 to 9
+                heat.Push({ startMs: i * 10000, durationMs: 10000, intensity: 0.1 })
+            end for
+            heat[3].intensity = 0.9 ' peak centre 35s
+            heat[7].intensity = 0.8 ' peak centre 75s
+            m.top.callFunc("TestSetWatchInfo", { chapters: [], heatmap: heat, details: {} })
+            m.top.position = 50.0
+            m.top.callFunc("TestKey", RemoteKeys.Right, true) ' scrub
+            m.top.callFunc("TestKey", RemoteKeys.Right, false)
+            m.top.callFunc("TestKey", RemoteKeys.Up, true)
+            snap = m.Snap()
+            m.assertEqual(snap.brain.cursorMs, 75000, "Up -> the next peak")
+            m.assertEqual(snap.transportMode, TransportController.Mode.Scrub, "still scrubbing (OK commits there)")
+            m.top.callFunc("TestKey", RemoteKeys.Down, true)
+            m.assertEqual(m.Snap().brain.cursorMs, 35000, "Down -> the previous peak")
+            m.top.callFunc("TestKey", RemoteKeys.Ok, true)
+            m.assertEqual(Int(m.top.seek * 1000), 35000, "the commit seeks to the peak")
+        end function
+
         @it("a chapter picked in the description panel seeks there")
         function _()
             m.top.duration = 100

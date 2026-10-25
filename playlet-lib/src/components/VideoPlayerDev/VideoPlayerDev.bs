@@ -371,6 +371,11 @@ function OnKeyEvent(key as string, press as boolean) as boolean
         return true
     end if
 
+    ' YourTube: while scrubbing a VOD, Up/Down jump the cursor to the next/previous most-replayed peak.
+    if press and (key = RemoteKeys.Up or key = RemoteKeys.Down) and m.transport.transportMode = TransportController.Mode.Scrub and JumpToPeak(key)
+        return true
+    end if
+
     ' Focus model (only while the chrome is up + idle): the BUTTON tier takes the directional + select keys; the
     ' BAR tier takes Up (back to the buttons) and lets the transport keys through. Rev/Fwd/Replay are not owned
     ' by the buttons, so they fall through to the transport and move focus to the bar.
@@ -1433,6 +1438,7 @@ function PlayWithContent(contentNode as object)
     m.descriptionPanel.visible = false ' YourTube
     m.watchInfo = invalid ' YourTube
     m.trickPlayBar.chapterStartsMs = [] ' YourTube
+    m.trickPlayBar.heatmap = [] ' YourTube
     m.buttonRow.likeCountText = "" ' YourTube
     m.buttonRow.dislikeCountText = "" ' YourTube
     m.upNext = { looked: false, video: invalid, cancelled: false } ' YourTube
@@ -1539,6 +1545,7 @@ function OnVideoContentJobDone(event as object) as void
     watchInfo = ValidAssociativeArray(metadata.ytWatchInfo)
     m.watchInfo = { chapters: ValidArray(watchInfo.chapters), heatmap: ValidArray(watchInfo.heatmap), details: ValidAssociativeArray(watchInfo.details) }
     m.trickPlayBar.chapterStartsMs = YourTubeWatchInfo.ChapterStartsMs(m.watchInfo.chapters)
+    m.trickPlayBar.heatmap = m.watchInfo.heatmap
     ' YourTube: like count from /next (works signed out), dislikes from Return YouTube Dislike
     m.buttonRow.likeCountText = ValidString(m.watchInfo.details.likeCount)
     LoadDislikes(ValidString(content.videoId))
@@ -1941,6 +1948,26 @@ function OnClose() as void
     end try
 
     m.top.content = invalid
+end function
+
+' YourTube: the scrub cursor to the next (Up) or previous (Down) most-replayed peak. False when there is none
+' (the key then does what it did before).
+function JumpToPeak(key as string) as boolean
+    if m.watchInfo = invalid or m.transport.isLive
+        return false
+    end if
+    dir = 1
+    if key = RemoteKeys.Down
+        dir = -1
+    end if
+    peakMs = YourTubeWatchInfo.NextPeakMs(m.watchInfo.heatmap, m.transport.cursorMs, dir)
+    if peakMs < 0
+        return false
+    end if
+    m.transport.JumpCursor(peakMs)
+    ApplyTransport()
+    ArmAutoHide()
+    return true
 end function
 
 ' YourTube: the Up next card shows over the last UP_NEXT_MS of a VOD (not Shorts), while nothing else is on

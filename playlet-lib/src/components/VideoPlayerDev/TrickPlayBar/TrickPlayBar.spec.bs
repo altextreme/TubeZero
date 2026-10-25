@@ -289,6 +289,21 @@ namespace Tests
             m.assertEqual(ticks.getChildCount(), 0)
         end function
 
+        @it("YourTube: draws a most-replayed bar per heat marker, taller where hotter; none on live")
+        function _()
+            bars = m.top.findNode("heatmapBars")
+            m.top.heatmap = [{ startMs: 0, durationMs: 100000, intensity: 0.0 }, { startMs: 100000, durationMs: 100000, intensity: 1.0 }]
+            m.assertEqual(bars.getChildCount(), 2)
+            m.assertEqual(bars.getChild(1).translation[0], 572.0)
+            m.assertEqual(bars.getChild(0).height, 1.0)
+            m.assertEqual(bars.getChild(1).height, 10.0)
+            m.top.isLive = true
+            m.assertEqual(bars.getChildCount(), 0)
+            m.top.isLive = false
+            m.top.heatmap = []
+            m.assertEqual(bars.getChildCount(), 0)
+        end function
+
         ' blendColor reads back as a signed 32-bit Integer; coerce the expected hex to the same Integer type.
         function AssertBlend(actual as dynamic, expectedHex as longinteger) as void
             expected% = (expectedHex and &hFFFFFFFF)

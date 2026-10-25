@@ -436,6 +436,15 @@ namespace TransportController
             m.ArmTimer(TransportController.Timer.ScrubRepeat, TransportController.SCRUB_REPEAT_INITIAL_MS, false)
         end function
 
+        ' YourTube: put the scrub cursor on `ms` (a most-replayed peak), clamped to the timeline; the scrub stays
+        ' active and frozen (OK commits there as usual). A no-op outside a VOD scrub.
+        function JumpCursor(ms as integer) as void
+            if m.transportMode <> TransportController.Mode.Scrub or m.isLive
+                return
+            end if
+            m.cursorMs = m.Clamp(ms, 0, m.durationMs)
+        end function
+
         function ScrubStep(dir as integer) as void
             m.cursorMs = m.Clamp(m.cursorMs + dir * m.scrubStepMs, 0, m.durationMs)
         end function
