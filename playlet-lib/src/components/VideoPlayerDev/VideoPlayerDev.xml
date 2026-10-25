@@ -99,9 +99,11 @@
                      whole HUD continuously (~25fps) for as long as the chrome is up. The LayoutGroup keeps the
                      secondary title flowing under however many lines the title takes. -->
                 <!-- YourTube: title + channel sit bottom-left above the scrubber (reference/04-player.png);
-                     bottom-aligned so a one-line title hugs the bar like a two-line one. -->
-                <LayoutGroup translation="[64, 506]" layoutDirection="vert" vertAlignment="bottom" itemSpacings="[6]">
-                    <!-- YourTube: 700 wide so the title ends before the action row (x 798) -->
+                     bottom-aligned so a one-line title hugs the bar like a two-line one. Their bottom sits
+                     above the action row (y 458) so the row can grow left under them without covering the
+                     title (was y 506, beside a shorter row). -->
+                <LayoutGroup translation="[64, 446]" layoutDirection="vert" vertAlignment="bottom" itemSpacings="[6]">
+                    <!-- YourTube: 700 wide, as before the row grew -->
                     <Label id="titleLabel" width="700" wrap="true" maxLines="2"
                         color="0xFEFEFEFF" horizAlign="left">
                         <Font role="font" uri="font:BoldSystemFontFile" size="22" />

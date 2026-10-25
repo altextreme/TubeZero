@@ -79,9 +79,12 @@ playlist_add_check save_done 63
 person_add subscribe 63
 how_to_reg subscribed 63
 thumb_up thumb_up 20 #AAAAAA
+yt_closed_caption player_cc 63
+info player_info 63
+settings player_settings 63
 LIST
 # Player action glyphs fill their whole box; shrink it to sit inside the player button disc like the others.
-for glyph in comment chat like like_fill dislike dislike_fill save save_done subscribe subscribed; do
+for glyph in comment chat like like_fill dislike dislike_fill save save_done subscribe subscribed player_cc player_info player_settings; do
     magick "$OUT/$glyph.png" -resize 48x48 -background none -gravity center -extent 63x63 "PNG32:$OUT/$glyph.png"
 done
 echo "Material Symbols rendered to $OUT"

@@ -42,6 +42,16 @@
         type: "boolean",
         defaultValue: false,
       },
+      {
+        // YourTube: the caption language picked with the player's CC button ("" follows Roku's setting,
+        // "off" keeps captions off, else a 3-letter code like "eng"). Set from the player, not Settings.
+        displayText: "Captions language",
+        key: "playback.captions_language",
+        description: "Caption language chosen in the player.",
+        visibility: "off",
+        type: "string",
+        defaultValue: "",
+      },
     ],
   },
   {

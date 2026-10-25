@@ -11,6 +11,7 @@ import "pkg:/components/VideoPlayerDev/SponsorBlockController.bs"
 import "pkg:/components/VideoPlayerDev/TransportController.bs"
 import "pkg:/components/VideoPlayerDev/VideoNode.bs"
 import "pkg:/components/VideoQueue/VideoQueueUtils.bs"
+import "pkg:/components/YourTube/PlayerSettings/YourTubePlayerSettings.bs" ' YourTube
 import "pkg:/components/YourTube/YourTubeText.bs"
 import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/Locale.bs"
@@ -103,6 +104,9 @@ function Initialize()
     m.toast = m.top.findNode("toast")
     m.relatedShelf = m.top.findNode("relatedShelf")
     m.relatedShelf.ObserveField("closed", FuncName(OnRelatedClosed))
+    ' YourTube: the open settings/captions sheet ({ kind, values }), and captions switched off in this player
+    m.playerSheet = invalid
+    m.captionsOff = false
     m.fullScreenHint = m.top.findNode("fullScreenHint")
 
     m.autoHide = m.top.findNode("autoHide")
@@ -576,6 +580,10 @@ function ActivateButton(index as integer) as void
         end if
     else if index >= PlayerCoordinatorLogic.PlayerButton.Like and index <= PlayerCoordinatorLogic.PlayerButton.Subscribe
         AccountAction(index)
+    else if index = PlayerCoordinatorLogic.PlayerButton.Captions ' YourTube
+        YtOpenCaptionsPicker()
+    else if index = PlayerCoordinatorLogic.PlayerButton.Settings ' YourTube
+        YtOpenSettingsSheet()
     end if
     SyncFocus()
 end function
@@ -963,6 +971,7 @@ function OnVideoState(event as object) as void
             m.transport.OnReady()
             m.spinner.mode = SpinMode.Off
             LogInfo("first frame: ready=true, loading overlay off")
+            YtApplyCaptionsPreference() ' YourTube: the remembered caption language (the tracks are loaded now)
         end if
         ' reaching "playing" means any in-flight play-through seek has landed. Clear the settling flag before
         ' the freeze so a transport that deferred its pause now freezes this settled-playing video.
@@ -1203,7 +1212,8 @@ function OnFullScreenChange() as void
     ' the SponsorBlock notification rides with the player: hidden while minimized, shown when full.
     m.sponsorblock.SetVisible(fullscreen)
     ' after a PiP restore the OS leaves captions blank while enableUI=false (resizing alone doesn't); suppress on minimize, release on restore to re-engage them.
-    m.top.suppressCaptions = not fullscreen
+    ' YourTube: ...unless captions were switched off in this player
+    m.top.suppressCaptions = not fullscreen or m.captionsOff
     ' minimized: no player UI at all. Reset any active transport (the bif/glyph clear; the underlying play/pause
     ' stays as-is) and hide chrome/spinner/pause now. Fires for the minimize button, external minimize, and a
     ' video that starts minimized.

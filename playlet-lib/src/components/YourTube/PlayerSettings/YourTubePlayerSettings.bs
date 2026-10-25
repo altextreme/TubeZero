@@ -1,0 +1,345 @@
+import "pkg:/components/Dialog/DialogUtils.bs"
+import "pkg:/components/Services/LoungeService/LoungeMessages.bs"
+import "pkg:/components/YourTube/PlayerSettings/YourTubePlayerSettingsLogic.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: the player's captions picker (CC button) and settings sheet (gear button): speed, quality,
+' captions and audio track. Imported into the VideoPlayerDev coordinator scope; uses its m.top, m.toast,
+' m.loungeService and m.playerSheet / m.captionsOff fields. Sheets are YourTubeDialog lists.
+
+' ----- sheets ------------------------------------------------------------------------------------------
+
+function YtOpenSettingsSheet() as void
+    labels = []
+    values = []
+    tracks = YtCaptionTracks()
+    if tracks.Count() > 0
+        labels.Push(YourTubePlayerSettings.Row("Captions", YtCurrentCaptionLabel(tracks)))
+        values.Push("captions")
+    end if
+    if not m.transport.isLive and m.top.hasField("playbackSpeed")
+        labels.Push(YourTubePlayerSettings.Row("Speed", YourTubePlayerSettings.SpeedLabel(YtCurrentSpeed())))
+        values.Push("speed")
+    end if
+    labels.Push(YourTubePlayerSettings.Row("Quality", YourTubePlayerSettings.QualityLabel(YtPref("playback.preferred_quality"))))
+    values.Push("quality")
+    audioTracks = YtAudioTracks()
+    if audioTracks.Count() > 1
+        labels.Push(YourTubePlayerSettings.Row("Audio track", YtCurrentAudioLabel(audioTracks)))
+        values.Push("audio")
+    end if
+    YtShowSheet("Settings", labels, values, "main", 0)
+end function
+
+function YtOpenCaptionsPicker() as void
+    tracks = YtCaptionTracks()
+    if tracks.Count() = 0
+        m.toast.text = "No captions for this video"
+        return
+    end if
+    labels = ["Off"]
+    values = [-1]
+    selected = 0
+    current = YtCurrentCaptionIndex(tracks)
+    for i = 0 to tracks.Count() - 1
+        labels.Push(YourTubePlayerSettings.CaptionLabel(tracks[i]))
+        values.Push(i)
+        if i = current
+            selected = labels.Count() - 1
+        end if
+    end for
+    labels[selected] = labels[selected] + "  •"
+    YtShowSheet("Captions", labels, values, "captions", selected)
+end function
+
+function YtOpenSpeedPicker() as void
+    labels = []
+    values = []
+    for each speed in YourTubePlayerSettings.Speeds()
+        labels.Push(YourTubePlayerSettings.SpeedLabel(speed))
+        values.Push(speed)
+    end for
+    selected = YourTubePlayerSettings.SpeedIndex(YtCurrentSpeed())
+    labels[selected] = labels[selected] + "  •"
+    YtShowSheet("Playback speed", labels, values, "speed", selected)
+end function
+
+function YtOpenQualityPicker() as void
+    labels = []
+    values = []
+    for each quality in YourTubePlayerSettings.Qualities()
+        labels.Push(YourTubePlayerSettings.QualityLabel(quality))
+        values.Push(quality)
+    end for
+    selected = YourTubePlayerSettings.QualityIndex(YtPref("playback.preferred_quality"))
+    if selected >= 0
+        labels[selected] = labels[selected] + "  •"
+    end if
+    YtShowSheet("Quality", labels, values, "quality", selected)
+end function
+
+function YtOpenAudioPicker() as void
+    tracks = YtAudioTracks()
+    labels = []
+    values = []
+    selected = 0
+    current = ValidString(YtVideoField("currentAudioTrack"))
+    if current = ""
+        current = ValidString(YtVideoField("audioTrack"))
+    end if
+    for i = 0 to tracks.Count() - 1
+        labels.Push(YourTubePlayerSettings.AudioLabel(tracks[i]))
+        values.Push(ValidString(tracks[i].Track))
+        if current <> "" and ValidString(tracks[i].Track) = current
+            selected = i
+        end if
+    end for
+    if labels.Count() = 0
+        return
+    end if
+    labels[selected] = labels[selected] + "  •"
+    YtShowSheet("Audio track", labels, values, "audio", selected)
+end function
+
+' One sheet at a time; the choice comes back in YtOnPlayerSheetClosed.
+function YtShowSheet(title as string, labels as object, values as object, kind as string, selected as integer) as void
+    if labels.Count() = 0
+        return
+    end if
+    HideChrome()
+    dialog = DialogUtils.ShowDialogEx({ title: title, buttons: labels })
+    if dialog = invalid
+        return
+    end if
+    dialog.width = 560
+    if selected >= 0
+        dialog.defaultButtonIndex = selected
+        dialog.focusDefaultButton = true
+    end if
+    m.playerSheet = { kind: kind, values: values }
+    dialog.observeFieldScoped("wasClosed", FuncName(YtOnPlayerSheetClosed))
+end function
+
+function YtOnPlayerSheetClosed(event as object) as void
+    dialog = event.getRoSGNode()
+    dialog.unobserveFieldScoped("wasClosed")
+    sheet = m.playerSheet
+    m.playerSheet = invalid
+    if sheet = invalid or m.onCloseCalled = true
+        return
+    end if
+    index = dialog.actualButtonSelected
+    if index < 0 or index >= sheet.values.Count()
+        return ' Back
+    end if
+    value = sheet.values[index]
+    if sheet.kind = "main"
+        if value = "captions"
+            YtOpenCaptionsPicker()
+        else if value = "speed"
+            YtOpenSpeedPicker()
+        else if value = "quality"
+            YtOpenQualityPicker()
+        else if value = "audio"
+            YtOpenAudioPicker()
+        end if
+    else if sheet.kind = "captions"
+        YtSelectCaptions(value)
+    else if sheet.kind = "speed"
+        YtSetSpeed(value)
+    else if sheet.kind = "quality"
+        YtSetQuality(value)
+    else if sheet.kind = "audio"
+        YtSetAudioTrack(value)
+    end if
+end function
+
+' ----- captions ----------------------------------------------------------------------------------------
+
+' The device's list once the stream loaded, else the tracks VideoContentJob.SetCaptions handed it.
+function YtCaptionTracks() as object
+    tracks = ValidArray(YtVideoField("availableSubtitleTracks"))
+    if tracks.Count() > 0
+        return tracks
+    end if
+    content = m.top.content
+    if content <> invalid
+        return ValidArray(content.SubtitleTracks)
+    end if
+    return []
+end function
+
+function YtCurrentCaptionIndex(tracks as object) as integer
+    if m.captionsOff or ValidString(YtVideoField("globalCaptionMode")) = "Off"
+        return -1
+    end if
+    return YourTubePlayerSettings.FindCaptionByName(tracks, YtVideoField("subtitleTrack"))
+end function
+
+function YtCurrentCaptionLabel(tracks as object) as string
+    index = YtCurrentCaptionIndex(tracks)
+    if index < 0
+        return "Off"
+    end if
+    return YourTubePlayerSettings.CaptionLabel(tracks[index])
+end function
+
+' index into YtCaptionTracks(), or -1 for Off. Remembers the language for the next videos.
+function YtSelectCaptions(index as integer) as void
+    tracks = YtCaptionTracks()
+    if index < 0 or index >= tracks.Count()
+        YtCaptionsOff()
+        YtSetPref("playback.captions_language", "off")
+        m.toast.text = "Captions off"
+        return
+    end if
+    track = tracks[index]
+    YtCaptionsOn(ValidString(track.TrackName), true)
+    YtSetPref("playback.captions_language", ValidString(track.Language))
+    m.toast.text = "Captions: " + YourTubePlayerSettings.CaptionLabel(track)
+end function
+
+' turnOnGlobal: an explicit choice also switches Roku's caption mode on (captions only draw while it is on).
+function YtCaptionsOn(trackName as string, turnOnGlobal as boolean) as void
+    m.captionsOff = false
+    if turnOnGlobal and m.top.hasField("globalCaptionMode") and m.top.globalCaptionMode = "Off"
+        m.top.globalCaptionMode = "On"
+    end if
+    if trackName <> "" and m.top.hasField("subtitleTrack")
+        m.top.subtitleTrack = trackName
+    end if
+    m.top.suppressCaptions = not m.container.fullscreen
+end function
+
+' Off for this player only (suppressCaptions); Roku's own caption setting is left alone.
+function YtCaptionsOff() as void
+    m.captionsOff = true
+    m.top.suppressCaptions = true
+end function
+
+' First frame: pick the remembered language, or keep them off. "" (never chosen) follows Roku's setting.
+function YtApplyCaptionsPreference() as void
+    language = ValidString(YtPref("playback.captions_language"))
+    if language = ""
+        return
+    end if
+    if language = "off"
+        YtCaptionsOff()
+        return
+    end if
+    tracks = YtCaptionTracks()
+    index = YourTubePlayerSettings.FindCaptionIndex(tracks, language)
+    if index >= 0
+        YtCaptionsOn(ValidString(tracks[index].TrackName), false)
+    end if
+end function
+
+' ----- speed / quality / audio -------------------------------------------------------------------------
+
+function YtCurrentSpeed() as float
+    speed = ValidFloat(YtVideoField("playbackSpeed"))
+    if speed <= 0
+        speed = 1.0
+    end if
+    return speed
+end function
+
+' Like the phone's setPlaybackSpeed (LoungeApi): the device applies a new speed reliably across a pause.
+function YtSetSpeed(speed as float) as void
+    if not m.top.hasField("playbackSpeed") or m.transport.isLive
+        return
+    end if
+    wasPlaying = m.top.state = "playing"
+    if wasPlaying
+        m.top.control = "pause"
+    end if
+    m.top.playbackSpeed = speed
+    if wasPlaying
+        m.top.control = "resume"
+    end if
+    m.toast.text = "Speed: " + YourTubePlayerSettings.SpeedLabel(speed)
+    loungeService = m.top.loungeService
+    if loungeService <> invalid and not StringUtils.IsNullOrEmpty(loungeService.loungeToken)
+        loungeService.outgoingMessages = [LoungeMessages.OnPlaybackSpeedChanged(speed, true)]
+    end if
+end function
+
+' Saves the preferred quality and reloads the video where it is (the manifest is filtered when built).
+function YtSetQuality(quality as string) as void
+    YtSetPref("playback.preferred_quality", quality)
+    m.toast.text = "Quality: " + YourTubePlayerSettings.QualityLabel(quality)
+    YtReloadVideo()
+end function
+
+' The device switches between the manifest's audio adaptation sets itself (DashManifest groups them by
+' audio track), so no reload is needed.
+function YtSetAudioTrack(trackId as string) as void
+    if trackId = "" or not m.top.hasField("audioTrack")
+        return
+    end if
+    m.top.audioTrack = trackId
+    for each track in YtAudioTracks()
+        if ValidString(track.Track) = trackId
+            m.toast.text = "Audio: " + YourTubePlayerSettings.AudioLabel(track)
+        end if
+    end for
+end function
+
+function YtAudioTracks() as object
+    return ValidArray(YtVideoField("availableAudioTracks"))
+end function
+
+function YtCurrentAudioLabel(tracks as object) as string
+    current = ValidString(YtVideoField("currentAudioTrack"))
+    if current = ""
+        current = ValidString(YtVideoField("audioTrack"))
+    end if
+    for each track in tracks
+        if ValidString(track.Track) = current
+            return YourTubePlayerSettings.AudioLabel(track)
+        end if
+    end for
+    return YourTubePlayerSettings.AudioLabel(tracks[0])
+end function
+
+' Loads the same video again from the current position (a new quality needs a new manifest).
+function YtReloadVideo() as void
+    content = m.top.content
+    if content = invalid or StringUtils.IsNullOrEmpty(content.videoId)
+        return
+    end if
+    node = CreateObject("roSGNode", "ContentNode")
+    node.title = ValidString(content.title)
+    fields = { videoId: content.videoId, _author: ValidString(content.secondaryTitle) }
+    if not m.transport.isLive
+        fields.timestamp = Int(m.top.position)
+    end if
+    node.AddFields(fields)
+    PlayWithContent(node)
+end function
+
+' ----- helpers -----------------------------------------------------------------------------------------
+
+' A Video field that older devices (and the test double) may not have.
+function YtVideoField(name as string) as dynamic
+    if m.top.hasField(name)
+        return m.top[name]
+    end if
+    return invalid
+end function
+
+function YtPref(key as string) as dynamic
+    preferences = m.top.preferences
+    if preferences = invalid or not preferences.hasField(key)
+        return invalid
+    end if
+    return preferences[key]
+end function
+
+function YtSetPref(key as string, value as dynamic) as void
+    preferences = m.top.preferences
+    if preferences <> invalid and preferences.hasField(key)
+        preferences[key] = value
+    end if
+end function

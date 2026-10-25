@@ -946,14 +946,14 @@ namespace Tests
             m.top.callFunc("TestKey", RemoteKeys.Up, true) ' bar -> buttons tier, play/pause (leftmost)
             m.top.callFunc("TestKey", RemoteKeys.Left, true) ' clamped at the left end
             m.assertEqual(m.Snap().nudgeCount, 1)
-            ' YourTube: minimize, comments, like, dislike, save, subscribe -> subscribe is rightmost
-            for i = 1 to 6
+            ' YourTube: minimize, comments, like, dislike, save, subscribe, captions, settings -> settings is rightmost
+            for i = 1 to 8
                 m.top.callFunc("TestKey", RemoteKeys.Right, true)
             end for
             m.top.callFunc("TestKey", RemoteKeys.Right, true) ' clamped at the right end
             snap = m.Snap()
             m.assertEqual(snap.nudgeCount, 2)
-            m.assertEqual(snap.focusedButton, 6, "the clamp held the highlight at the end")
+            m.assertEqual(snap.focusedButton, 8, "the clamp held the highlight at the end")
         end function
 
         ' Down at the bar tier (the bottom, and the default on reveal) is a no-op: consumed, no nudge.
@@ -1098,7 +1098,8 @@ namespace Tests
                 classified[name] = "axis"
             end for
             ' flags / scratch — one-shot latches and counters with a single consuming path.
-            for each name in ["onCloseCalled", "ignoreNextFinished", "videoPlayedSuccessfully", "firstFrameSeen", "showFullScreenHint", "repauseAfterSeek", "loadingSetSeekMs", "watchTimeMarker", "reportWatchTime", "errorDialogNode", "lastCommitSeq", "lastFinishSeq", "liveAstSeconds", "liveFallbackEdgeMs", "liveFallbackAtSeconds", "liveBadgeHoldActive"]
+            ' YourTube: playerSheet (the open settings sheet) and captionsOff (captions switched off in this player).
+            for each name in ["playerSheet", "captionsOff", "onCloseCalled", "ignoreNextFinished", "videoPlayedSuccessfully", "firstFrameSeen", "showFullScreenHint", "repauseAfterSeek", "loadingSetSeekMs", "watchTimeMarker", "reportWatchTime", "errorDialogNode", "lastCommitSeq", "lastFinishSeq", "liveAstSeconds", "liveFallbackEdgeMs", "liveFallbackAtSeconds", "liveBadgeHoldActive"]
                 classified[name] = "flag"
             end for
             ' NOT coordinator state — node-scope + test-environment entries, pinned EXPLICITLY (no hidden
@@ -1141,6 +1142,18 @@ namespace Tests
             m.assertTrue(m.Snap().suppressCaptions, "captions suppressed while minimized")
             container.fullscreen = true
             m.assertFalse(m.Snap().suppressCaptions, "captions released on restore")
+        end function
+
+        ' YourTube: captions switched off from the player's CC picker are per-player state; a PiP restore must
+        ' not release them again.
+        @it("captions switched off in the player stay off across a PiP restore")
+        function _()
+            container = m.top.container
+            m.top.callFunc("TestCaptionsOff")
+            m.assertTrue(m.Snap().suppressCaptions, "off right away")
+            container.fullscreen = false
+            container.fullscreen = true
+            m.assertTrue(m.Snap().suppressCaptions, "still off after the restore")
         end function
 
         ' The PiP-toggle-after-close crash (captured on device): OnClose drops m.sponsorblock, so a leaked

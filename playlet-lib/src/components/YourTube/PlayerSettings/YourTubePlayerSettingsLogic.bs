@@ -1,0 +1,134 @@
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: pure helpers for the player's captions picker and settings sheet (labels, option lists, track
+' lookups). No nodes; the player (YourTubePlayerSettings.bs) shows the sheets and applies the choice.
+namespace YourTubePlayerSettings
+
+    ' Speed choices, slowest first (the Video node's playbackSpeed).
+    function Speeds() as object
+        return [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    end function
+
+    ' The quality preference values offered in the sheet ("auto" first), as in the settings QualitySelector.
+    function Qualities() as object
+        return ["auto", "1080p", "720p", "480p", "360p", "240p", "144p"]
+    end function
+
+    ' "Normal" for 1x, else "1.5x".
+    function SpeedLabel(speed as float) as string
+        if Abs(speed - 1.0) < 0.01
+            return "Normal"
+        end if
+        return speed.ToStr() + "x"
+    end function
+
+    ' The index of the speed closest to `speed` in Speeds().
+    function SpeedIndex(speed as float) as integer
+        speedList = Speeds()
+        best = 3
+        bestDiff = 100.0
+        for i = 0 to speedList.Count() - 1
+            diff = Abs(speedList[i] - speed)
+            if diff < bestDiff
+                bestDiff = diff
+                best = i
+            end if
+        end for
+        return best
+    end function
+
+    ' "Auto" for auto/empty, else the preference as written ("720p", or "480p, 360p" for a list).
+    function QualityLabel(preference as dynamic) as string
+        value = ValidString(preference)
+        if value = "" or value = "auto"
+            return "Auto"
+        end if
+        return value.Replace(",", ", ")
+    end function
+
+    ' The index of a single-value quality preference in Qualities(), or -1 (a list, or unknown).
+    function QualityIndex(preference as dynamic) as integer
+        value = ValidString(preference)
+        if value = ""
+            value = "auto"
+        end if
+        qualityList = Qualities()
+        for i = 0 to qualityList.Count() - 1
+            if qualityList[i] = value
+                return i
+            end if
+        end for
+        return -1
+    end function
+
+    ' A caption track's name: its Description ("English (auto-generated)"), else its language code.
+    function CaptionLabel(track as dynamic) as string
+        if not IsAssociativeArray(track)
+            return ""
+        end if
+        label = ValidString(track.Description)
+        if label = ""
+            label = ValidString(track.Language)
+        end if
+        return label
+    end function
+
+    ' The first track in `language` (a 3-letter code like "eng"), preferring a track that is not
+    ' auto-generated. -1 when none matches.
+    function FindCaptionIndex(tracks as dynamic, language as string) as integer
+        if not IsArray(tracks) or language = ""
+            return -1
+        end if
+        fallback = -1
+        for i = 0 to tracks.Count() - 1
+            track = tracks[i]
+            if IsAssociativeArray(track) and ValidString(track.Language) = language
+                if CaptionLabel(track).InStr("auto-generated") = -1
+                    return i
+                end if
+                if fallback = -1
+                    fallback = i
+                end if
+            end if
+        end for
+        return fallback
+    end function
+
+    ' The index of the track whose TrackName is `trackName`, or -1.
+    function FindCaptionByName(tracks as dynamic, trackName as dynamic) as integer
+        name = ValidString(trackName)
+        if not IsArray(tracks) or name = ""
+            return -1
+        end if
+        for i = 0 to tracks.Count() - 1
+            if IsAssociativeArray(tracks[i]) and ValidString(tracks[i].TrackName) = name
+                return i
+            end if
+        end for
+        return -1
+    end function
+
+    ' An audio track's name: its Name ("English original"), else its language code.
+    function AudioLabel(track as dynamic) as string
+        if not IsAssociativeArray(track)
+            return ""
+        end if
+        label = ValidString(track.Name)
+        if label = ""
+            label = ValidString(track.Language)
+        end if
+        if label = ""
+            label = ValidString(track.Track)
+        end if
+        return label
+    end function
+
+    ' "Speed  •  1.5x": a sheet row with its current value.
+    function Row(name as string, value as string) as string
+        if value = ""
+            return name
+        end if
+        return name + "  •  " + value
+    end function
+
+end namespace

@@ -1,0 +1,77 @@
+' YourTube: pure helpers behind the player features (settings sheet, chapters / description / heatmap, up next,
+' like counts). /next fixtures are real WEB responses captured signed out and trimmed
+' (source/tests/fixtures/yourtube/next-chapters.json: Veritasium JsBZOcqZerk, 10 chapters, a heatmap).
+import "pkg:/components/YourTube/PlayerSettings/YourTubePlayerSettingsLogic.bs"
+import "pkg:/source/utils/StringUtils.bs"
+
+namespace Tests
+
+    @suite
+    class YourTubePlayerFeaturesTests extends Rooibos.BaseTestSuite
+
+        function Fixture(name as string) as dynamic
+            return StringUtils.ParseJsonSafe(ReadAsciiFile("pkg:/source/tests/fixtures/yourtube/" + name))
+        end function
+
+        @describe("YourTubePlayerSettings labels")
+
+        @it("labels speeds, with 1x as Normal")
+        function _()
+            m.assertEqual(YourTubePlayerSettings.SpeedLabel(1.0), "Normal")
+            m.assertEqual(YourTubePlayerSettings.SpeedLabel(1.5), "1.5x")
+            m.assertEqual(YourTubePlayerSettings.SpeedLabel(0.25), "0.25x")
+            m.assertEqual(YourTubePlayerSettings.SpeedLabel(2.0), "2x")
+        end function
+
+        @it("finds the closest speed option")
+        function _()
+            m.assertEqual(YourTubePlayerSettings.SpeedIndex(1.0), 3)
+            m.assertEqual(YourTubePlayerSettings.SpeedIndex(2.0), 7)
+            m.assertEqual(YourTubePlayerSettings.SpeedIndex(1.3), 4)
+        end function
+
+        @it("labels and indexes the quality preference")
+        function _()
+            m.assertEqual(YourTubePlayerSettings.QualityLabel("auto"), "Auto")
+            m.assertEqual(YourTubePlayerSettings.QualityLabel(invalid), "Auto")
+            m.assertEqual(YourTubePlayerSettings.QualityLabel("480p,360p"), "480p, 360p")
+            m.assertEqual(YourTubePlayerSettings.QualityIndex("auto"), 0)
+            m.assertEqual(YourTubePlayerSettings.QualityIndex("720p"), 2)
+            m.assertEqual(YourTubePlayerSettings.QualityIndex("480p,360p"), -1)
+        end function
+
+        @describe("YourTubePlayerSettings caption tracks")
+
+        @it("prefers a manual track over an auto-generated one in the same language")
+        function _()
+            tracks = [
+                { Language: "eng", Description: "English (auto-generated)", TrackName: "a" }
+                { Language: "spa", Description: "Spanish", TrackName: "b" }
+                { Language: "eng", Description: "English", TrackName: "c" }
+            ]
+            m.assertEqual(YourTubePlayerSettings.FindCaptionIndex(tracks, "eng"), 2)
+            m.assertEqual(YourTubePlayerSettings.FindCaptionIndex(tracks, "spa"), 1)
+            m.assertEqual(YourTubePlayerSettings.FindCaptionIndex(tracks, "fra"), -1)
+            m.assertEqual(YourTubePlayerSettings.FindCaptionIndex(invalid, "eng"), -1)
+        end function
+
+        @it("falls back to an auto-generated track")
+        function _()
+            tracks = [{ Language: "eng", Description: "English (auto-generated)", TrackName: "a" }]
+            m.assertEqual(YourTubePlayerSettings.FindCaptionIndex(tracks, "eng"), 0)
+        end function
+
+        @it("finds the selected track by name and labels tracks")
+        function _()
+            tracks = [{ Language: "eng", Description: "English", TrackName: "a" }, { Language: "deu", TrackName: "b" }]
+            m.assertEqual(YourTubePlayerSettings.FindCaptionByName(tracks, "b"), 1)
+            m.assertEqual(YourTubePlayerSettings.FindCaptionByName(tracks, ""), -1)
+            m.assertEqual(YourTubePlayerSettings.CaptionLabel(tracks[0]), "English")
+            m.assertEqual(YourTubePlayerSettings.CaptionLabel(tracks[1]), "deu")
+            m.assertEqual(YourTubePlayerSettings.AudioLabel({ Name: "English original", Language: "eng", Track: "1" }), "English original")
+            m.assertEqual(YourTubePlayerSettings.AudioLabel({ Language: "fra", Track: "2" }), "fra")
+        end function
+
+    end class
+
+end namespace

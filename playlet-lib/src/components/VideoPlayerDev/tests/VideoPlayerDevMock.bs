@@ -251,6 +251,11 @@ function TestContentJobFailed(errorMessage as string) as void
     })
 end function
 
+' YourTube: TestCaptionsOff — the captions picker's "Off", minus the sheet.
+function TestCaptionsOff() as void
+    YtCaptionsOff()
+end function
+
 ' TestCoordinatorFields — every non-function key on the coordinator's m, for the unmodeled-axis meta-test
 ' (the coordinator twin of the brain's reflection test). Call AFTER TestSetup so Initialize/OnNodeReady have
 ' populated m. The ONLY filtering here is the two DYNAMICALLY-named runtime families ("__delay_<uuid>" and

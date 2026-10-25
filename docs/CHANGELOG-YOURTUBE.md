@@ -66,6 +66,14 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   `notification/get_unseen_count`, refreshed at most once a minute when Profile shows. No badge on the nav icon yet.
 - Diagnostics: `GET /api/yourtube/debug/library?videoId=&q=` returns the raw get_add_to_playlist, Watch later,
   notifications (WEB and TV), unseen count and (with q) history search responses with what the parsers found.
+### Player features (not yet checked on the TV)
+- CC button in the player row: Off or one of the video's caption tracks. The language is remembered
+  (`playback.captions_language`) and picked again on the next videos; Off only hides captions in this player.
+  Choosing a track also turns Roku's caption mode on if it was off.
+- Gear button: a settings sheet with Captions, Speed (0.25x to 2x, the phone is told), Quality (saves
+  Preferred quality and reloads the video where it was) and Audio track (only when the stream has more than one;
+  switched by the device, no reload).
+- The title and channel now sit above the action row (it grew to the left under them).
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote
