@@ -1,0 +1,56 @@
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+function Init()
+    m.top.focusable = true
+    m.pill = m.top.findNode("Pill")
+    m.pillLabel = m.top.findNode("PillLabel")
+    m.pillLabel.text = "Notifications"
+    m.badge = m.top.findNode("Badge")
+    m.badgeLabel = m.top.findNode("BadgeLabel")
+    m.top.ObserveField("focusedChild", FuncName(OnFocusedChildChange))
+    Layout()
+end function
+
+' Pill width follows the label; the red count badge sits after the text when there is something unread.
+function Layout() as void
+    textWidth = m.pillLabel.localBoundingRect().width
+    width = textWidth + 44
+    count = m.top.count
+    m.badge.visible = count > 0
+    if count > 0
+        text = count.ToStr()
+        if count > 99
+            text = "99+"
+        end if
+        m.badgeLabel.text = text
+        badgeWidth = 28
+        if text.Len() > 2
+            badgeWidth = 40
+        end if
+        m.badge.width = badgeWidth
+        m.badgeLabel.width = badgeWidth
+        m.badge.translation = [22 + textWidth + 10, 8]
+        width = 22 + textWidth + 10 + badgeWidth + 12
+    end if
+    m.pill.width = width
+end function
+
+' Focused: light pill with dark text, like the top bar.
+function OnFocusedChildChange() as void
+    if m.top.hasFocus()
+        m.pill.uri = "pkg:/images/yt-pill-light.$$RES$$.9.png"
+        m.pillLabel.color = "#161616FF"
+    else
+        m.pill.uri = "pkg:/images/yt-pill-dark.$$RES$$.9.png"
+        m.pillLabel.color = "#EBEBEBFF"
+    end if
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press and key = RemoteKeys.Ok
+        m.top.selected = true
+        return true
+    end if
+    return false
+end function

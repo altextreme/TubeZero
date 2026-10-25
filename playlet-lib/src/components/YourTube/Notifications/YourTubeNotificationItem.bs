@@ -1,0 +1,27 @@
+import "pkg:/source/utils/Types.bs"
+
+function Init()
+    m.background = m.top.findNode("Background")
+    m.unreadDot = m.top.findNode("UnreadDot")
+    m.avatar = m.top.findNode("Avatar")
+    m.messageLabel = m.top.findNode("MessageLabel")
+    m.timeLabel = m.top.findNode("TimeLabel")
+    m.videoThumbnail = m.top.findNode("VideoThumbnail")
+end function
+
+function OnContentSet() as void
+    content = m.top.itemContent
+    if content = invalid
+        return
+    end if
+    m.messageLabel.text = content.title
+    m.timeLabel.text = content.description
+    m.avatar.uri = ValidString(content.avatar)
+    m.videoThumbnail.uri = ValidString(content.videoThumbnail)
+    m.videoThumbnail.visible = ValidString(content.videoThumbnail) <> ""
+    m.unreadDot.visible = content.unread = true
+end function
+
+function OnFocusPercent() as void
+    m.background.visible = m.top.focusPercent > 0.5
+end function

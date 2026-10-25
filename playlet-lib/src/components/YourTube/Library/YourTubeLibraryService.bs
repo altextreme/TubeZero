@@ -408,6 +408,51 @@ function OnHistorySearchKeyboardButton(event as object) as void
     screen@.BindNode()
 end function
 
+' --- notifications ------------------------------------------------------------------------------------------
+
+'' Opens the inbox and loads it. callFunc target (Profile screen), hence the unused parameter.
+function OpenNotifications(_unused as dynamic) as void
+    if CurrentYouTubeProfile() = invalid
+        ShowToast("Sign in with a YouTube account to see notifications")
+        return
+    end if
+    screen = CreateObject("roSGNode", "YourTubeNotificationsScreen")
+    screen.status = "Loading..."
+    m.top.appController@.PushScreen(screen)
+    screen@.BindNode()
+    QueueLibraryJob({ op: "notifications" }, { kind: "notifications", screen: screen })
+end function
+
+function OnNotificationsLoaded(screen as object, success as boolean, data as object) as void
+    if not success
+        screen.status = "Couldn't load your notifications. Try again later."
+        return
+    end if
+    items = ValidArray(data.items)
+    screen.items = items
+    if items.Count() = 0
+        screen.status = "No notifications yet."
+    else
+        screen.status = ""
+    end if
+    ' opening the inbox is what marks them seen on YouTube; the badge follows on the next refresh
+    m.top.unseenCount = 0
+    m.lastUnseenRefresh = invalid
+end function
+
+'' Updates unseenCount (at most once a minute). callFunc target, hence the unused parameter.
+function RefreshNotificationCount(_unused as dynamic) as void
+    if CurrentYouTubeProfile() = invalid
+        m.top.unseenCount = -1
+        return
+    end if
+    if m.lastUnseenRefresh <> invalid and m.lastUnseenRefresh.TotalSeconds() < 60
+        return
+    end if
+    m.lastUnseenRefresh = CreateObject("roTimespan")
+    QueueLibraryJob({ op: "unseen" }, { kind: "unseen" })
+end function
+
 ' --- jobs ---------------------------------------------------------------------------------------------------
 
 function QueueLibraryJob(input as object, context as object) as void
@@ -448,6 +493,10 @@ function OnLibraryJobDone(event as object) as void
         OnFeedbackSent(context, success)
     else if kind = "wlRemove" or kind = "wlMove"
         OnWatchLaterEdited(context, success)
+    else if kind = "notifications"
+        OnNotificationsLoaded(context.screen, success, data)
+    else if kind = "unseen" and success
+        m.top.unseenCount = ValidInt(data.count)
     end if
 end function
 

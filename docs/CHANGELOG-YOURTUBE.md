@@ -60,6 +60,10 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   TV, reading up to 4 pages per call, in case the TV client ignores the query.
 - Pause watch history: new Settings > Playback > "Pause watch history" (`playback.pause_watch_history`, off by
   default). MarkVideoWatchedJob returns before the history ping and watch-time loop when it is on.
+- Notifications inbox: a "Notifications" pill (with a red unread count) at the top right of Profile for a YouTube
+  profile (Up from the accounts row). OK opens the inbox (`notification/get_notification_menu`, WEB client first,
+  TV if WEB returns nothing); OK on an item plays its video or opens its channel. The count comes from
+  `notification/get_unseen_count`, refreshed at most once a minute when Profile shows. No badge on the nav icon yet.
 - Diagnostics: `GET /api/yourtube/debug/library?videoId=&q=` returns the raw get_add_to_playlist, Watch later,
   notifications (WEB and TV), unseen count and (with q) history search responses with what the parsers found.
 

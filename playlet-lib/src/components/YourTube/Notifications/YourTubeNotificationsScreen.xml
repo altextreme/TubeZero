@@ -1,0 +1,29 @@
+<!--
+    YourTube: notifications inbox (InnerTube notification/get_notification_menu, filled by YourTubeLibraryService).
+    OK on a notification plays its video or opens its channel. Pushed on the app stack; Back closes it.
+-->
+<component name="YourTubeNotificationsScreen" extends="Group" includes="AutoBind,Focus">
+    <interface>
+        <field id="appController" type="node" bind="/AppController" />
+        <field id="videoQueue" type="node" bind="/VideoQueue" />
+        <!-- [{ message, time, thumbnail, videoThumbnail, read, videoId, channelId }] -->
+        <field id="items" type="array" onChange="OnItemsChange" />
+        <field id="status" type="string" onChange="OnStatusChange" />
+    </interface>
+    <children>
+        <Rectangle width="1280" height="720" color="0x0F0F0FFF" />
+        <Label id="HeadingLabel" translation="[120,48]" width="1040" color="0xF1F1F1FF">
+            <Font role="font" uri="font:BoldSystemFontFile" size="30" />
+        </Label>
+        <Label id="StatusLabel" translation="[120,100]" width="1040" wrap="true" color="0xAAAAAAFF" font="font:SmallSystemFont" />
+        <MarkupList
+            id="NotificationList"
+            translation="[120,120]"
+            itemComponentName="YourTubeNotificationItem"
+            itemSize="[1040,112]"
+            itemSpacing="[0,4]"
+            numRows="5"
+            drawFocusFeedback="false"
+            vertFocusAnimationStyle="floatingFocus" />
+    </children>
+</component>

@@ -12,6 +12,31 @@ function Init()
     m.top.focusable = true
     m.profileRowList = m.top.FindNode("ProfileRowList")
     m.signedOutHint = m.top.FindNode("SignedOutHint") ' YourTube
+    m.notificationsButton = m.top.FindNode("NotificationsButton") ' YourTube
+end function
+
+' YourTube: the Notifications pill shows for a YouTube profile, with the unread count.
+function UpdateNotificationsButton() as void
+    libraryService = m.global.yourtubeLibrary
+    profile = m.profilesService.currentProfile
+    isYouTube = libraryService <> invalid and profile <> invalid and profile.type = "youtube"
+    m.notificationsButton.visible = isYouTube
+    m.notificationsButton.focusable = isYouTube
+    if not isYouTube and m.notificationsButton.hasFocus()
+        NodeSetFocus(m.profileRowList, true)
+    end if
+    if isYouTube
+        m.notificationsButton.count = libraryService.unseenCount
+        libraryService@.RefreshNotificationCount()
+    end if
+end function
+
+function OnUnseenCountChange() as void
+    m.notificationsButton.count = m.global.yourtubeLibrary.unseenCount
+end function
+
+function OnNotificationsSelected() as void
+    m.global.yourtubeLibrary@.OpenNotifications()
 end function
 
 ' YourTube: explain what signing in gives you while the only tile is "Add account".
@@ -32,6 +57,22 @@ function OnNodeReady()
     m.profileRowList.observeFieldScoped("rowItemSelected", FuncName(OnRowItemSelected))
     m.profilesService.observeFieldScoped("currentProfile", FuncName(OnCurrentProfileChanged))
     UpdateSignedOutHint() ' YourTube
+    ' YourTube: notifications pill above the accounts row
+    SetNavigation(m.profileRowList, RemoteKeys.Up, m.notificationsButton)
+    SetNavigation(m.notificationsButton, RemoteKeys.Down, m.profileRowList)
+    m.notificationsButton.observeField("selected", FuncName(OnNotificationsSelected))
+    if m.global.yourtubeLibrary <> invalid
+        m.global.yourtubeLibrary.observeFieldScoped("unseenCount", FuncName(OnUnseenCountChange))
+    end if
+    m.top.observeField("visible", FuncName(OnVisibleChange))
+    UpdateNotificationsButton()
+end function
+
+' YourTube: refresh the unread count each time the screen shows
+function OnVisibleChange() as void
+    if m.top.visible
+        UpdateNotificationsButton()
+    end if
 end function
 
 function OnFocusChange() as void
@@ -93,6 +134,7 @@ end function
 
 function OnCurrentProfileChanged() as void
     UpdateSignedOutHint() ' YourTube
+    UpdateNotificationsButton() ' YourTube
     currentProfile = m.profilesService.currentProfile
     if currentProfile = invalid
         return

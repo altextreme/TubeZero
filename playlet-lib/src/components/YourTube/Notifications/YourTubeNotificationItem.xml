@@ -1,0 +1,22 @@
+<!--
+    YourTube: one row of the notifications inbox: channel avatar, message (2 lines), time, video thumbnail, and a
+    blue dot when unread. itemContent fields: title (message), description (time), avatar, videoThumbnail, unread.
+-->
+<component name="YourTubeNotificationItem" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="OnContentSet" />
+        <field id="focusPercent" type="float" onChange="OnFocusPercent" />
+    </interface>
+    <children>
+        <Rectangle id="Background" width="1040" height="112" color="0x3F3F3FFF" visible="false" />
+        <Poster id="UnreadDot" uri="pkg:/images/white-circle.png" blendColor="0x3EA6FFFF" width="10" height="10" translation="[12,51]" />
+        <Poster id="Avatar" width="56" height="56" translation="[34,28]" />
+        <Label id="MessageLabel" translation="[110,20]" width="680" height="56" wrap="true" maxLines="2" color="0xF1F1F1FF">
+            <Font role="font" uri="font:MediumSystemFontFile" size="20" />
+        </Label>
+        <Label id="TimeLabel" translation="[110,78]" width="680" color="0xAAAAAAFF">
+            <Font role="font" uri="font:SystemFontFile" size="16" />
+        </Label>
+        <Poster id="VideoThumbnail" width="160" height="90" translation="[860,11]" loadDisplayMode="scaleToZoom" />
+    </children>
+</component>

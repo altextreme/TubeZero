@@ -21,6 +21,8 @@
             text="Add your YouTube account to see your subscriptions, history and playlists, and to like, save and subscribe from the TV.">
             <Font role="font" uri="font:SystemFontFile" size="20" />
         </Label>
+        <!-- YourTube: notifications inbox (YouTube profiles only; Up from the accounts row) -->
+        <YourTubeNotificationsButton id="NotificationsButton" translation="[1000,60]" visible="false" />
         <RowList
             id="ProfileRowList"
             translation="[0,190]"
