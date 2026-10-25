@@ -11,7 +11,7 @@
     <children>
         <Button
             id="Button"
-            minWidth="340"
+            minWidth="0"
             showFocusFootprint="true" />
         <Label id="DescriptionLabel"
             width="450"

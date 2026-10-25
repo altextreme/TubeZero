@@ -5,9 +5,10 @@
         <function name="BindPreference" />
     </interface>
     <children>
+        <!-- YourTube: minWidth 0 so the pill fits its label (a wider Roku Button right-aligns the text) -->
         <Button
             id="Button"
-            minWidth="340"
+            minWidth="0"
             showFocusFootprint="true" />
         <Label id="DescriptionLabel"
             width="450"

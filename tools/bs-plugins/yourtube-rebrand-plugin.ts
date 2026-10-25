@@ -186,6 +186,9 @@ const WIDGET_STYLES: WidgetStyle[] = [
             ['focusFootprintBitmapUri', 'pkg:/images/yt-pill-dark.$$RES$$.9.png'],
             ['textColor', '0xF1F1F1FF'],
             ['focusedTextColor', '0x0F0F0FFF'],
+            // no default dot icon before the label
+            ['iconUri', 'pkg:/images/yt-transparent.png'],
+            ['focusedIconUri', 'pkg:/images/yt-transparent.png'],
         ],
         fonts: roboto('textFont', 'Regular', 22) + roboto('focusedTextFont', 'Medium', 22),
     },

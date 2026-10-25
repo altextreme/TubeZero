@@ -12,7 +12,9 @@ function OnScreenNameChange() as void
     if m.screen <> invalid
         return
     end if
-    m.screen = m.slot.createChild(m.top.screenName)
+    ' Create, flag, then attach: the screen binds and wires Back/Left as soon as it joins the tree, so the
+    ' standalone flag must already be set (otherwise Back goes to the hidden nav rail).
+    m.screen = CreateObject("roSGNode", m.top.screenName)
     if m.screen = invalid
         return
     end if
@@ -20,10 +22,12 @@ function OnScreenNameChange() as void
     if m.screen.hasField("standalone")
         m.screen.standalone = true
     end if
+    m.slot.appendChild(m.screen)
     if m.screen.hasField("binding_done")
         m.screen@.BindNode()
     end if
-    if m.top.isInFocusChain()
+    ' PushScreen asks for focus before screenName is set, so take it now if this page is the one that should have it
+    if m.top.focus or m.top.isInFocusChain()
         FocusHostedScreen()
     end if
 end function
@@ -38,7 +42,11 @@ end function
 function FocusHostedScreen() as void
     if m.screen <> invalid and m.screen.focusable
         NodeSetFocus(m.screen, true)
+        return
     end if
+    ' nothing focusable inside (yet): hold focus here so Back still closes the page
+    ' bs:disable-next-line NO_SET_FOCUS
+    m.top.setFocus(true)
 end function
 
 function OnKeyEvent(key as string, press as boolean) as boolean
