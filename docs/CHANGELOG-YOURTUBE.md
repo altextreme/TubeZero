@@ -51,6 +51,9 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   and Liked videos come from a new built-in route `GET .../api/v1/yourtube/library?plid=WL|LL` (endpoint
   `yt_library_playlist`, optional rows, so Invidious accounts just don't show them). YouTube's playlist library
   (FEplaylist_aggregation) already mixes your own and saved playlists, so there is no separate "Saved" row.
+- Edit Watch Later: on the Watch later row (and the Watch Later playlist page) long-press offers "Remove from Watch
+  Later" and "Move to top" (`edit_playlist` ACTION_REMOVE_VIDEO_BY_VIDEO_ID / ACTION_MOVE_VIDEO_BEFORE). NodesParser
+  keeps each playlist item's `setVideoId`; "Move to top" only shows when both items have one.
 - Diagnostics: `GET /api/yourtube/debug/library?videoId=&q=` returns the raw get_add_to_playlist, Watch later,
   notifications (WEB and TV), unseen count and (with q) history search responses with what the parsers found.
 

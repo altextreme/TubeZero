@@ -2246,6 +2246,11 @@ namespace Innertube
             if feedbackTokens.Count() > 0
                 item["feedbackTokens"] = feedbackTokens
             end if
+            ' YourTube: a playlist row's setVideoId (Watch Later "Move to top")
+            setVideoId = YourTubeLibrary.ParseSetVideoId(context.yourTubeNodeData)
+            if setVideoId <> ""
+                item["setVideoId"] = setVideoId
+            end if
         end if
         context.currentFeed.items.Push(item)
     end function

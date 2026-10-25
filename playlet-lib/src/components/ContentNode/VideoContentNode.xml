@@ -32,5 +32,7 @@
         <!-- YourTube: feedback tokens from the card's menu { notInterested, notInterestedUndo, dontRecommend,
              dontRecommendUndo, removeFromHistory } (YourTubeLibrary.ParseFeedback) -->
         <field id="feedbackTokens" type="assocarray" />
+        <!-- YourTube: the item's id inside its playlist (edit_playlist moves use it) -->
+        <field id="setVideoId" type="string" />
     </interface>
 </component>

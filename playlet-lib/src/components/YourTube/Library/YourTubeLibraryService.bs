@@ -54,7 +54,102 @@ function GetContextMenuOptionsForItem(item as object) as object
     if ValidString(tokens["removeFromHistory"]) <> ""
         options.push(ContextMenuUtils.CreateOption("Remove from watch history", m.top, "SendFeedback", [item, "removeFromHistory"]))
     end if
+
+    ' Watch Later row (You screen) or the Watch Later playlist page
+    if WatchLaterParent(item) <> invalid
+        options.push(ContextMenuUtils.CreateOption("Remove from Watch Later", m.top, "RemoveFromWatchLater", [item]))
+        if MoveToTopSuccessor(item) <> ""
+            options.push(ContextMenuUtils.CreateOption("Move to top", m.top, "MoveToTopOfWatchLater", [item]))
+        end if
+    end if
     return options
+end function
+
+' --- Watch Later edits --------------------------------------------------------------------------------------
+
+' The row or playlist node holding item when that is your Watch Later, else invalid.
+function WatchLaterParent(item as object) as dynamic
+    parent = item.getParent()
+    if parent = invalid
+        return invalid
+    end if
+    if parent.hasField("feedSources")
+        feedSources = parent.feedSources
+        index = item.feedSourcesIndex
+        if IsArray(feedSources) and IsInt(index) and index >= 0 and index < feedSources.Count()
+            feedSource = ValidAssociativeArray(feedSources[index])
+            queryParams = ValidAssociativeArray(feedSource["queryParams"])
+            if ValidString(feedSource["id"]) = "yt_library_watch_later" or ValidString(queryParams["plid"]) = "WL"
+                return parent
+            end if
+        end if
+        return invalid
+    end if
+    if parent.hasField("playlistId")
+        playlistId = ValidString(parent.playlistId)
+        if playlistId = "WL" or playlistId = "VLWL"
+            return parent
+        end if
+    end if
+    return invalid
+end function
+
+' The setVideoId of the first item in item's list when item can move in front of it, else "".
+function MoveToTopSuccessor(item as object) as string
+    if ValidString(item.setVideoId) = ""
+        return ""
+    end if
+    parent = item.getParent()
+    if parent = invalid or parent.getChildCount() = 0
+        return ""
+    end if
+    first = parent.getChild(0)
+    if first.isSameNode(item) or not first.hasField("setVideoId")
+        return ""
+    end if
+    return ValidString(first.setVideoId)
+end function
+
+' Context menu target.
+function RemoveFromWatchLater(video as object) as void
+    parent = WatchLaterParent(video)
+    if parent = invalid
+        return
+    end if
+    index = ChildIndex(parent, video)
+    if index >= 0
+        parent.removeChild(video)
+    end if
+    context = { kind: "wlRemove", video: video, row: parent, index: index }
+    QueueLibraryJob({ op: "edit", playlistId: "WL", videoId: ValidString(video.videoId), add: false }, context)
+    ShowToast("Removed from Watch Later")
+end function
+
+' Context menu target.
+function MoveToTopOfWatchLater(video as object) as void
+    parent = WatchLaterParent(video)
+    successor = MoveToTopSuccessor(video)
+    if parent = invalid or successor = ""
+        return
+    end if
+    index = ChildIndex(parent, video)
+    parent.removeChild(video)
+    parent.insertChild(video, 0)
+    context = { kind: "wlMove", video: video, row: parent, index: index }
+    QueueLibraryJob({ op: "move", playlistId: "WL", setVideoId: ValidString(video.setVideoId), successorSetVideoId: successor }, context)
+    ShowToast("Moved to the top of Watch Later")
+end function
+
+function OnWatchLaterEdited(context as object, success as boolean) as void
+    if success
+        return
+    end if
+    if context.kind = "wlMove"
+        ' put it back where it was
+        context.row.removeChild(context.video)
+    end if
+    PutCardBack(context)
+    ShowToast("Couldn't update Watch Later. Try again.")
 end function
 
 ' --- feedback (Not interested, Don't recommend channel, Remove from watch history) ---------------------------
@@ -319,6 +414,8 @@ function OnLibraryJobDone(event as object) as void
         OnPlaylistCreated(context.dialog, success, data)
     else if kind = "feedback"
         OnFeedbackSent(context, success)
+    else if kind = "wlRemove" or kind = "wlMove"
+        OnWatchLaterEdited(context, success)
     end if
 end function
 
