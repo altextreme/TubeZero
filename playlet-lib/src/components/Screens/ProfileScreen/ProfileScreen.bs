@@ -20,19 +20,29 @@ function UpdateNotificationsButton() as void
     libraryService = m.global.yourtubeLibrary
     profile = m.profilesService.currentProfile
     isYouTube = libraryService <> invalid and profile <> invalid and profile.type = "youtube"
-    m.notificationsButton.visible = isYouTube
-    m.notificationsButton.focusable = isYouTube
-    if not isYouTube and m.notificationsButton.hasFocus()
-        NodeSetFocus(m.profileRowList, true)
-    end if
+    ShowNotificationsButton(isYouTube and libraryService.unseenCount >= 0)
     if isYouTube
         m.notificationsButton.count = libraryService.unseenCount
         libraryService@.RefreshNotificationCount()
     end if
 end function
 
+' Shown only once the unread count loads: some sign-ins can't reach YouTube's notifications at all
+' (a TV sign-in gets 400s from both clients), and a button that always fails is worse than none.
+function ShowNotificationsButton(available as boolean) as void
+    m.notificationsButton.visible = available
+    m.notificationsButton.focusable = available
+    if not available and m.notificationsButton.hasFocus()
+        NodeSetFocus(m.profileRowList, true)
+    end if
+end function
+
 function OnUnseenCountChange() as void
-    m.notificationsButton.count = m.global.yourtubeLibrary.unseenCount
+    libraryService = m.global.yourtubeLibrary
+    profile = m.profilesService.currentProfile
+    isYouTube = profile <> invalid and profile.type = "youtube"
+    m.notificationsButton.count = libraryService.unseenCount
+    ShowNotificationsButton(isYouTube and libraryService.unseenCount >= 0)
 end function
 
 function OnNotificationsSelected() as void
