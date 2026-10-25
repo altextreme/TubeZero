@@ -49,6 +49,10 @@ namespace YourTubePairing
             end if
         end for
         if method = "GET" or method = "HEAD"
+            ' Diagnostics return raw account responses
+            if route.StartsWith("/api/yourtube/debug/")
+                return true
+            end if
             for each gated in GatedReadRoutes()
                 if route = gated
                     return true
