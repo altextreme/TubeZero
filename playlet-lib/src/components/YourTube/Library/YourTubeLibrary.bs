@@ -164,7 +164,19 @@ namespace YourTubeLibrary
     ' tokens fill "Not interested" then "Don't recommend channel" in menu order, like YouTube lists them.
     function ParseFeedback(rendererData as dynamic) as object
         entries = []
-        CollectFeedbackEntries(rendererData, entries, 0)
+        ' menus live under these keys on every card type seen so far; walking only them keeps big feeds fast
+        walkedPart = false
+        if YourTubeJson.IsAA(rendererData)
+            for each key in ["onLongPressCommand", "menu", "metadata"]
+                if rendererData.DoesExist(key)
+                    CollectFeedbackEntries(rendererData[key], entries, 0)
+                    walkedPart = true
+                end if
+            end for
+        end if
+        if not walkedPart
+            CollectFeedbackEntries(rendererData, entries, 0)
+        end if
         result = {}
         unmatched = []
         for each entry in entries

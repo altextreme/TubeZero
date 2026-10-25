@@ -1,0 +1,34 @@
+<!--
+    YourTube: a toast with an action ("Video removed  [Undo]"), bottom center. It takes focus while it shows so OK can
+    press the action; any other key, or the timeout, closes it and hands focus back (returnFocus). Sets `action`
+    when OK is pressed. Added by YourTubeLibraryService to the dialog layer.
+-->
+<component name="YourTubeUndoToast" extends="Group">
+    <interface>
+        <field id="text" type="string" />
+        <field id="actionText" type="string" />
+        <field id="seconds" type="float" value="6" />
+        <field id="returnFocus" type="node" />
+        <field id="action" type="boolean" alwaysNotify="true" />
+        <field id="wasClosed" type="boolean" alwaysNotify="true" />
+        <field id="close" type="boolean" alwaysNotify="true" onChange="OnClose" />
+        <function name="Show" />
+    </interface>
+    <children>
+        <Group id="Toast" opacity="0">
+            <Poster id="Pill" uri="pkg:/images/yt-pill-dark.$$RES$$.9.png" height="56" />
+            <Label id="Message" height="56" vertAlign="center" color="0xF1F1F1FF" translation="[24,0]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="20" />
+            </Label>
+            <Rectangle id="ButtonBg" height="40" color="0xF1F1F1FF" translation="[0,8]">
+                <Label id="ButtonLabel" height="40" vertAlign="center" horizAlign="center" color="0x0F0F0FFF">
+                    <Font role="font" uri="font:MediumSystemFontFile" size="18" />
+                </Label>
+            </Rectangle>
+        </Group>
+        <Timer id="HideTimer" duration="6" />
+        <Animation id="FadeIn" duration="0.15">
+            <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[0.0, 1.0]" fieldToInterp="Toast.opacity" />
+        </Animation>
+    </children>
+</component>

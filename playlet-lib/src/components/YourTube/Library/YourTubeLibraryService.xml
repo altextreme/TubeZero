@@ -1,6 +1,6 @@
 <!--
     YourTube: library actions for the signed-in YouTube profile - the "Save to playlist..." dialog, and the long-press
-    menu items that go with it. Lives in MainScene and registers itself as m.global.yourtubeLibrary, so any screen
+    menu items that go with it ("Not interested", "Don't recommend channel", "Remove from watch history"). Lives in MainScene and registers itself as m.global.yourtubeLibrary, so any screen
     (or the player's Save button) can reach it:
         m.global.yourtubeLibrary@.OpenSaveToPlaylist(videoId)
     It is also a context menu provider: VideoRowList and PlaylistView add it to their providers.
@@ -12,6 +12,7 @@
         <field id="jobQueue" type="node" bind="/JobQueue" />
         <function name="OpenSaveToPlaylist" />
         <function name="SaveVideoToPlaylist" />
+        <function name="SendFeedback" />
         <function name="ShowToast" />
     </interface>
 </component>

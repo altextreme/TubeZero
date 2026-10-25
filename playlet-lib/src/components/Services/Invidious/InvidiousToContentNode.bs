@@ -55,6 +55,7 @@ namespace InvidiousContent
         SetIfExists(node, "videoInfo", item, "videoInfo")
         SetIfExists(node, "percentDurationWatched", item, "percentDurationWatched")
         SetIfExists(node, "badges", item, "badges") ' YourTube: 4K/CC chips
+        SetIfExists(node, "feedbackTokens", item, "feedbackTokens") ' YourTube: Not interested / Don't recommend
 
         return node
     end function

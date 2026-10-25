@@ -29,5 +29,8 @@
         <field id="percentDurationWatched" type="float" />
         <!-- YourTube: card chips such as "4K", "CC" -->
         <field id="badges" type="stringarray" />
+        <!-- YourTube: feedback tokens from the card's menu { notInterested, notInterestedUndo, dontRecommend,
+             dontRecommendUndo, removeFromHistory } (YourTubeLibrary.ParseFeedback) -->
+        <field id="feedbackTokens" type="assocarray" />
     </interface>
 </component>

@@ -1,0 +1,82 @@
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+const SCREEN_CENTER_X = 640
+const BOTTOM_Y = 620
+const BUTTON_PADDING = 20
+
+function Init()
+    m.toast = m.top.findNode("Toast")
+    m.pill = m.top.findNode("Pill")
+    m.message = m.top.findNode("Message")
+    m.buttonBg = m.top.findNode("ButtonBg")
+    m.buttonLabel = m.top.findNode("ButtonLabel")
+    m.fadeIn = m.top.findNode("FadeIn")
+    m.timer = m.top.findNode("HideTimer")
+    m.timer.observeField("fire", FuncName(OnTimeout))
+    m.closed = false
+end function
+
+'' Lays out, fades in and takes focus. callFunc target, hence the unused parameter.
+function Show(_unused as dynamic) as void
+    m.message.text = m.top.text
+    textWidth = m.message.localBoundingRect().width
+    hasAction = m.top.actionText <> ""
+    m.buttonBg.visible = hasAction
+    width = textWidth + 48
+    if hasAction
+        m.buttonLabel.text = m.top.actionText
+        buttonWidth = m.buttonLabel.localBoundingRect().width + BUTTON_PADDING * 2
+        if buttonWidth < 88
+            buttonWidth = 88
+        end if
+        m.buttonBg.width = buttonWidth
+        m.buttonLabel.width = buttonWidth
+        m.buttonBg.translation = [24 + textWidth + 20, 8]
+        width = 24 + textWidth + 20 + buttonWidth + 8
+    end if
+    m.pill.width = width
+    m.toast.translation = [SCREEN_CENTER_X - width / 2, BOTTOM_Y]
+    m.fadeIn.control = "start"
+    m.timer.duration = m.top.seconds
+    m.timer.control = "start"
+    if hasAction
+        m.top.focusable = true
+        NodeSetFocus(m.top, true)
+    end if
+end function
+
+function OnTimeout() as void
+    m.top.close = true
+end function
+
+function OnClose() as void
+    if m.closed or not m.top.close
+        return
+    end if
+    m.closed = true
+    m.timer.control = "stop"
+    hadFocus = m.top.isInFocusChain()
+    parent = m.top.getParent()
+    if parent <> invalid
+        parent.removeChild(m.top)
+    end if
+    returnFocus = m.top.returnFocus
+    if hadFocus and returnFocus <> invalid
+        NodeSetFocus(returnFocus, true)
+    end if
+    m.top.wasClosed = true
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if not press
+        return true
+    end if
+    if key = RemoteKeys.Ok
+        m.top.action = true
+    end if
+    ' any key closes it; OK also runs the action
+    m.top.close = true
+    return true
+end function

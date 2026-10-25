@@ -2,6 +2,7 @@
 ' Only used in debug mode.
 #const DEBUG_THROW_ON_UNKNOWN_NODES = true
 
+import "pkg:/components/YourTube/Library/YourTubeLibrary.bs"
 import "pkg:/components/YourTube/YourTubeBadges.bs"
 import "pkg:/source/utils/Logging.bs"
 import "pkg:/source/utils/ObjectUtils.bs"
@@ -2240,6 +2241,11 @@ namespace Innertube
         ' YourTube: 4K / CC / HDR chips for video cards
         if IsAssociativeArray(item) and item["type"] = "video" and context.yourTubeNodeData <> invalid
             item["badges"] = YourTubeBadges.Parse(context.yourTubeNodeData)
+            ' YourTube: "Not interested" / "Don't recommend channel" tokens from the card's menu (signed-in feeds)
+            feedbackTokens = YourTubeLibrary.ParseFeedback(context.yourTubeNodeData)
+            if feedbackTokens.Count() > 0
+                item["feedbackTokens"] = feedbackTokens
+            end if
         end if
         context.currentFeed.items.Push(item)
     end function

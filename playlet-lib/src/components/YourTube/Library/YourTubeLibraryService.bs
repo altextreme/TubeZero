@@ -13,6 +13,8 @@ function Init()
     m.global.addFields({ yourtubeLibrary: m.top })
     ' JobCallback id -> what the request was for
     m.pending = {}
+    ' undo toast id -> the feedback it can undo
+    m.undoContexts = {}
 end function
 
 function OnNodeReady()
@@ -40,7 +42,146 @@ function GetContextMenuOptionsForItem(item as object) as object
         return options
     end if
     options.push(ContextMenuUtils.CreateOption("Save to playlist...", m.top, "SaveVideoToPlaylist", [item]))
+
+    ' Feedback tokens come with signed-in Home / Related / History cards (NodesParser keeps them).
+    tokens = ValidAssociativeArray(item.feedbackTokens)
+    if ValidString(tokens["notInterested"]) <> ""
+        options.push(ContextMenuUtils.CreateOption("Not interested", m.top, "SendFeedback", [item, "notInterested"]))
+    end if
+    if ValidString(tokens["dontRecommend"]) <> ""
+        options.push(ContextMenuUtils.CreateOption("Don't recommend channel", m.top, "SendFeedback", [item, "dontRecommend"]))
+    end if
+    if ValidString(tokens["removeFromHistory"]) <> ""
+        options.push(ContextMenuUtils.CreateOption("Remove from watch history", m.top, "SendFeedback", [item, "removeFromHistory"]))
+    end if
     return options
+end function
+
+' --- feedback (Not interested, Don't recommend channel, Remove from watch history) ---------------------------
+
+function FeedbackMessage(kind as string) as string
+    if kind = "dontRecommend"
+        return "We won't recommend this channel to you"
+    else if kind = "removeFromHistory"
+        return "Removed from watch history"
+    end if
+    return "Video removed. You'll see fewer like it"
+end function
+
+' Context menu target. Sends the card's feedback token, takes the card out of its row and offers Undo when
+' YouTube gave an undo token.
+function SendFeedback(video as object, kind as string) as void
+    if video = invalid
+        return
+    end if
+    tokens = ValidAssociativeArray(video.feedbackTokens)
+    token = ValidString(tokens[kind])
+    if token = ""
+        return
+    end if
+    undoToken = ValidString(tokens[kind + "Undo"])
+
+    row = video.getParent()
+    index = ChildIndex(row, video)
+    if index >= 0
+        row.removeChild(video)
+    end if
+
+    context = { kind: "feedback", feedbackKind: kind, video: video, row: row, index: index, undoToken: undoToken }
+    QueueLibraryJob({ op: "feedback", token: token }, context)
+    ShowUndoToast(FeedbackMessage(kind), undoToken <> "", context)
+end function
+
+function ChildIndex(parent as dynamic, child as object) as integer
+    if parent = invalid
+        return -1
+    end if
+    children = parent.getChildren(-1, 0)
+    for i = 0 to children.Count() - 1
+        if children[i].isSameNode(child)
+            return i
+        end if
+    end for
+    return -1
+end function
+
+function PutCardBack(context as object) as void
+    row = context.row
+    if row = invalid or context.index < 0 or context.video.getParent() <> invalid
+        return
+    end if
+    index = context.index
+    if index > row.getChildCount()
+        index = row.getChildCount()
+    end if
+    row.insertChild(context.video, index)
+end function
+
+function OnFeedbackSent(context as object, success as boolean) as void
+    if success
+        return
+    end if
+    PutCardBack(context)
+    ShowToast("Couldn't send that to YouTube. Try again.")
+end function
+
+' Undo: the card comes back and YouTube gets the undo token.
+function OnUndoToastAction(event as object) as void
+    toast = event.getRoSGNode()
+    context = m.undoContexts[toast.id]
+    if context = invalid
+        return
+    end if
+    PutCardBack(context)
+    if context.undoToken <> ""
+        QueueLibraryJob({ op: "feedback", token: context.undoToken }, { kind: "undo" })
+    end if
+end function
+
+function OnUndoToastClosed(event as object) as void
+    toast = event.getRoSGNode()
+    toast.unobserveFieldScoped("action")
+    toast.unobserveFieldScoped("wasClosed")
+    m.undoContexts.Delete(toast.id)
+end function
+
+' Shows the toast once the context menu has closed (so focus is back on the row it should return to).
+function ShowUndoToast(text as string, canUndo as boolean, context as object) as void
+    if not canUndo
+        ShowToast(text)
+        return
+    end if
+    m.pendingUndo = { text: text, context: context }
+    if m.undoTimer = invalid
+        m.undoTimer = CreateObject("roSGNode", "Timer")
+        m.undoTimer.duration = 0.15
+        m.undoTimer.observeFieldScoped("fire", FuncName(OnUndoTimer))
+        m.top.appendChild(m.undoTimer)
+    end if
+    m.undoTimer.control = "start"
+end function
+
+function OnUndoTimer() as void
+    pendingUndo = m.pendingUndo
+    m.pendingUndo = invalid
+    if pendingUndo = invalid
+        return
+    end if
+    scene = m.top.getScene()
+    host = scene.findNode("YourTubeDialogHost")
+    if host = invalid
+        host = scene
+    end if
+    toast = CreateObject("roSGNode", "YourTubeUndoToast")
+    toast.id = "YourTubeUndoToast-" + StringUtils.RandomId()
+    toast.text = pendingUndo.text
+    toast.actionText = "Undo"
+    toast.returnFocus = GetFocusedNode()
+    m.undoContexts[toast.id] = pendingUndo.context
+    toast.observeFieldScoped("action", FuncName(OnUndoToastAction))
+    toast.observeFieldScoped("wasClosed", FuncName(OnUndoToastClosed))
+    host.appendChild(toast)
+    toast@.Show()
 end function
 
 ' Context menu target: the video's content node.
@@ -176,6 +317,8 @@ function OnLibraryJobDone(event as object) as void
         OnPlaylistEdited(context.dialog, context.toggle, success)
     else if kind = "create"
         OnPlaylistCreated(context.dialog, success, data)
+    else if kind = "feedback"
+        OnFeedbackSent(context, success)
     end if
 end function
 

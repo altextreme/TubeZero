@@ -43,6 +43,10 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   playlist is private and starts with the video). `playlist/get_add_to_playlist`, `browse/edit_playlist`,
   `playlist/create` on the TV client with the profile's token. The player's Save button can open the same dialog
   with `m.global.yourtubeLibrary@.OpenSaveToPlaylist(videoId)` (not wired yet).
+- Not interested / Don't recommend channel / Remove from watch history: NodesParser keeps the feedback tokens from a
+  card's menu (`feedbackTokens` on the video node); cards that have them get the long-press items. The card leaves
+  its row, the token goes to InnerTube `feedback`, and an "Undo" toast (OK to undo) appears when YouTube sent an
+  undo token. Hidden when signed out.
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote
