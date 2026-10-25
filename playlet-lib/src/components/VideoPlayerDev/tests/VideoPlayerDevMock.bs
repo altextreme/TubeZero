@@ -304,6 +304,8 @@ function TestSnapshot() as object
         buttonRowVisible: m.buttonRow.visible
         barPositionMs: m.trickPlayBar.positionMs
         chapterText: m.trickPlayBar.chapterText ' YourTube
+        upNextVisible: m.upNextCard.visible ' YourTube
+        upNextSeconds: m.upNextCard.secondsLeft ' YourTube
         spinnerMode: m.spinner.mode
         brain: TestBrainSnapshot()
     }

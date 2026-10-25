@@ -1,0 +1,57 @@
+<!--
+    YourTube: "Up next" corner card shown over the last seconds of a video. Never takes focus: the player maps
+    OK to Play now and Back to Cancel while it shows. Set `video` (a video content node: title, _author,
+    thumbnail) and `secondsLeft`; the player drives `visible`.
+-->
+<component name="YourTubeUpNextCard" extends="Group">
+    <interface>
+        <field id="video" type="node" onChange="OnVideoChange" />
+        <field id="secondsLeft" type="integer" onChange="OnSecondsLeftChange" />
+    </interface>
+    <children>
+        <Group id="Card" translation="[836,520]">
+            <Poster
+                id="Background"
+                uri="pkg:/images/yt-rounded.$$RES$$.9.png"
+                blendColor="0x212121F2"
+                width="412"
+                height="148" />
+            <Poster
+                id="Thumbnail"
+                translation="[14,14]"
+                width="160"
+                height="90"
+                loadDisplayMode="scaleToZoom" />
+            <Label
+                id="Countdown"
+                width="220"
+                color="0xAAAAAAFF"
+                translation="[186,12]">
+                <Font role="font" uri="font:SystemFontFile" size="15" />
+            </Label>
+            <Label
+                id="VideoTitle"
+                width="214"
+                wrap="true"
+                maxLines="2"
+                color="0xF1F1F1FF"
+                translation="[186,34]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="17" />
+            </Label>
+            <Label
+                id="Author"
+                width="214"
+                color="0xAAAAAAFF"
+                translation="[186,82]">
+                <Font role="font" uri="font:SystemFontFile" size="14" />
+            </Label>
+            <Label
+                id="Keys"
+                width="384"
+                color="0xDDDDDDFF"
+                translation="[14,116]">
+                <Font role="font" uri="font:SystemFontFile" size="14" />
+            </Label>
+        </Group>
+    </children>
+</component>

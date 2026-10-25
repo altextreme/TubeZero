@@ -146,6 +146,9 @@
         <!-- YourTube: related videos row (Down from the scrubber) -->
         <YourTubeRelatedShelf id="relatedShelf" visible="false" />
 
+        <!-- YourTube: "Up next" card over the last seconds (never focused) -->
+        <YourTubeUpNextCard id="upNextCard" visible="false" />
+
         <!-- YourTube: feedback for like/dislike/save -->
         <YourTubeToast id="toast" />
 

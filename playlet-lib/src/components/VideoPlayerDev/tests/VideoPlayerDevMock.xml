@@ -118,6 +118,7 @@
         <YourTubeCommentsPanel id="commentsPanel" visible="false" />
         <YourTubeDescriptionPanel id="descriptionPanel" visible="false" />
         <YourTubeRelatedShelf id="relatedShelf" visible="false" />
+        <YourTubeUpNextCard id="upNextCard" visible="false" />
         <YourTubeToast id="toast" />
     </children>
 </component>

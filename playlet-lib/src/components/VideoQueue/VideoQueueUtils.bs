@@ -108,28 +108,65 @@ namespace VideoQueueUtils
             return true
         end if
 
-        if preferences["playback.autoplay"] <> true
+        ' YourTube: the autoplay pick moved to FindAutoplayVideo, shared with PeekNext (the Up next card)
+        recommendedVideo = FindAutoplayVideo(videoQueue, preferences)
+        if recommendedVideo = invalid
             return false
+        end if
+
+        LogInfo(`Playing next recommended video (${recommendedVideo.videoId})`)
+        instance = invidiousNode@.GetInstance()
+        node = InvidiousContent.ToVideoContentNode(invalid, recommendedVideo, instance)
+        videoQueue.playVideo = node
+        return true
+    end function
+
+    ' YourTube: what PlayNext would play, as a video content node (title, _author, thumbnail), without playing
+    ' it: the next queue item, else the autoplay pick. invalid when nothing would play.
+    function PeekNext(videoQueue as object, invidiousNode as object, preferences as object) as dynamic
+        if videoQueue = invalid
+            return invalid
+        end if
+        if videoQueue.hasNext = true
+            queueContent = videoQueue.content
+            if queueContent = invalid
+                return invalid
+            end if
+            return queueContent.getChild(videoQueue.index + 1)
+        end if
+        recommendedVideo = FindAutoplayVideo(videoQueue, preferences)
+        if recommendedVideo = invalid or invidiousNode = invalid
+            return invalid
+        end if
+        instance = invidiousNode@.GetInstance()
+        return InvidiousContent.ToVideoContentNode(invalid, recommendedVideo, instance)
+    end function
+
+    ' The first recommendation from the playing video's /next that is not already in the queue, when autoplay
+    ' is on; invalid otherwise. (Was the body of PlayNext.)
+    function FindAutoplayVideo(videoQueue as object, preferences as object) as dynamic
+        if preferences = invalid or preferences["playback.autoplay"] <> true
+            return invalid
         end if
 
         player = videoQueue.player
         if player = invalid
-            return false
+            return invalid
         end if
 
         content = player.content
         if content = invalid
-            return false
+            return invalid
         end if
 
         metadata = content.metadata
         if metadata = invalid
-            return false
+            return invalid
         end if
 
         recommendedVideos = metadata.recommendedVideos
         if not IsArray(recommendedVideos) or recommendedVideos.Count() = 0
-            return false
+            return invalid
         end if
 
         queueContent = videoQueue.content
@@ -147,14 +184,10 @@ namespace VideoQueueUtils
                 continue for
             end if
 
-            LogInfo(`Playing next recommended video (${videoId})`)
-            instance = invidiousNode@.GetInstance()
-            node = InvidiousContent.ToVideoContentNode(invalid, recommendedVideo, instance)
-            videoQueue.playVideo = node
-            return true
+            return recommendedVideo
         end for
 
-        return false
+        return invalid
     end function
 
 end namespace

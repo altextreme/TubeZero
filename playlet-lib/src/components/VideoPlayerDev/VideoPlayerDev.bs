@@ -113,6 +113,9 @@ function Initialize()
     m.descriptionPanel.ObserveField("closed", FuncName(OnDescriptionClosed))
     m.descriptionPanel.ObserveField("seekToMs", FuncName(OnDescriptionSeek))
     m.watchInfo = invalid
+    ' YourTube: the "Up next" card over the last seconds ({ looked, video, cancelled }, reset per video)
+    m.upNextCard = m.top.findNode("upNextCard")
+    m.upNext = { looked: false, video: invalid, cancelled: false }
     m.fullScreenHint = m.top.findNode("fullScreenHint")
 
     m.autoHide = m.top.findNode("autoHide")
@@ -360,6 +363,11 @@ function OnKeyEvent(key as string, press as boolean) as boolean
         return true
     end if
     if press and key = RemoteKeys.Back and m.sponsorblock.DismissManual()
+        return true
+    end if
+    ' YourTube: while the Up next card shows (chrome hidden), OK plays the next video now and Back cancels it.
+    if press and m.upNextCard.visible and (key = RemoteKeys.Ok or key = RemoteKeys.Back)
+        UpNextKey(key)
         return true
     end if
 
@@ -1211,6 +1219,8 @@ function OnPosition(event as object) as void
         ApplyTransport()
     end if
 
+    UpdateUpNext(posMs) ' YourTube
+
     ' report watch progress to the account in 20-second steps.
     if m.reportWatchTime and m.markVideoWatchedJob <> invalid
         marker = (posMs \ 20000) * 20
@@ -1400,6 +1410,8 @@ function PlayWithContent(contentNode as object)
     m.descriptionPanel.visible = false ' YourTube
     m.watchInfo = invalid ' YourTube
     m.trickPlayBar.chapterStartsMs = [] ' YourTube
+    m.upNext = { looked: false, video: invalid, cancelled: false } ' YourTube
+    m.upNextCard.visible = false ' YourTube
     videoContentNode = CreateObject("roSGNode", "ContentNode")
 
     if not StringUtils.IsNullOrEmpty(contentNode.videoId)
@@ -1741,6 +1753,12 @@ function OnPlaybackFinished() as void
         return
     end if
     LogDebug("playback finished -> PlayNext or close")
+    m.upNextCard.visible = false ' YourTube
+    ' YourTube: Back on the Up next card cancelled what would have played next
+    if m.upNext.cancelled
+        ClosePlayer()
+        return
+    end if
     if not VideoQueueUtils.PlayNext(m.videoQueue, m.invidious, m.preferences)
         ClosePlayer()
     end if
@@ -1895,6 +1913,47 @@ function OnClose() as void
     end try
 
     m.top.content = invalid
+end function
+
+' YourTube: the Up next card shows over the last UP_NEXT_MS of a VOD (not Shorts), while nothing else is on
+' screen, when something would play next (the queue's next video, else autoplay's pick).
+const UP_NEXT_MS = 10000
+function UpdateUpNext(posMs as integer) as void
+    show = false
+    durationMs = m.transport.durationMs
+    remainingMs = durationMs - posMs
+    if not m.upNext.cancelled and not m.transport.isLive and m.top.yourtubeShorts <> true and m.container.fullscreen and m.chromeMode = ChromeMode.Hidden and m.transport.transportMode = TransportController.Mode.Idle and not PanelOpen() and durationMs >= 3 * UP_NEXT_MS and remainingMs > 0 and remainingMs <= UP_NEXT_MS
+        if not m.upNext.looked
+            m.upNext.looked = true
+            m.upNext.video = VideoQueueUtils.PeekNext(m.videoQueue, m.invidious, m.preferences)
+            m.upNextCard.video = m.upNext.video
+        end if
+        show = m.upNext.video <> invalid
+    end if
+    if show
+        m.upNextCard.secondsLeft = (remainingMs + 999) \ 1000
+    end if
+    if m.upNextCard.visible <> show
+        m.upNextCard.visible = show
+    end if
+end function
+
+' A side panel or the related row holds focus (and the screen's corner).
+function PanelOpen() as boolean
+    return m.commentsPanel.visible or m.descriptionPanel.visible or m.relatedShelf.visible
+end function
+
+function UpNextKey(key as string) as void
+    m.upNextCard.visible = false
+    if key = RemoteKeys.Ok
+        LogInfo("Up next: play now")
+        if not VideoQueueUtils.PlayNext(m.videoQueue, m.invidious, m.preferences)
+            m.toast.text = "Nothing to play next"
+        end if
+    else
+        m.upNext.cancelled = true
+        m.toast.text = "Autoplay canceled"
+    end if
 end function
 
 ' YourTube: hide title/meta while the scrub preview strip is up (they would overlap)

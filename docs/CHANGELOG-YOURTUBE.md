@@ -79,6 +79,10 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 - Description button (i): a side panel like Comments with the title, channel and subscribers, views, date and
   likes, the description (Up/Down scrolls) and the chapter list (OK jumps to the chapter and closes). Back or
   Left closes it. Parser `YourTubeWatchInfo` is tested against a saved `/next` (`next-chapters.json`).
+- Up next card: over the last 10 seconds of a video (not live, not Shorts, not while the bar or a panel is up)
+  a corner card shows what plays next (the queue's next video, else autoplay's pick from /next when Autoplay is
+  on) with a countdown. OK plays it now, Back cancels (the video then ends without playing anything next).
+  `VideoQueueUtils.PeekNext` shares the pick with `PlayNext`.
 - The title and channel now sit above the action row (it grew to the left under them).
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)

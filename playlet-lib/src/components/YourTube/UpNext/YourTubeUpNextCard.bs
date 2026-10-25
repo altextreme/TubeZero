@@ -1,0 +1,31 @@
+import "pkg:/components/YourTube/YourTubeText.bs"
+import "pkg:/source/utils/Types.bs"
+
+function Init()
+    m.thumbnail = m.top.findNode("Thumbnail")
+    m.countdown = m.top.findNode("Countdown")
+    m.videoTitle = m.top.findNode("VideoTitle")
+    m.author = m.top.findNode("Author")
+    m.top.findNode("Keys").text = "OK  Play now        Back  Cancel"
+end function
+
+function OnVideoChange() as void
+    video = m.top.video
+    if video = invalid
+        m.thumbnail.uri = ""
+        m.videoTitle.text = ""
+        m.author.text = ""
+        return
+    end if
+    m.thumbnail.uri = ValidString(video.thumbnail)
+    m.videoTitle.text = YourTubeText.Clean(ValidString(video.title)).text
+    m.author.text = ValidString(video._author)
+end function
+
+function OnSecondsLeftChange() as void
+    seconds = m.top.secondsLeft
+    if seconds < 1
+        seconds = 1
+    end if
+    m.countdown.text = "Up next in " + seconds.ToStr()
+end function

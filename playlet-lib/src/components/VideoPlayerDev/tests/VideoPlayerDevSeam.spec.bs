@@ -1087,7 +1087,7 @@ namespace Tests
                 classified[name] = "controller"
             end for
             ' cached child nodes / timers / animations / reusable helpers (structure, not state).
-            for each name in ["chrome", "titleLabel", "secondaryTitleLabel", "clock", "bifDisplay", "trickPlayBar", "spinner", "largePause", "buttonRow", "fullScreenHint", "autoHide", "transportTimer", "liveBadgeHold", "liveEdgeClock", "fullScreenHintTimer", "chromeFadeIn", "chromeFadeOut", "minimize", "nowDateTime", "commentsPanel", "liveChatPanel", "toast", "relatedShelf", "descriptionPanel"]
+            for each name in ["chrome", "titleLabel", "secondaryTitleLabel", "clock", "bifDisplay", "trickPlayBar", "spinner", "largePause", "buttonRow", "fullScreenHint", "autoHide", "transportTimer", "liveBadgeHold", "liveEdgeClock", "fullScreenHintTimer", "chromeFadeIn", "chromeFadeOut", "minimize", "nowDateTime", "commentsPanel", "liveChatPanel", "toast", "relatedShelf", "descriptionPanel", "upNextCard"]
                 classified[name] = "node"
             end for
             ' in-flight job handles.
@@ -1101,7 +1101,8 @@ namespace Tests
             ' flags / scratch — one-shot latches and counters with a single consuming path.
             ' YourTube: playerSheet (the open settings sheet), captionsOff (captions switched off in this player) and
             ' watchInfo (the video's chapters/heatmap/details, replaced per content load).
-            for each name in ["playerSheet", "captionsOff", "watchInfo", "onCloseCalled", "ignoreNextFinished", "videoPlayedSuccessfully", "firstFrameSeen", "showFullScreenHint", "repauseAfterSeek", "loadingSetSeekMs", "watchTimeMarker", "reportWatchTime", "errorDialogNode", "lastCommitSeq", "lastFinishSeq", "liveAstSeconds", "liveFallbackEdgeMs", "liveFallbackAtSeconds", "liveBadgeHoldActive"]
+            ' upNext ({ looked, video, cancelled }: the Up next card's per-video state).
+            for each name in ["playerSheet", "captionsOff", "watchInfo", "upNext", "onCloseCalled", "ignoreNextFinished", "videoPlayedSuccessfully", "firstFrameSeen", "showFullScreenHint", "repauseAfterSeek", "loadingSetSeekMs", "watchTimeMarker", "reportWatchTime", "errorDialogNode", "lastCommitSeq", "lastFinishSeq", "liveAstSeconds", "liveFallbackEdgeMs", "liveFallbackAtSeconds", "liveBadgeHoldActive"]
                 classified[name] = "flag"
             end for
             ' NOT coordinator state — node-scope + test-environment entries, pinned EXPLICITLY (no hidden
@@ -1180,6 +1181,68 @@ namespace Tests
             m.top.findNode("descriptionPanel").seekToMs = 50000
             m.assertEqual(Int(m.top.seek * 1000), 50000)
             m.assertEqual(m.Snap().transportMode, TransportController.Mode.Idle)
+        end function
+
+        ' YourTube: a stub queue whose next item is `title` (PlayNext pulses `next`).
+        function QueueWithNext(title as string) as object
+            queue = m.top.videoQueue
+            if not queue.hasField("next")
+                queue.addField("next", "boolean", true)
+                queue.addField("index", "integer", false)
+                queue.addField("content", "node", false)
+            end if
+            content = CreateObject("roSGNode", "ContentNode")
+            content.CreateChild("ContentNode").title = "Now"
+            content.CreateChild("ContentNode").title = title
+            queue.content = content
+            queue.index = 0
+            queue.hasNext = true
+            queue.next = false
+            return queue
+        end function
+
+        @it("the Up next card shows over the last 10 seconds; OK plays the next video now")
+        function _()
+            queue = m.QueueWithNext("Next one")
+            m.top.duration = 100
+            m.top.position = 80.0
+            m.assertFalse(m.Snap().upNextVisible, "not yet")
+            m.top.position = 95.0
+            snap = m.Snap()
+            m.assertTrue(snap.upNextVisible, "shown in the last 10s")
+            m.assertEqual(snap.upNextSeconds, 5)
+            m.top.callFunc("TestKey", RemoteKeys.Ok, true)
+            m.assertTrue(queue.next, "OK played the queue's next video")
+            m.assertFalse(m.Snap().upNextVisible)
+            queue.hasNext = false
+        end function
+
+        @it("Back on the Up next card cancels: the video ends without playing the next one")
+        function _()
+            queue = m.QueueWithNext("Next one")
+            m.top.duration = 100
+            m.top.position = 95.0
+            m.top.callFunc("TestKey", RemoteKeys.Back, true)
+            m.assertFalse(m.Snap().upNextVisible)
+            m.assertFalse(m.Snap().onCloseCalled, "Back cancelled the card, it didn't close the player")
+            m.top.position = 97.0
+            m.assertFalse(m.Snap().upNextVisible, "stays hidden once cancelled")
+            m.top.callFunc("TestSetState", VideoState.Finished)
+            m.assertFalse(queue.next, "nothing played next")
+            m.assertTrue(queue.closePlayer, "the player closed instead")
+            queue.hasNext = false
+        end function
+
+        @it("the Up next card stays away while the chrome is up, on live, and with nothing next")
+        function _()
+            m.top.duration = 100
+            m.top.position = 95.0
+            m.assertFalse(m.Snap().upNextVisible, "nothing next (no queue, no autoplay)")
+            queue = m.QueueWithNext("Next one")
+            m.top.callFunc("TestKey", RemoteKeys.Up, true) ' chrome up
+            m.top.position = 96.0
+            m.assertFalse(m.Snap().upNextVisible, "not over the chrome")
+            queue.hasNext = false
         end function
 
         ' The PiP-toggle-after-close crash (captured on device): OnClose drops m.sponsorblock, so a leaked
