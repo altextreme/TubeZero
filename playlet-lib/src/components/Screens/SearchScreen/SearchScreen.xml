@@ -63,6 +63,13 @@
                 rowFocusAnimationStyle="floatingfocus"
                 variableWidthItems="true"
                 focusBitmapUri="pkg:/images/focus-glow-padding-30.$$RES$$.9.png" />
+            <!-- YourTube: filter chips under the results (Upload date, Type, Duration, Sort); shown with the results -->
+            <YourTubeChipBar
+                id="filterChips"
+                translation="[90,690]"
+                maxWidth="1110"
+                activeIndex="-1"
+                visible="false" />
             <Animation
                 id="scrollAnimation"
                 duration="0.3">

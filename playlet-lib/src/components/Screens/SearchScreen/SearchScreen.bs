@@ -3,6 +3,7 @@ import "pkg:/components/JobSystem/Jobs.bs"
 import "pkg:/components/JobSystem/JobSystem.bs"
 import "pkg:/components/Navigation/Navigation.bs"
 import "pkg:/components/Services/SearchHistory/SearchHistoryUtils.bs"
+import "pkg:/components/YourTube/SearchChips/YourTubeSearchChips.bs" ' YourTube: result filter chips
 import "pkg:/components/YourTube/YourTubeTheme.bs"
 import "pkg:/source/utils/CryptoUtils.bs"
 import "pkg:/source/utils/ErrorUtils.bs"
@@ -22,6 +23,11 @@ function Init()
     m.scrollAnimationInterpolator = m.top.FindNode("scrollAnimationInterpolator")
     m.suggestions = m.top.FindNode("suggestions")
     m.filtersButton = m.top.FindNode("filtersButton")
+    ' YourTube: filter chips under the results
+    m.filterChips = m.top.FindNode("filterChips")
+    m.filterChips.focusable = false
+    m.lastQuery = ""
+    m.focusChipsAfterSearch = false
 
     m.rowList.screen = m.top
 
@@ -51,6 +57,8 @@ function OnNodeReady()
     m.suggestions.ObserveField("buttonFocused", FuncName(OnSearchButtonFocused))
     m.suggestions.ObserveField("buttonSelected", FuncName(OnSearchButtonSelected))
     m.filtersButton.ObserveField("buttonSelected", FuncName(OnFiltersButtonSelected))
+    m.filterChips.ObserveField("selected", FuncName(OnFilterChipSelected))
+    UpdateFilterChips()
 
     m.top.ObserveField("visible", FuncName(OnVisibilityChange))
     m.rowlist.ObserveFieldScoped("onError", FuncName(OnSearchError))
@@ -69,6 +77,20 @@ function OnNodeReady()
     end function)
     SetNavigation(m.filtersButton, RemoteKeys.Down, m.suggestions)
     SetNavigation(m.filtersButton, RemoteKeys.Down, m.keyboard)
+
+    ' YourTube: results row <-> filter chips under it (before the catch-all Down below)
+    SetNavigation(m.rowList, RemoteKeys.Down, m.filterChips)
+    SetNavigation(m.filterChips, RemoteKeys.Down, m.filterChips)
+    SetNavigation(m.filterChips, RemoteKeys.Up, m.rowList)
+    SetNavigation(m.filterChips, RemoteKeys.Up, m.suggestions, function()
+        ScrollUp()
+    end function)
+    SetNavigation(m.filterChips, RemoteKeys.Up, m.keyboard, function()
+        ScrollUp()
+    end function)
+    SetNavigation(m.filterChips, RemoteKeys.Left, m.navBar, function()
+        ScrollUp()
+    end function)
 
     SetNavigation(invalid, RemoteKeys.Down, m.rowList, function()
         ScrollDown()
@@ -232,9 +254,37 @@ function OnFiltersChange()
     else
         m.filtersButton.text = Tr(Locale.Buttons.Filters)
     end if
+    UpdateFilterChips() ' YourTube
+end function
+
+' YourTube: chip labels follow the filters (set by the chips or by the Filters dialog)
+function UpdateFilterChips() as void
+    chips = YourTubeSearchChips.Build(m.top.filters)
+    m.filterChips.chips = chips.texts
+    m.filterChips.markedIndexes = chips.marked
+end function
+
+' YourTube: OK on a chip moves its filter to the next value and runs the search again
+function OnFilterChipSelected() as void
+    keys = YourTubeSearchChips.FilterKeys()
+    index = m.filterChips.selected
+    if index < 0 or index >= keys.Count() or m.lastQuery = ""
+        return
+    end if
+    filters = m.top.filters
+    filters[keys[index]] = YourTubeSearchChips.NextValue(keys[index], filters[keys[index]])
+    m.top.filters = filters
+    m.focusChipsAfterSearch = true
+    Search(m.lastQuery)
+end function
+
+function SetFilterChipsShown(shown as boolean) as void
+    m.filterChips.visible = shown
+    m.filterChips.focusable = shown
 end function
 
 function Search(text as string)
+    m.lastQuery = text ' YourTube: the chips search again with it
     m.rowlist.UnobserveFieldScoped("someContentReady")
     m.rowlist.ObserveFieldScoped("someContentReady", FuncName(OnSearchContentReady))
     ShowLoadingScreen()
@@ -271,6 +321,8 @@ end function
 function OnSearchContentReady() as void
     m.rowlist.UnobserveFieldScoped("someContentReady")
 
+    focusChips = m.focusChipsAfterSearch
+    m.focusChipsAfterSearch = false
     if not m.rowlist.someContentReady
         DialogUtils.ShowDialogEx({
             message: Tr(Locale.Dialogs.NoResultsFoundMessage)
@@ -278,16 +330,26 @@ function OnSearchContentReady() as void
         })
         m.rowlist.feeds = invalid
         m.rowlist.focusable = false
+        ' YourTube: a chip filtered everything out; stay on the chips to change it back
+        if not focusChips
+            SetFilterChipsShown(false)
+        end if
         HideLoadingScreen()
         return
     end if
 
     m.rowlist.focusable = true
-    m.currentNavigtionNode = m.rowList
-    NodeSetFocus(m.rowlist, true)
-    ' There's a bug with the floating focus indicator. If the rowList receives focus after the
-    ' content is set, the focus indicator will be "off". This is why we set the content again.
-    m.rowlist.content = m.rowlist.content
+    SetFilterChipsShown(true) ' YourTube
+    if focusChips
+        m.currentNavigtionNode = m.filterChips
+        NodeSetFocus(m.filterChips, true)
+    else
+        m.currentNavigtionNode = m.rowList
+        NodeSetFocus(m.rowlist, true)
+        ' There's a bug with the floating focus indicator. If the rowList receives focus after the
+        ' content is set, the focus indicator will be "off". This is why we set the content again.
+        m.rowlist.content = m.rowlist.content
+    end if
     ScrollDown()
     HideLoadingScreen()
 end function
@@ -296,6 +358,7 @@ function OnSearchError()
     ' Note: we don't display an error dialog, VideoRowListRowContentJob will do that.
     m.rowlist.feeds = invalid
     m.rowlist.focusable = false
+    m.focusChipsAfterSearch = false
     HideLoadingScreen()
 end function
 
@@ -311,6 +374,8 @@ function ClearSearch()
     m.keyboard.text = ""
     m.rowlist.feeds = invalid
     m.rowlist.focusable = false
+    m.lastQuery = ""
+    SetFilterChipsShown(false) ' YourTube
     ScrollUp()
 end function
 
@@ -353,6 +418,8 @@ function SetSearchControlsVisible(visible as boolean) as void
     m.suggestions.visible = visible
     m.keyboard.visible = visible
     m.filtersButton.visible = visible
+    ' The result filter chips sit under the results row, off the bottom until the results scroll up
+    m.filterChips.visible = not visible and m.filterChips.focusable
 end function
 
 function OnKeyEvent(key as string, press as boolean) as boolean

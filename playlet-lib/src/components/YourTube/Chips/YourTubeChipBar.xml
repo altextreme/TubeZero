@@ -11,6 +11,8 @@
     <interface>
         <field id="chips" type="array" onChange="OnChipsChange" />
         <field id="activeIndex" type="integer" value="0" onChange="UpdateStyles" />
+        <!-- More chips drawn like the current one (e.g. search filters that are set) -->
+        <field id="markedIndexes" type="array" onChange="UpdateStyles" />
         <field id="focusIndex" type="integer" value="0" onChange="OnFocusIndexChange" />
         <field id="selected" type="integer" alwaysNotify="true" />
         <field id="maxWidth" type="float" value="1100" onChange="UpdateScroll" />

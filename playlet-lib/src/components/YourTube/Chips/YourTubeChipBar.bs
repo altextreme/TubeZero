@@ -121,10 +121,16 @@ end function
 
 function UpdateStyles() as void
     focused = m.top.hasFocus()
+    marked = {}
+    if IsArray(m.top.markedIndexes)
+        for each index in m.top.markedIndexes
+            marked[StrI(ValidInt(index))] = true
+        end for
+    end if
     for i = 0 to m.items.Count() - 1
         item = m.items[i]
         isFocus = focused and i = m.top.focusIndex
-        isActive = i = m.top.activeIndex
+        isActive = i = m.top.activeIndex or marked.DoesExist(StrI(i))
         if isFocus or (isActive and not focused)
             item.bg.blendColor = "#EBEBEBFF"
             item.label.color = "#161616FF"

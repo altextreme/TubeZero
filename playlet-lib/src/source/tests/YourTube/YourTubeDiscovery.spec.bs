@@ -4,6 +4,7 @@ import "pkg:/components/YourTube/ChannelSearch/YourTubeChannelSearch.bs"
 import "pkg:/components/YourTube/FeedFilters/YourTubeFeedFilters.bs"
 import "pkg:/components/YourTube/HomeChips/YourTubeHomeChips.bs"
 import "pkg:/components/YourTube/LiveNow/YourTubeLiveNow.bs"
+import "pkg:/components/YourTube/SearchChips/YourTubeSearchChips.bs"
 import "pkg:/source/services/HttpClient.bs"
 import "pkg:/source/utils/StringUtils.bs"
 
@@ -207,6 +208,26 @@ namespace Tests
         function _()
             m.assertEqual(YourTubeLiveNow.PickLive([{ type: "video", videoId: "x" }], 20).Count(), 0)
             m.assertEqual(YourTubeLiveNow.PickLive(invalid, 20).Count(), 0)
+        end function
+
+        @describe("YourTubeSearchChips")
+
+        @it("labels unset chips with the filter name and set ones with the value")
+        function _()
+            chips = YourTubeSearchChips.Build({ date: "week", type: "", duration: "", features: [], sort: "views" })
+            m.assertEqual(chips.texts, ["This week", "Type", "Duration", "Sort: View count"])
+            m.assertEqual(chips.marked, [0, 3])
+            m.assertEqual(YourTubeSearchChips.Build(invalid).marked.Count(), 0)
+        end function
+
+        @it("cycles a filter through its values and back to unset")
+        function _()
+            m.assertEqual(YourTubeSearchChips.NextValue("duration", ""), "short")
+            m.assertEqual(YourTubeSearchChips.NextValue("duration", "short"), "medium")
+            m.assertEqual(YourTubeSearchChips.NextValue("duration", "long"), "")
+            m.assertEqual(YourTubeSearchChips.NextValue("type", invalid), "video")
+            m.assertEqual(YourTubeSearchChips.NextValue("sort", "nonsense"), "date")
+            m.assertEqual(YourTubeSearchChips.NextValue("features", ""), "")
         end function
 
     end class

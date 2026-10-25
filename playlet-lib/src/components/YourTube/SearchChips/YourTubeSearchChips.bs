@@ -1,0 +1,97 @@
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: filter chips under the search results (Upload date, Type, Duration, Sort). OK on a chip moves its
+' filter to the next value and searches again; the values are the SearchScreen filters (the same ones the
+' Filters dialog sets, encoded by Innertube.GetEncodedSearchFilters). Features stay in the Filters dialog.
+namespace YourTubeSearchChips
+
+    function FilterKeys() as object
+        return ["date", "type", "duration", "sort"]
+    end function
+
+    function FilterOptions(key as string) as object
+        if key = "date"
+            return [
+                { title: "Upload date", value: "" }
+                { title: "Last hour", value: "hour" }
+                { title: "Today", value: "today" }
+                { title: "This week", value: "week" }
+                { title: "This month", value: "month" }
+                { title: "This year", value: "year" }
+            ]
+        else if key = "type"
+            return [
+                { title: "Type", value: "" }
+                { title: "Videos", value: "video" }
+                { title: "Channels", value: "channel" }
+                { title: "Playlists", value: "playlist" }
+                { title: "Movies", value: "movie" }
+            ]
+        else if key = "duration"
+            return [
+                { title: "Duration", value: "" }
+                { title: "Under 4 minutes", value: "short" }
+                { title: "4 - 20 minutes", value: "medium" }
+                { title: "Over 20 minutes", value: "long" }
+            ]
+        else if key = "sort"
+            return [
+                { title: "Sort: Relevance", value: "" }
+                { title: "Sort: Upload date", value: "date" }
+                { title: "Sort: View count", value: "views" }
+                { title: "Sort: Rating", value: "rating" }
+            ]
+        end if
+        return []
+    end function
+
+    ' The value after current in key's options (wraps back to "", the unset value).
+    function NextValue(key as string, current as dynamic) as string
+        options = FilterOptions(key)
+        if options.Count() = 0
+            return ""
+        end if
+        index = IndexOfValue(options, ValidString(current))
+        return options[(index + 1) mod options.Count()].value
+    end function
+
+    ' Chip label: the filter's name while unset, else the chosen value ("This week").
+    function ChipText(key as string, value as dynamic) as string
+        options = FilterOptions(key)
+        if options.Count() = 0
+            return ""
+        end if
+        return options[IndexOfValue(options, ValidString(value))].title
+    end function
+
+    ' Chip labels and the indexes of the chips whose filter is set, for filters (SearchScreen.filters).
+    function Build(filters as object) as object
+        texts = []
+        marked = []
+        keys = FilterKeys()
+        for i = 0 to keys.Count() - 1
+            value = ""
+            if IsAssociativeArray(filters)
+                value = ValidString(filters[keys[i]])
+            end if
+            texts.Push(ChipText(keys[i], value))
+            if value <> ""
+                marked.Push(i)
+            end if
+        end for
+        return {
+            texts: texts
+            marked: marked
+        }
+    end function
+
+    function IndexOfValue(options as object, value as string) as integer
+        for i = 0 to options.Count() - 1
+            if options[i].value = value
+                return i
+            end if
+        end for
+        return 0
+    end function
+
+end namespace
