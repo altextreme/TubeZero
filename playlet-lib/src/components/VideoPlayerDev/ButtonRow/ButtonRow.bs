@@ -50,6 +50,12 @@ function LayoutClusters() as void
     ' YourTube: one right-aligned action row like the YouTube TV player (play/pause leads it)
     m.rightCluster.translation = [TRACKBAR_RIGHT_X - ClusterWidth(m.rightCluster), ROW_Y]
     m.centerCluster.translation = [m.rightCluster.translation[0] - BUTTON_SPACING - ClusterWidth(m.centerCluster), ROW_Y]
+    ' YourTube: the like / dislike counts sit centred under their buttons
+    for each pair in [["LikeCountLabel", "LikeButton"], ["DislikeCountLabel", "DislikeButton"]]
+        label = m.top.findNode(pair[0])
+        button = m.top.findNode(pair[1])
+        label.translation = [m.rightCluster.translation[0] + button.translation[0] + BUTTON_WIDTH / 2 - label.width / 2, ROW_Y + BUTTON_WIDTH + 1]
+    end for
 end function
 
 function LayoutButtons(cluster as object) as void

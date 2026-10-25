@@ -28,6 +28,9 @@
         <field id="disliked" type="boolean" value="false" />
         <field id="saved" type="boolean" value="false" />
         <field id="subscribed" type="boolean" value="false" />
+        <!-- YourTube: small counts under the like / dislike buttons ("148K"); "" hides them -->
+        <field id="likeCountText" type="string" alias="LikeCountLabel.text" />
+        <field id="dislikeCountText" type="string" alias="DislikeCountLabel.text" />
     </interface>
     <children>
         <!-- play/pause, centered on screen (x=640). -->
@@ -66,5 +69,12 @@
             <VideoPlayerButton id="SettingsButton"
                 iconUri="pkg:/images/icons/ms/player_settings.png" />
         </Group>
+        <!-- YourTube: under the like / dislike buttons, placed in LayoutClusters -->
+        <Label id="LikeCountLabel" width="62" horizAlign="center" color="0xDDDDDDFF">
+            <Font role="font" uri="font:SystemFontFile" size="14" />
+        </Label>
+        <Label id="DislikeCountLabel" width="62" horizAlign="center" color="0xDDDDDDFF">
+            <Font role="font" uri="font:SystemFontFile" size="14" />
+        </Label>
     </children>
 </component>

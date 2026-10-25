@@ -32,6 +32,8 @@ function Init()
         "TubeZero is a personal fork of Playlet by Brahim Hadriche."
         "Playlet: github.com/iBicha/playlet. Licensed under the GNU AGPL-3.0."
         "TubeZero source: github.com/altextreme/TubeZero"
+        ' YourTube: Return YouTube Dislike asks for credit
+        "Dislike counts: Return YouTube Dislike (returnyoutubedislike.com), estimated from its users."
     ]
 
     m.keyValueList = m.top.findNode("KeyValueListContent")

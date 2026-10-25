@@ -83,6 +83,10 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   a corner card shows what plays next (the queue's next video, else autoplay's pick from /next when Autoplay is
   on) with a countdown. OK plays it now, Back cancels (the video then ends without playing anything next).
   `VideoQueueUtils.PeekNext` shares the pick with `PlayNext`.
+- Like and dislike counts: small counts under the Like and Dislike buttons and in the Description panel. Likes
+  come from `/next` (signed out too); dislikes from Return YouTube Dislike (`returnyoutubedislikeapi.com/votes`,
+  estimates), behind the new Settings > Return YouTube Dislike > Show dislike counts (`ryd.enabled`, on by
+  default). Credited on the About screen.
 - The title and channel now sit above the action row (it grew to the left under them).
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)

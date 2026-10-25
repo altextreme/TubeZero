@@ -166,6 +166,21 @@
     ],
   },
   {
+    // YourTube: dislike counts in the player (returnyoutubedislikeapi.com)
+    displayText: "Return YouTube Dislike",
+    key: "ryd",
+    description: "Dislike counts from Return YouTube Dislike",
+    children: [
+      {
+        displayText: "Show dislike counts",
+        key: "ryd.enabled",
+        description: "Show estimated dislike counts in the player. Asks returnyoutubedislikeapi.com about each video you open.",
+        type: "boolean",
+        defaultValue: true,
+      },
+    ],
+  },
+  {
     displayText: "SponsorBlock",
     key: "sponsorblock",
     description: "SponsorBlock preferences",

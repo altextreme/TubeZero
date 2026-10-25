@@ -1,0 +1,29 @@
+import "pkg:/components/YourTube/Dislikes/YourTubeDislikes.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: a video's dislike count from Return YouTube Dislike.
+' Input: { videoId }. Output: { videoId, likes, dislikes }.
+@job("YourTubeDislikesJob")
+function ExecuteJob() as void
+    input = JobGetInput()
+    videoId = ValidString(input.videoId)
+    if videoId = ""
+        JobError("No videoId")
+        return
+    end if
+
+    request = YourTubeDislikes.CreateRequest(videoId)
+    request.Cancellation(JobGetCancellation())
+    response = request.Await()
+    if not response.IsSuccess()
+        JobError(response.ErrorMessage())
+        return
+    end if
+
+    votes = YourTubeDislikes.Parse(response.Json())
+    if votes = invalid
+        JobError("No dislike count in the response")
+        return
+    end if
+    JobSuccessData({ videoId: videoId, likes: votes.likes, dislikes: votes.dislikes })
+end function

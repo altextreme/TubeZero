@@ -1,6 +1,7 @@
 ' YourTube: pure helpers behind the player features (settings sheet, chapters / description / heatmap, up next,
 ' like counts). /next fixtures are real WEB responses captured signed out and trimmed
 ' (source/tests/fixtures/yourtube/next-chapters.json: Veritasium JsBZOcqZerk, 10 chapters, a heatmap).
+import "pkg:/components/YourTube/Dislikes/YourTubeDislikes.bs"
 import "pkg:/components/YourTube/PlayerSettings/YourTubePlayerSettingsLogic.bs"
 import "pkg:/components/YourTube/WatchInfo/YourTubeWatchInfo.bs"
 import "pkg:/source/utils/StringUtils.bs"
@@ -191,6 +192,23 @@ namespace Tests
             m.assertEqual(details.title, "")
             m.assertEqual(details.likeCount, "")
             m.assertEqual(details.likeCountExact, 0)
+        end function
+
+        @describe("YourTubeDislikes.Parse")
+
+        @it("reads the dislike count from a Return YouTube Dislike /votes response")
+        function _()
+            votes = YourTubeDislikes.Parse(m.Fixture("ryd-votes.json"))
+            m.assertEqual(votes.dislikes, 1716)
+            m.assertEqual(votes.likes, 148634)
+            m.assertEqual(YourTubeWatchInfo.ShortCount(votes.dislikes), "1.7K")
+        end function
+
+        @it("returns invalid without a dislike count")
+        function _()
+            m.assertInvalid(YourTubeDislikes.Parse(invalid))
+            m.assertInvalid(YourTubeDislikes.Parse({ "likes": 3 }))
+            m.assertInvalid(YourTubeDislikes.Parse({ "dislikes": "12" }))
         end function
 
         @describe("YourTubeWatchInfo formatting")

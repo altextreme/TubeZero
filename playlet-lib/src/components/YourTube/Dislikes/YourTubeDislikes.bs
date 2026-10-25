@@ -1,0 +1,24 @@
+import "pkg:/components/YourTube/YourTubeJson.bs"
+import "pkg:/source/services/HttpClient.bs"
+
+' YourTube: dislike counts from Return YouTube Dislike (returnyoutubedislikeapi.com, credited on the About
+' screen). The numbers are estimates extrapolated from the extension's users. Behind `ryd.enabled`.
+namespace YourTubeDislikes
+
+    function CreateRequest(videoId as string) as object
+        return HttpClient.Get("https://returnyoutubedislikeapi.com/votes?videoId=" + videoId)
+    end function
+
+    ' { likes, dislikes } from a /votes response, or invalid when it has no dislike count.
+    function Parse(response as dynamic) as dynamic
+        if not YourTubeJson.IsAA(response)
+            return invalid
+        end if
+        dislikes = response["dislikes"]
+        if GetInterface(dislikes, "ifInt") = invalid and GetInterface(dislikes, "ifFloat") = invalid and GetInterface(dislikes, "ifDouble") = invalid and GetInterface(dislikes, "ifLongInt") = invalid
+            return invalid
+        end if
+        return { likes: YourTubeJson.AsInt(response["likes"]), dislikes: Int(dislikes) }
+    end function
+
+end namespace

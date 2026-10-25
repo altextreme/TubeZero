@@ -38,6 +38,17 @@ namespace Tests
             m.assertEqual(m.top.findNode("RightCluster").translation[0], 674.0)
         end function
 
+        @it("YourTube: like / dislike counts sit centred under their buttons")
+        function _()
+            m.top.likeCountText = "148K"
+            like = m.top.findNode("LikeCountLabel")
+            m.assertEqual(like.text, "148K")
+            ' like is the 3rd right-cluster button: 674 + 2 x 62 + 21 - 31 = 788
+            m.assertEqual(like.translation[0], 788.0)
+            m.assertEqual(m.top.findNode("DislikeCountLabel").translation[0], 850.0)
+            m.top.likeCountText = ""
+        end function
+
         @describe("virtual-focus highlight")
 
         @it("no button is focused until the row holds focus")

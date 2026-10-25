@@ -831,15 +831,15 @@ function OpenDescription() as void
     m.descriptionPanel.info = {
         title: title
         channel: channel
-        stats: DescriptionStats(details)
+        stats: DescriptionStats(details, m.watchInfo)
         description: description
         chapters: chapters
         currentMs: m.transport.positionMs
     }
 end function
 
-' "20,849,711 views  •  Sep 21, 2026  •  148K likes"
-function DescriptionStats(details as object) as string
+' "20,849,711 views  •  Sep 21, 2026  •  148K likes  •  1.7K dislikes"
+function DescriptionStats(details as object, watchInfo as dynamic) as string
     parts = []
     for each value in [ValidString(details.views), ValidString(details.date)]
         if value <> ""
@@ -849,7 +849,30 @@ function DescriptionStats(details as object) as string
     if ValidString(details.likeCount) <> ""
         parts.Push(details.likeCount + " likes")
     end if
+    if watchInfo <> invalid and watchInfo.dislikes <> invalid
+        parts.Push(YourTubeWatchInfo.ShortCount(watchInfo.dislikes) + " dislikes")
+    end if
     return parts.Join("  •  ")
+end function
+
+' YourTube: the dislike count from Return YouTube Dislike (ryd.enabled), under the dislike button.
+function LoadDislikes(videoId as string) as void
+    if videoId = "" or YtPref("ryd.enabled") <> true
+        return
+    end if
+    callback = JobSystem.CreateCallback(OnDislikesLoaded)
+    JobSystem.QueueJob(m.top.jobQueue, Jobs.YourTubeDislikesJob, { videoId: videoId }, callback)
+end function
+
+function OnDislikesLoaded(event as object) as void
+    JobSystem.UnobserveCallback(event.getRoSGNode())
+    info = event.getInfo()
+    content = m.top.content
+    if m.onCloseCalled = true or not info.success or content = invalid or content.videoId <> info.data.videoId or m.watchInfo = invalid
+        return
+    end if
+    m.watchInfo.dislikes = info.data.dislikes
+    m.buttonRow.dislikeCountText = YourTubeWatchInfo.ShortCount(info.data.dislikes)
 end function
 
 function OnDescriptionClosed() as void
@@ -1410,6 +1433,8 @@ function PlayWithContent(contentNode as object)
     m.descriptionPanel.visible = false ' YourTube
     m.watchInfo = invalid ' YourTube
     m.trickPlayBar.chapterStartsMs = [] ' YourTube
+    m.buttonRow.likeCountText = "" ' YourTube
+    m.buttonRow.dislikeCountText = "" ' YourTube
     m.upNext = { looked: false, video: invalid, cancelled: false } ' YourTube
     m.upNextCard.visible = false ' YourTube
     videoContentNode = CreateObject("roSGNode", "ContentNode")
@@ -1514,6 +1539,9 @@ function OnVideoContentJobDone(event as object) as void
     watchInfo = ValidAssociativeArray(metadata.ytWatchInfo)
     m.watchInfo = { chapters: ValidArray(watchInfo.chapters), heatmap: ValidArray(watchInfo.heatmap), details: ValidAssociativeArray(watchInfo.details) }
     m.trickPlayBar.chapterStartsMs = YourTubeWatchInfo.ChapterStartsMs(m.watchInfo.chapters)
+    ' YourTube: like count from /next (works signed out), dislikes from Return YouTube Dislike
+    m.buttonRow.likeCountText = ValidString(m.watchInfo.details.likeCount)
+    LoadDislikes(ValidString(content.videoId))
     LoadAccountState(ValidString(content.videoId)) ' YourTube
     m.bifDisplay.tileSet = invalid
 
