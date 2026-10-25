@@ -1,0 +1,903 @@
+{
+ "contents": {
+  "twoColumnWatchNextResults": {
+   "results": {
+    "results": {
+     "contents": [
+      {
+       "videoPrimaryInfoRenderer": {
+        "title": {
+         "runs": [
+          {
+           "text": "The Insane Real Engineering of the Nazi Enigma Machine"
+          }
+         ]
+        },
+        "viewCount": {
+         "videoViewCountRenderer": {
+          "viewCount": {
+           "simpleText": "20,849,711 views"
+          },
+          "shortViewCount": {
+           "simpleText": "20M views"
+          },
+          "originalViewCount": "20849711"
+         }
+        },
+        "dateText": {
+         "simpleText": "Sep 21, 2026"
+        },
+        "relativeDateText": {
+         "simpleText": "1 month ago"
+        },
+        "videoActions": {
+         "menuRenderer": {
+          "topLevelButtons": [
+           {
+            "segmentedLikeDislikeButtonViewModel": {
+             "likeButtonViewModel": {
+              "likeButtonViewModel": {
+               "toggleButtonViewModel": {
+                "toggleButtonViewModel": {
+                 "defaultButtonViewModel": {
+                  "buttonViewModel": {
+                   "iconName": "LIKE",
+                   "title": "148K",
+                   "accessibilityText": "like this video along with 148,689 other people",
+                   "style": "BUTTON_VIEW_MODEL_STYLE_MONO",
+                   "isFullWidth": false,
+                   "type": "BUTTON_VIEW_MODEL_TYPE_TONAL",
+                   "buttonSize": "BUTTON_VIEW_MODEL_SIZE_DEFAULT",
+                   "accessibilityId": "id.video.like.button",
+                   "tooltip": "I like this"
+                  }
+                 },
+                 "toggledButtonViewModel": {
+                  "buttonViewModel": {
+                   "iconName": "LIKE",
+                   "title": "148K",
+                   "accessibilityText": "like this video along with 148,689 other people",
+                   "style": "BUTTON_VIEW_MODEL_STYLE_MONO",
+                   "isFullWidth": false,
+                   "type": "BUTTON_VIEW_MODEL_TYPE_TONAL",
+                   "buttonSize": "BUTTON_VIEW_MODEL_SIZE_DEFAULT",
+                   "accessibilityId": "id.video.like.button",
+                   "tooltip": "Unlike"
+                  }
+                 },
+                 "identifier": "watch-like",
+                 "isTogglingDisabled": true
+                }
+               },
+               "likeStatusEntityKey": "EgtKc0JaT2NxWmVyayA-KAE%3D",
+               "likeStatusEntity": {
+                "key": "EgtKc0JaT2NxWmVyayA-KAE%3D",
+                "likeStatus": "INDIFFERENT"
+               }
+              }
+             },
+             "dislikeButtonViewModel": {
+              "dislikeButtonViewModel": {
+               "toggleButtonViewModel": {
+                "toggleButtonViewModel": {
+                 "defaultButtonViewModel": {
+                  "buttonViewModel": {
+                   "iconName": "DISLIKE",
+                   "title": "Dislike",
+                   "accessibilityText": "Dislike this video",
+                   "style": "BUTTON_VIEW_MODEL_STYLE_MONO",
+                   "isFullWidth": false,
+                   "type": "BUTTON_VIEW_MODEL_TYPE_TONAL",
+                   "buttonSize": "BUTTON_VIEW_MODEL_SIZE_DEFAULT",
+                   "accessibilityId": "id.video.dislike.button",
+                   "tooltip": "I dislike this"
+                  }
+                 },
+                 "toggledButtonViewModel": {
+                  "buttonViewModel": {
+                   "iconName": "DISLIKE",
+                   "title": "Dislike",
+                   "accessibilityText": "Dislike this video",
+                   "style": "BUTTON_VIEW_MODEL_STYLE_MONO",
+                   "isFullWidth": false,
+                   "type": "BUTTON_VIEW_MODEL_TYPE_TONAL",
+                   "buttonSize": "BUTTON_VIEW_MODEL_SIZE_DEFAULT",
+                   "accessibilityId": "id.video.dislike.button",
+                   "tooltip": "I dislike this"
+                  }
+                 },
+                 "isTogglingDisabled": true
+                }
+               },
+               "dislikeEntityKey": "EgtKc0JaT2NxWmVyayA-KAE%3D"
+              }
+             },
+             "iconType": "LIKE_ICON_TYPE_UNKNOWN",
+             "likeCountEntity": {
+              "key": "unset_like_count_entity_key"
+             },
+             "dynamicLikeCountUpdateData": {
+              "updateStatusKey": "like_count_update_status_key",
+              "placeholderLikeCountValuesKey": "like_count_placeholder_values_key",
+              "updateDelayLoopId": "like_count_update_delay_loop_id",
+              "updateDelaySec": 5
+             },
+             "teasersOrderEntityKey": "EgtKc0JaT2NxWmVyayD8AygB"
+            }
+           }
+          ]
+         }
+        }
+       }
+      },
+      {
+       "videoSecondaryInfoRenderer": {
+        "owner": {
+         "videoOwnerRenderer": {
+          "title": {
+           "runs": [
+            {
+             "text": "Veritasium"
+            }
+           ]
+          },
+          "subscriberCountText": {
+           "simpleText": "21.4M subscribers"
+          }
+         }
+        },
+        "attributedDescription": {
+         "content": "How did Bletchley Park's codebreakers crack the \"unbreakable\" enigma? Sponsored by Incogni - use code veritasium at https://incogni.com/veritasium to get an exclusive 60% off your annual subscription.\n\nIf you’re looking for a molecular modelling kit, try Snatoms, a kit I invented where the atoms snap together magnetically - https://ve42.co/SnatomsV \n\nFor the latest science news, and for an exclusive bonus Q&A with the director of this video, sign up to the Veritasium newsletter - https://ve42.co/Newsletter \n\nFor early access to work in progress videos join our patreon https://ve42.co/VePatreon \n\n▀▀▀\n0:00 Who invented Enigma?\n4:16 How did Enigma work?\n10:51 The Secret Spy Mansion\n13:10 The First Codebreakers Who Broke Enigma\n16:45 Trying To Decrypt An Enigma Message\n22:35 Who was Alan Turing?\n26:30 How Enigma’s Flaws Were Exploited\n34:27 Breaking Enigma - The Bombe\n41:39 The Naval Enigma\n44:35 What did Alan Turing do after Bletchley Park? \n\n▀▀▀\nA huge thanks out to Sir Dermot Turing, Jonah Weinbaum, Andrew Fryer, John Pickles, Peter Hoath, Robert Dowell and all of the experts at Bletchley Park & The National Museum of Computing that helped make this video possible!\n\nShout out to Jared Owen for letting us use his 3D model of the Enigma machine! Check out his amazing video:    • How did the Enigma Machine work?  \n\nBletchley Park is a museum and heritage attraction open daily to visitors. To plan your visit and book tickets, head to: https://www.bletchleypark.org.uk/plan...\n\nThe National Museum of Computing at Bletchley Park is an independent charity housing working historic machines. Plan your visit here: https://www.tnmoc.org/plan-your-visit \n\n▀▀▀\nCan you decrypt this unbroken Naval Enigma message? Let us know in the comments!\n\nJCRSAJTGSJEYEXYKKZZSHVUOCTRFRCRPFVYPLKPPLGRHVVBBTBRSXSWXGGTYTVKQNGSCHVGF\n\nUniversal Enigma simulator by Daniel Palloks: https://ve42.co/EnigmaSim\n\n▀▀▀\nReferences: https://ve42.co/BletchleyRefs \n\nVisual References: https://ve42.co/BletchleyVisRefs \n\n▀▀▀\nSpecial thanks to our Patreon supporters:\nAdam Foreman, Albert Wenger, Alex Porter, Alexander Tamas, André Powell, Anton Ragin, Balkrishna Heroor, Bertrand Serlet, Blake Byers, Bruce, Bryan Ackermann, Chris Brewer, Data Don, Dave Kircher, David Johnston, David Tseng, EJ Alexandra, Evgeny Skvortsov, Garrett Mueller, Gnare, gpoly, Hayden Christensen, Hong Thai Le, Ibby Hadeed, Jeromy Johnson, Juan Benet, Kelcey Steele, Kyi, Lee Redden, Marinus Kuivenhoven, Mark Heising, Meekay, meg noah, Michael Krugman, Moebiusol - Cristian, Orlando Bassotto, Parsee Health, Patreon mp22, Paul Peijzel, Robson, Sam Lutfi, Shalva Bukia, Sinan Taifour, Steven, Sweet_Nemo, Tair Aurmont, Tj Steyn, Ubiquity Ventures, Vahe Andonians, wolfee\n\n\n▀▀▀\nWriters: James Moore, Gregor Čavlović, Darius Garewal & Emilia Gyles\nProducer & Director: James Moore\nAdditional Directing: Darius Garewal\nPresenters: Gregor Čavlović & Derek Muller\nEditor: Peter Nelson\nAdditional Editing: James Stuart & Trenton Oliver\nCamera Operators: Rob Newman & Darius Garewal\nAnimators: Emma Wright, Domonkos Józsa, Alex Drakoulis, Andrew Neet, Rokas Vikšraitis & Aleksandrs Loginovs\nIllustrator: Jakub Misiek\nResearchers: Darius Garewal & Gabe Strong\nThumbnail Designers: Abdallah Rabah, Daniel Ellacott & Ben Powell\nProduction Team: Jess Bishop-Laggett, Glen Griffiths, Matthew Cavanagh & Anna Milkovic\nExecutive Producers: Gregor Čavlović, Emilia Gyles, Henry van Dyck & Derek Muller\n\nAdditional video/photos supplied by Getty Images and Storyblocks\nMusic from Epidemic Sound \n& Sprach Zarathustra - Conducted by Philip Milman (https://pmmusic.pro/)"
+        }
+       }
+      }
+     ]
+    }
+   }
+  }
+ },
+ "playerOverlays": {
+  "playerOverlayRenderer": {
+   "decoratedPlayerBarRenderer": {
+    "decoratedPlayerBarRenderer": {
+     "playerBar": {
+      "multiMarkersPlayerBarRenderer": {
+       "visibleOnLoad": {
+        "key": "DESCRIPTION_CHAPTERS"
+       },
+       "markersMap": [
+        {
+         "key": "DESCRIPTION_CHAPTERS",
+         "value": {
+          "chapters": [
+           {
+            "chapterRenderer": {
+             "title": {
+              "simpleText": "Who invented Enigma?"
+             },
+             "timeRangeStartMillis": 0
+            }
+           },
+           {
+            "chapterRenderer": {
+             "title": {
+              "simpleText": "How did Enigma work?"
+             },
+             "timeRangeStartMillis": 256000
+            }
+           },
+           {
+            "chapterRenderer": {
+             "title": {
+              "simpleText": "The Secret Spy Mansion"
+             },
+             "timeRangeStartMillis": 651000
+            }
+           },
+           {
+            "chapterRenderer": {
+             "title": {
+              "simpleText": "The First Codebreakers Who Broke Enigma"
+             },
+             "timeRangeStartMillis": 790000
+            }
+           },
+           {
+            "chapterRenderer": {
+             "title": {
+              "simpleText": "Trying To Decrypt An Enigma Message"
+             },
+             "timeRangeStartMillis": 1005000
+            }
+           },
+           {
+            "chapterRenderer": {
+             "title": {
+              "simpleText": "Who was Alan Turing?"
+             },
+             "timeRangeStartMillis": 1355000
+            }
+           },
+           {
+            "chapterRenderer": {
+             "title": {
+              "simpleText": "How Enigma’s Flaws Were Exploited"
+             },
+             "timeRangeStartMillis": 1590000
+            }
+           },
+           {
+            "chapterRenderer": {
+             "title": {
+              "simpleText": "Breaking Enigma - The Bombe"
+             },
+             "timeRangeStartMillis": 2067000
+            }
+           },
+           {
+            "chapterRenderer": {
+             "title": {
+              "simpleText": "The Naval Enigma"
+             },
+             "timeRangeStartMillis": 2499000
+            }
+           },
+           {
+            "chapterRenderer": {
+             "title": {
+              "simpleText": "What did Alan Turing do after Bletchley Park?"
+             },
+             "timeRangeStartMillis": 2675000
+            }
+           }
+          ],
+          "onChapterRepeat": {
+           "openPopupAction": {
+            "popup": {
+             "notificationActionRenderer": {
+              "responseText": {
+               "runs": [
+                {
+                 "text": "Chapter repeat is on"
+                }
+               ]
+              },
+              "actionButton": {
+               "buttonRenderer": {
+                "style": "STYLE_BLUE_TEXT",
+                "text": {
+                 "runs": [
+                  {
+                   "text": "Turn off"
+                  }
+                 ]
+                },
+                "command": {
+                 "repeatChapterCommand": {
+                  "repeat": "REPEAT_CHAPTER_TYPE_DISABLE_REPEAT"
+                 }
+                }
+               }
+              }
+             }
+            },
+            "popupType": "TOAST"
+           }
+          }
+         }
+        }
+       ]
+      }
+     },
+     "playerBarActionButton": {
+      "buttonRenderer": {
+       "text": {
+        "runs": [
+         {
+          "text": "View Chapters"
+         }
+        ]
+       },
+       "command": {
+        "commandExecutorCommand": {
+         "commands": [
+          {
+           "updateEngagementPanelContentCommand": {
+            "targetPanelIdentifier": {
+             "surface": "ENGAGEMENT_PANEL_SURFACE_WATCH",
+             "tag": "engagement-panel-timeline-view-consolidated"
+            },
+            "contentSourcePanelIdentifier": {
+             "surface": "ENGAGEMENT_PANEL_SURFACE_WATCH",
+             "tag": "engagement-panel-macro-markers-description-chapters"
+            }
+           }
+          },
+          {
+           "updateTimedMarkersSyncObserverCommand": {
+            "isEnabled": false,
+            "timedSyncEntityKey": "Eh10aW1lbGluZV92aWV3X3N5bmNfZW50aXR5X2tleSD-ASgB",
+            "panelSyncEntityKey": "Eh10aW1lbGluZV92aWV3X3N5bmNfZW50aXR5X2tleSDEASgB"
+           }
+          },
+          {
+           "entityUpdateCommand": {
+            "entityBatchUpdate": {
+             "mutations": [
+              {
+               "entityKey": "EiRlbmdhZ2VtZW50X3BhbmVsX2NoaXBzX2Jhcl9lbnRpdHlfaWQggwQoAQ%3D%3D",
+               "type": "ENTITY_MUTATION_TYPE_REPLACE",
+               "payload": {
+                "chipBarStateEntity": {
+                 "key": "EiRlbmdhZ2VtZW50X3BhbmVsX2NoaXBzX2Jhcl9lbnRpdHlfaWQggwQoAQ%3D%3D",
+                 "selectedIndex": 0
+                }
+               }
+              }
+             ]
+            }
+           }
+          },
+          {
+           "scrollToEngagementPanelCommand": {
+            "panelIdentifier": {
+             "tag": "engagement-panel-timeline-view-consolidated"
+            }
+           }
+          }
+         ]
+        }
+       }
+      }
+     },
+     "buttonType": "DECORATED_PLAYER_BAR_BUTTON_TYPE_CHAPTERS"
+    }
+   }
+  }
+ },
+ "frameworkUpdates": {
+  "entityBatchUpdate": {
+   "mutations": [
+    {
+     "entityKey": "EgpIRUFUU0VFS0VSIJICKAE%3D",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "macroMarkersListEntity": {
+       "key": "EgpIRUFUU0VFS0VSIJICKAE%3D",
+       "externalVideoId": "JsBZOcqZerk",
+       "markersList": {
+        "markerType": "MARKER_TYPE_HEATMAP",
+        "markers": [
+         {
+          "startMillis": "0",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.49638667533262637
+         },
+         {
+          "startMillis": "28620",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.1094356059185968
+         },
+         {
+          "startMillis": "57240",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.13234587101657916
+         },
+         {
+          "startMillis": "85860",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.09496821549493262
+         },
+         {
+          "startMillis": "114480",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.22751694397400002
+         },
+         {
+          "startMillis": "143100",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.1070722630032459
+         },
+         {
+          "startMillis": "171720",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.21496394931486867
+         },
+         {
+          "startMillis": "200340",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.10276838608959601
+         },
+         {
+          "startMillis": "228960",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.1458039841123071
+         },
+         {
+          "startMillis": "257580",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.34800932299948034
+         },
+         {
+          "startMillis": "286200",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.13175852069831004
+         },
+         {
+          "startMillis": "314820",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.13479228210198235
+         },
+         {
+          "startMillis": "343440",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.06026606057487827
+         },
+         {
+          "startMillis": "372060",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.03360609415265757
+         },
+         {
+          "startMillis": "400680",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.1289618235052636
+         },
+         {
+          "startMillis": "429300",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.1428093831493168
+         },
+         {
+          "startMillis": "457920",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.5325580128997907
+         },
+         {
+          "startMillis": "486540",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.10645719827631014
+         },
+         {
+          "startMillis": "515160",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.11374967167713904
+         },
+         {
+          "startMillis": "543780",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.24572619237537402
+         },
+         {
+          "startMillis": "572400",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.17518395931307146
+         },
+         {
+          "startMillis": "601020",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.15259377030380658
+         },
+         {
+          "startMillis": "629640",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.19320008876116368
+         },
+         {
+          "startMillis": "658260",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.1097696048856018
+         },
+         {
+          "startMillis": "686880",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.22769749105605183
+         },
+         {
+          "startMillis": "715500",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.5729222759260036
+         },
+         {
+          "startMillis": "744120",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.13552471556704263
+         },
+         {
+          "startMillis": "772740",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.2649092916973974
+         },
+         {
+          "startMillis": "801360",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.5594658703530846
+         },
+         {
+          "startMillis": "829980",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.6784263199592266
+         },
+         {
+          "startMillis": "858600",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.38636407561151176
+         },
+         {
+          "startMillis": "887220",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.18848680041711594
+         },
+         {
+          "startMillis": "915840",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.6175480655474098
+         },
+         {
+          "startMillis": "944460",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.26991777508351944
+         },
+         {
+          "startMillis": "973080",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.23626325108064616
+         },
+         {
+          "startMillis": "1001700",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.23189004123536236
+         },
+         {
+          "startMillis": "1030320",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.4358909435579649
+         },
+         {
+          "startMillis": "1058940",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.4705478022136176
+         },
+         {
+          "startMillis": "1087560",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.17976120875201887
+         },
+         {
+          "startMillis": "1116180",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.10209877445271173
+         },
+         {
+          "startMillis": "1144800",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.08279742448517906
+         },
+         {
+          "startMillis": "1173420",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.3272846120408729
+         },
+         {
+          "startMillis": "1202040",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.03698683920227687
+         },
+         {
+          "startMillis": "1230660",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.0929845243267397
+         },
+         {
+          "startMillis": "1259280",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.16311274878185136
+         },
+         {
+          "startMillis": "1287900",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.32676815206515125
+         },
+         {
+          "startMillis": "1316520",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.7170893648761958
+         },
+         {
+          "startMillis": "1345140",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.20667844819876796
+         },
+         {
+          "startMillis": "1373760",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.06930260903105435
+         },
+         {
+          "startMillis": "1402380",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0
+         },
+         {
+          "startMillis": "1431000",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.001449227147030736
+         },
+         {
+          "startMillis": "1459620",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.5116998149383027
+         },
+         {
+          "startMillis": "1488240",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.7404271861799183
+         },
+         {
+          "startMillis": "1516860",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.3778073973565821
+         },
+         {
+          "startMillis": "1545480",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.5439515057517812
+         },
+         {
+          "startMillis": "1574100",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.28372908270486175
+         },
+         {
+          "startMillis": "1602720",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.3249642574195337
+         },
+         {
+          "startMillis": "1631340",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.1110840221686748
+         },
+         {
+          "startMillis": "1659960",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.13150143531365074
+         },
+         {
+          "startMillis": "1688580",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.4742449456105199
+         },
+         {
+          "startMillis": "1717200",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.6692457016115525
+         },
+         {
+          "startMillis": "1745820",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.3553255516077378
+         },
+         {
+          "startMillis": "1774440",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.2679463555627659
+         },
+         {
+          "startMillis": "1803060",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.22088334920954267
+         },
+         {
+          "startMillis": "1831680",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.15838760159807622
+         },
+         {
+          "startMillis": "1860300",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.09875249884704683
+         },
+         {
+          "startMillis": "1888920",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.4087180635535486
+         },
+         {
+          "startMillis": "1917540",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.16378540018461513
+         },
+         {
+          "startMillis": "1946160",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.17535245991552678
+         },
+         {
+          "startMillis": "1974780",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.1853605700859492
+         },
+         {
+          "startMillis": "2003400",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.16418736231220954
+         },
+         {
+          "startMillis": "2032020",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.1577670390229757
+         },
+         {
+          "startMillis": "2060640",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.20898506758168875
+         },
+         {
+          "startMillis": "2089260",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.6232752846881476
+         },
+         {
+          "startMillis": "2117880",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.34217349790250523
+         },
+         {
+          "startMillis": "2146500",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.13856875963554183
+         },
+         {
+          "startMillis": "2175120",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.2874993681227408
+         },
+         {
+          "startMillis": "2203740",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.07120734134232834
+         },
+         {
+          "startMillis": "2232360",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.06776099739447031
+         },
+         {
+          "startMillis": "2260980",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.05137827300692778
+         },
+         {
+          "startMillis": "2289600",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.0798024107144767
+         },
+         {
+          "startMillis": "2318220",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.19989387839562958
+         },
+         {
+          "startMillis": "2346840",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.3305344595178053
+         },
+         {
+          "startMillis": "2375460",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.2532226303139189
+         },
+         {
+          "startMillis": "2404080",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.7377734330391553
+         },
+         {
+          "startMillis": "2432700",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.3038351074870597
+         },
+         {
+          "startMillis": "2461320",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.3331727511333542
+         },
+         {
+          "startMillis": "2489940",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.35136184701278644
+         },
+         {
+          "startMillis": "2518560",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.32193728857912296
+         },
+         {
+          "startMillis": "2547180",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 1
+         },
+         {
+          "startMillis": "2575800",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.9486126452234076
+         },
+         {
+          "startMillis": "2604420",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.12889903920506143
+         },
+         {
+          "startMillis": "2633040",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.38012974096053376
+         },
+         {
+          "startMillis": "2661660",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.35056152544308433
+         },
+         {
+          "startMillis": "2690280",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.2620834352686922
+         },
+         {
+          "startMillis": "2718900",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.14828047386872767
+         },
+         {
+          "startMillis": "2747520",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.19349427054794482
+         },
+         {
+          "startMillis": "2776140",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.29968582706156455
+         },
+         {
+          "startMillis": "2804760",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.35073344109115734
+         },
+         {
+          "startMillis": "2833380",
+          "durationMillis": "28620",
+          "intensityScoreNormalized": 0.1857088296830061
+         }
+        ],
+        "markersMetadata": {
+         "heatmapMetadata": {
+          "maxHeightDp": 40,
+          "minHeightDp": 4,
+          "showHideAnimationDurationMillis": 200
+         }
+        },
+        "markersDecoration": {
+         "timedMarkerDecorations": [
+          {
+           "visibleTimeRangeStartMillis": 2518560,
+           "visibleTimeRangeEndMillis": 2604420,
+           "decorationTimeMillis": 2547180,
+           "label": {
+            "runs": [
+             {
+              "text": "Most replayed"
+             }
+            ]
+           },
+           "icon": "UNKNOWN"
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   ]
+  }
+ }
+}

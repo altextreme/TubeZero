@@ -55,7 +55,8 @@ namespace PlayerCoordinatorLogic
         Save = 5 ' YourTube
         Subscribe = 6 ' YourTube
         Captions = 7 ' YourTube
-        Settings = 8 ' YourTube
+        Description = 8 ' YourTube
+        Settings = 9 ' YourTube
     end enum
 
     ' The two focus targets above/at the trackbar: the bar itself (Left/Right scrub, the cursor grows) and the

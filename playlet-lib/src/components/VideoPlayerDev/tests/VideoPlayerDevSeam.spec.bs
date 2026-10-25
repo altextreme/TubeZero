@@ -946,14 +946,15 @@ namespace Tests
             m.top.callFunc("TestKey", RemoteKeys.Up, true) ' bar -> buttons tier, play/pause (leftmost)
             m.top.callFunc("TestKey", RemoteKeys.Left, true) ' clamped at the left end
             m.assertEqual(m.Snap().nudgeCount, 1)
-            ' YourTube: minimize, comments, like, dislike, save, subscribe, captions, settings -> settings is rightmost
-            for i = 1 to 8
+            ' YourTube: minimize, comments, like, dislike, save, subscribe, captions, description, settings ->
+            ' settings is rightmost
+            for i = 1 to 9
                 m.top.callFunc("TestKey", RemoteKeys.Right, true)
             end for
             m.top.callFunc("TestKey", RemoteKeys.Right, true) ' clamped at the right end
             snap = m.Snap()
             m.assertEqual(snap.nudgeCount, 2)
-            m.assertEqual(snap.focusedButton, 8, "the clamp held the highlight at the end")
+            m.assertEqual(snap.focusedButton, 9, "the clamp held the highlight at the end")
         end function
 
         ' Down at the bar tier (the bottom, and the default on reveal) is a no-op: consumed, no nudge.
@@ -1086,7 +1087,7 @@ namespace Tests
                 classified[name] = "controller"
             end for
             ' cached child nodes / timers / animations / reusable helpers (structure, not state).
-            for each name in ["chrome", "titleLabel", "secondaryTitleLabel", "clock", "bifDisplay", "trickPlayBar", "spinner", "largePause", "buttonRow", "fullScreenHint", "autoHide", "transportTimer", "liveBadgeHold", "liveEdgeClock", "fullScreenHintTimer", "chromeFadeIn", "chromeFadeOut", "minimize", "nowDateTime", "commentsPanel", "liveChatPanel", "toast", "relatedShelf"]
+            for each name in ["chrome", "titleLabel", "secondaryTitleLabel", "clock", "bifDisplay", "trickPlayBar", "spinner", "largePause", "buttonRow", "fullScreenHint", "autoHide", "transportTimer", "liveBadgeHold", "liveEdgeClock", "fullScreenHintTimer", "chromeFadeIn", "chromeFadeOut", "minimize", "nowDateTime", "commentsPanel", "liveChatPanel", "toast", "relatedShelf", "descriptionPanel"]
                 classified[name] = "node"
             end for
             ' in-flight job handles.
@@ -1098,8 +1099,9 @@ namespace Tests
                 classified[name] = "axis"
             end for
             ' flags / scratch — one-shot latches and counters with a single consuming path.
-            ' YourTube: playerSheet (the open settings sheet) and captionsOff (captions switched off in this player).
-            for each name in ["playerSheet", "captionsOff", "onCloseCalled", "ignoreNextFinished", "videoPlayedSuccessfully", "firstFrameSeen", "showFullScreenHint", "repauseAfterSeek", "loadingSetSeekMs", "watchTimeMarker", "reportWatchTime", "errorDialogNode", "lastCommitSeq", "lastFinishSeq", "liveAstSeconds", "liveFallbackEdgeMs", "liveFallbackAtSeconds", "liveBadgeHoldActive"]
+            ' YourTube: playerSheet (the open settings sheet), captionsOff (captions switched off in this player) and
+            ' watchInfo (the video's chapters/heatmap/details, replaced per content load).
+            for each name in ["playerSheet", "captionsOff", "watchInfo", "onCloseCalled", "ignoreNextFinished", "videoPlayedSuccessfully", "firstFrameSeen", "showFullScreenHint", "repauseAfterSeek", "loadingSetSeekMs", "watchTimeMarker", "reportWatchTime", "errorDialogNode", "lastCommitSeq", "lastFinishSeq", "liveAstSeconds", "liveFallbackEdgeMs", "liveFallbackAtSeconds", "liveBadgeHoldActive"]
                 classified[name] = "flag"
             end for
             ' NOT coordinator state — node-scope + test-environment entries, pinned EXPLICITLY (no hidden
@@ -1154,6 +1156,30 @@ namespace Tests
             container.fullscreen = false
             container.fullscreen = true
             m.assertTrue(m.Snap().suppressCaptions, "still off after the restore")
+        end function
+
+        ' YourTube: the bar's chapter label shows the YouTube chapter under the cursor; SponsorBlock's segment
+        ' title wins inside its segments.
+        @it("the chapter label shows the YouTube chapter, and SponsorBlock's title inside its segments")
+        function _()
+            m.top.duration = 100
+            m.top.callFunc("TestSetWatchInfo", { chapters: [{ title: "Intro", startMs: 0 }, { title: "Middle", startMs: 50000 }], heatmap: [], details: {} })
+            m.top.position = 60.0
+            m.top.callFunc("TestKey", RemoteKeys.Up, true) ' reveal -> the renderers sync
+            m.assertEqual(m.Snap().chapterText, "Middle")
+            m.top.callFunc("TestSeedSponsorBlock", m.ManualSegment(55.0, 70.0))
+            m.top.callFunc("TestKey", RemoteKeys.Left, true) ' scrub: the cursor stays inside the segment
+            m.top.callFunc("TestKey", RemoteKeys.Left, false)
+            m.assertEqual(m.Snap().chapterText, "Sponsor")
+        end function
+
+        @it("a chapter picked in the description panel seeks there")
+        function _()
+            m.top.duration = 100
+            m.top.position = 10.0
+            m.top.findNode("descriptionPanel").seekToMs = 50000
+            m.assertEqual(Int(m.top.seek * 1000), 50000)
+            m.assertEqual(m.Snap().transportMode, TransportController.Mode.Idle)
         end function
 
         ' The PiP-toggle-after-close crash (captured on device): OnClose drops m.sponsorblock, so a leaked

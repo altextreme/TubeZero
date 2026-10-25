@@ -59,6 +59,9 @@
             <!-- YourTube: caption track picker -->
             <VideoPlayerButton id="CaptionsButton"
                 iconUri="pkg:/images/icons/ms/player_cc.png" />
+            <!-- YourTube: description and chapters panel -->
+            <VideoPlayerButton id="DescriptionButton"
+                iconUri="pkg:/images/icons/ms/player_info.png" />
             <!-- YourTube: settings sheet (speed, quality, captions, audio track) -->
             <VideoPlayerButton id="SettingsButton"
                 iconUri="pkg:/images/icons/ms/player_settings.png" />

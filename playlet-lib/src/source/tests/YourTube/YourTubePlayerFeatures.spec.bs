@@ -2,6 +2,7 @@
 ' like counts). /next fixtures are real WEB responses captured signed out and trimmed
 ' (source/tests/fixtures/yourtube/next-chapters.json: Veritasium JsBZOcqZerk, 10 chapters, a heatmap).
 import "pkg:/components/YourTube/PlayerSettings/YourTubePlayerSettingsLogic.bs"
+import "pkg:/components/YourTube/WatchInfo/YourTubeWatchInfo.bs"
 import "pkg:/source/utils/StringUtils.bs"
 
 namespace Tests
@@ -70,6 +71,141 @@ namespace Tests
             m.assertEqual(YourTubePlayerSettings.CaptionLabel(tracks[1]), "deu")
             m.assertEqual(YourTubePlayerSettings.AudioLabel({ Name: "English original", Language: "eng", Track: "1" }), "English original")
             m.assertEqual(YourTubePlayerSettings.AudioLabel({ Language: "fra", Track: "2" }), "fra")
+        end function
+
+        @describe("YourTubeWatchInfo.ParseChapters")
+
+        @it("reads the description chapters from the player bar's markers map")
+        function _()
+            chapters = YourTubeWatchInfo.ParseChapters(m.Fixture("next-chapters.json"))
+            m.assertEqual(chapters.Count(), 10)
+            m.assertEqual(chapters[0].title, "Who invented Enigma?")
+            m.assertEqual(chapters[0].startMs, 0)
+            m.assertEqual(chapters[1].title, "How did Enigma work?")
+            m.assertEqual(chapters[1].startMs, 256000)
+            m.assertEqual(chapters[9].startMs, 2675000)
+        end function
+
+        @it("falls back to the chapters engagement panel")
+        function _()
+            item = { "macroMarkersListItemRenderer": { "title": { "simpleText": "Part two" }, "onTap": { "watchEndpoint": { "startTimeSeconds": 90 } } } }
+            response = { "engagementPanels": [{ "engagementPanelSectionListRenderer": { "content": { "macroMarkersListRenderer": { "contents": [item] } } } }] }
+            chapters = YourTubeWatchInfo.ParseChapters(response)
+            m.assertEqual(chapters.Count(), 1)
+            m.assertEqual(chapters[0].title, "Part two")
+            m.assertEqual(chapters[0].startMs, 90000)
+        end function
+
+        @it("returns no chapters for bad input")
+        function _()
+            m.assertEqual(YourTubeWatchInfo.ParseChapters(invalid).Count(), 0)
+            m.assertEqual(YourTubeWatchInfo.ParseChapters({ "playerOverlays": [1] }).Count(), 0)
+        end function
+
+        @it("finds the chapter under a time")
+        function _()
+            chapters = YourTubeWatchInfo.ParseChapters(m.Fixture("next-chapters.json"))
+            m.assertEqual(YourTubeWatchInfo.ChapterTitleAt(chapters, 300000), "How did Enigma work?")
+            m.assertEqual(YourTubeWatchInfo.ChapterTitleAt(chapters, 0), "Who invented Enigma?")
+            m.assertEqual(YourTubeWatchInfo.ChapterTitleAt([], 1000), "")
+            m.assertEqual(YourTubeWatchInfo.ChapterStartsMs(chapters).Count(), 9)
+        end function
+
+        @describe("YourTubeWatchInfo.ParseHeatmap")
+
+        @it("reads the 100 heat markers from the macroMarkersListEntity mutation")
+        function _()
+            heatmap = YourTubeWatchInfo.ParseHeatmap(m.Fixture("next-chapters.json"))
+            m.assertEqual(heatmap.Count(), 100)
+            m.assertEqual(heatmap[1].startMs, 28620)
+            m.assertEqual(heatmap[1].durationMs, 28620)
+            m.assertEqual(heatmap[89].startMs, 2547180)
+            m.assertTrue(heatmap[89].intensity > 0.99)
+        end function
+
+        @it("reads the older HEATSEEKER markers")
+        function _()
+            marker = { "heatMarkerRenderer": { "timeRangeStartMillis": 5000, "markerDurationMillis": 5000, "heatMarkerIntensityScoreNormalized": 0.5 } }
+            response = { "playerOverlays": { "playerOverlayRenderer": { "decoratedPlayerBarRenderer": { "decoratedPlayerBarRenderer": { "playerBar": { "multiMarkersPlayerBarRenderer": { "markersMap": [{ "key": "HEATSEEKER", "value": { "heatmap": { "heatmapRenderer": { "heatMarkers": [marker] } } } }] } } } } } } }
+            heatmap = YourTubeWatchInfo.ParseHeatmap(response)
+            m.assertEqual(heatmap.Count(), 1)
+            m.assertEqual(heatmap[0].startMs, 5000)
+            m.assertTrue(Abs(heatmap[0].intensity - 0.5) < 0.001)
+        end function
+
+        @it("jumps between peaks")
+        function _()
+            heatmap = YourTubeWatchInfo.ParseHeatmap(m.Fixture("next-chapters.json"))
+            peaks = YourTubeWatchInfo.PeaksMs(heatmap)
+            m.assertTrue(peaks.Count() > 0)
+            ' the most-replayed marker (89, 2547180 + 28620/2) is a peak
+            found = false
+            for each peak in peaks
+                if peak = 2561490
+                    found = true
+                end if
+            end for
+            m.assertTrue(found, "the most replayed moment is a peak")
+            nextPeak = YourTubeWatchInfo.NextPeakMs(heatmap, 2400000, 1)
+            m.assertTrue(nextPeak > 2403000 and nextPeak <= 2561490)
+            m.assertEqual(YourTubeWatchInfo.NextPeakMs(heatmap, 2561490 + 1, -1) < 2561490, true)
+            m.assertEqual(YourTubeWatchInfo.NextPeakMs([], 0, 1), -1)
+        end function
+
+        @it("picks local maxima above the threshold")
+        function _()
+            heatmap = [
+                { startMs: 0, durationMs: 1000, intensity: 0.2 }
+                { startMs: 1000, durationMs: 1000, intensity: 0.9 }
+                { startMs: 2000, durationMs: 1000, intensity: 0.3 }
+                { startMs: 3000, durationMs: 1000, intensity: 0.4 }
+                { startMs: 4000, durationMs: 1000, intensity: 0.6 }
+                { startMs: 5000, durationMs: 1000, intensity: 0.6 }
+            ]
+            peaks = YourTubeWatchInfo.PeaksMs(heatmap)
+            m.assertEqual(peaks.Count(), 2)
+            m.assertEqual(peaks[0], 1500)
+            m.assertEqual(peaks[1], 4500)
+        end function
+
+        @describe("YourTubeWatchInfo.ParseDetails")
+
+        @it("reads title, channel, views, date, likes and the description")
+        function _()
+            details = YourTubeWatchInfo.ParseDetails(m.Fixture("next-chapters.json"))
+            m.assertEqual(details.title, "The Insane Real Engineering of the Nazi Enigma Machine")
+            m.assertEqual(details.channel, "Veritasium")
+            m.assertEqual(details.views, "20,849,711 views")
+            m.assertEqual(details.shortViews, "20M views")
+            m.assertEqual(details.date, "Sep 21, 2026")
+            m.assertEqual(details.relativeDate, "1 month ago")
+            m.assertEqual(details.likeCount, "148K")
+            m.assertEqual(details.likeCountExact, 148689)
+            m.assertTrue(details.description.StartsWith("How did Bletchley Park"))
+            m.assertTrue(details.subscribers.Len() > 0)
+        end function
+
+        @it("returns empty details for bad input")
+        function _()
+            details = YourTubeWatchInfo.ParseDetails({ "contents": "x" })
+            m.assertEqual(details.title, "")
+            m.assertEqual(details.likeCount, "")
+            m.assertEqual(details.likeCountExact, 0)
+        end function
+
+        @describe("YourTubeWatchInfo formatting")
+
+        @it("formats chapter times and short counts")
+        function _()
+            m.assertEqual(YourTubeWatchInfo.FormatTime(0), "0:00")
+            m.assertEqual(YourTubeWatchInfo.FormatTime(256000), "4:16")
+            m.assertEqual(YourTubeWatchInfo.FormatTime(3723000), "1:02:03")
+            m.assertEqual(YourTubeWatchInfo.ShortCount(950), "950")
+            m.assertEqual(YourTubeWatchInfo.ShortCount(1234), "1.2K")
+            m.assertEqual(YourTubeWatchInfo.ShortCount(1000), "1K")
+            m.assertEqual(YourTubeWatchInfo.ShortCount(148689), "148K")
+            m.assertEqual(YourTubeWatchInfo.ShortCount(3456789), "3.4M")
+            m.assertEqual(YourTubeWatchInfo.ShortCount(20849711), "20M")
         end function
 
     end class

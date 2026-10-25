@@ -1,6 +1,7 @@
 import "pkg:/components/Services/Innertube/Context.bs"
 import "pkg:/components/Services/Innertube/Parser.bs"
 import "pkg:/components/Services/Innertube/protos/params.proto.gen.bs"
+import "pkg:/components/YourTube/WatchInfo/YourTubeWatchInfo.bs" ' YourTube
 import "pkg:/source/services/HttpClient.bs"
 import "pkg:/source/utils/Logging.bs"
 import "pkg:/source/utils/ObjectUtils.bs"
@@ -62,6 +63,9 @@ namespace Innertube
         if parsedResponse.error <> invalid
             return parsedResponse
         end if
+
+        ' YourTube: chapters, heatmap and the description panel's details for the player
+        parsedResponse["ytWatchInfo"] = YourTubeWatchInfo.Parse(payload)
 
         if StringUtils.IsNullOrEmpty(parsedResponse.title)
             title = ParseText(ObjectUtils.Dig(playerOverlayRenderer, ["videoDetails", "playerOverlayVideoDetailsRenderer", "title"]))

@@ -1,0 +1,97 @@
+<!--
+    YourTube: description side panel over the player (CommentsPanel style). Set `info` to open it:
+    { title, channel, stats, description, chapters: [{ title, startMs }], currentMs }. It takes focus; the
+    description scrolls with Up/Down, the chapter list below it seeks: OK raises `seekToMs` and closes.
+    Back or Left raises `closed`.
+-->
+<component name="YourTubeDescriptionPanel" extends="Group">
+    <interface>
+        <field id="info" type="assocarray" onChange="OnInfoChange" />
+        <field id="closed" type="boolean" alwaysNotify="true" />
+        <field id="seekToMs" type="integer" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Group id="Panel" translation="[1280,0]">
+            <Rectangle
+                width="560"
+                height="720"
+                color="0x212121FF" />
+            <Label
+                id="Heading"
+                text="Description"
+                color="0xF1F1F1FF"
+                translation="[32,34]">
+                <Font role="font" uri="font:BoldSystemFontFile" size="26" />
+            </Label>
+            <Label
+                id="VideoTitle"
+                width="496"
+                wrap="true"
+                maxLines="2"
+                color="0xF1F1F1FF"
+                translation="[32,86]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="20" />
+            </Label>
+            <Label
+                id="ChannelLine"
+                width="496"
+                color="0xDDDDDDFF"
+                translation="[32,140]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="17" />
+            </Label>
+            <Label
+                id="Stats"
+                width="496"
+                wrap="true"
+                maxLines="2"
+                color="0xAAAAAAFF"
+                translation="[32,166]">
+                <Font role="font" uri="font:SystemFontFile" size="16" />
+            </Label>
+            <!-- the description text scrolls inside this clip (Up/Down) -->
+            <Group id="TextClip" translation="[32,210]">
+                <Label
+                    id="DescriptionText"
+                    width="496"
+                    wrap="true"
+                    color="0xDDDDDDFF">
+                    <Font role="font" uri="font:SystemFontFile" size="16" />
+                </Label>
+            </Group>
+            <Rectangle id="TextFocusBar" width="3" color="0xDDDDDDFF" translation="[20,210]" visible="false" />
+            <Label
+                id="ChaptersHeading"
+                text="Chapters"
+                color="0xF1F1F1FF"
+                visible="false">
+                <Font role="font" uri="font:BoldSystemFontFile" size="18" />
+            </Label>
+            <LabelList
+                id="ChapterList"
+                itemSize="[512,40]"
+                itemSpacing="[0,2]"
+                color="0xDDDDDDFF"
+                focusedColor="0xFFFFFFFF"
+                focusBitmapUri="pkg:/images/yt-rounded.$$RES$$.9.png"
+                focusBitmapBlendColor="0x3F3F3FFF"
+                focusFootprintBitmapUri="pkg:/images/yt-transparent.png"
+                vertFocusAnimationStyle="floatingFocus"
+                visible="false">
+                <Font role="font" uri="font:SystemFontFile" size="17" />
+            </LabelList>
+            <Label
+                id="Hint"
+                color="0x717171FF"
+                translation="[32,684]">
+                <Font role="font" uri="font:SystemFontFile" size="14" />
+            </Label>
+        </Group>
+
+        <Animation id="SlideIn" duration="0.22" easeFunction="outCubic">
+            <Vector2DFieldInterpolator
+                key="[0.0, 1.0]"
+                keyValue="[[1280,0], [720,0]]"
+                fieldToInterp="Panel.translation" />
+        </Animation>
+    </children>
+</component>

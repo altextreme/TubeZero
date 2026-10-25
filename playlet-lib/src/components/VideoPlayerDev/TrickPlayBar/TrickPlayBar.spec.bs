@@ -273,6 +273,22 @@ namespace Tests
             m.AssertBlend(m.top.findNode("trackFill").blendColor, &hFF000080)
         end function
 
+        @describe("TrickPlayBar — YourTube chapter gaps")
+
+        @it("draws one gap per chapter start at its place on the track; none on live")
+        function _()
+            ticks = m.top.findNode("chapterTicks")
+            m.top.chapterStartsMs = [50000, 100000]
+            m.assertEqual(ticks.getChildCount(), 2)
+            ' 100000 / 200000 * 1144 = 572, the 3px gap centred on it
+            m.assertEqual(ticks.getChild(1).translation[0], 570.5)
+            m.top.isLive = true
+            m.assertEqual(ticks.getChildCount(), 0)
+            m.top.isLive = false
+            m.top.chapterStartsMs = []
+            m.assertEqual(ticks.getChildCount(), 0)
+        end function
+
         ' blendColor reads back as a signed 32-bit Integer; coerce the expected hex to the same Integer type.
         function AssertBlend(actual as dynamic, expectedHex as longinteger) as void
             expected% = (expectedHex and &hFFFFFFFF)

@@ -1,0 +1,342 @@
+import "pkg:/components/YourTube/YourTubeJson.bs"
+
+' YourTube: what the player shows beside the video, parsed from a WEB /next response (the request
+' Innertube.CreateNextRequest already makes, signed out): chapters, the most-replayed heatmap, and the
+' description panel's details (channel, views, date, likes, description). Fixture-tested
+' (source/tests/fixtures/yourtube/next-chapters.json). Fixture AAs are case-sensitive: bracket access only.
+namespace YourTubeWatchInfo
+
+    ' Heat markers at least this intense, and higher than their neighbours, are peaks to jump to.
+    const PEAK_MIN_INTENSITY = 0.55
+    ' A peak this close to the cursor counts as "here", not as the next one.
+    const PEAK_MIN_GAP_MS = 3000
+
+    ' { chapters: [{ title, startMs }], heatmap: [{ startMs, durationMs, intensity }], details: {...} }
+    function Parse(nextResponse as dynamic) as object
+        return {
+            chapters: ParseChapters(nextResponse)
+            heatmap: ParseHeatmap(nextResponse)
+            details: ParseDetails(nextResponse)
+        }
+    end function
+
+    ' Chapters from the player bar's markers map (DESCRIPTION_CHAPTERS, else AUTO_CHAPTERS, else any), or the
+    ' chapters engagement panel. Sorted by start, as YouTube sends them.
+    function ParseChapters(nextResponse as dynamic) as object
+        chapters = []
+        markersMap = YourTubeJson.Dig(nextResponse, ["playerOverlays", "playerOverlayRenderer", "decoratedPlayerBarRenderer", "decoratedPlayerBarRenderer", "playerBar", "multiMarkersPlayerBarRenderer", "markersMap"])
+        if YourTubeJson.IsArr(markersMap)
+            best = invalid
+            for each key in ["DESCRIPTION_CHAPTERS", "AUTO_CHAPTERS", ""]
+                for each entry in markersMap
+                    list = YourTubeJson.Dig(entry, ["value", "chapters"])
+                    if best = invalid and YourTubeJson.IsArr(list) and list.Count() > 0 and (key = "" or YourTubeJson.AsString(YourTubeJson.Dig(entry, ["key"])) = key)
+                        best = list
+                    end if
+                end for
+            end for
+            if best <> invalid
+                for each item in best
+                    renderer = YourTubeJson.Dig(item, ["chapterRenderer"])
+                    title = YourTubeJson.RunsText(YourTubeJson.Dig(renderer, ["title"]))
+                    startMs = ToMs(YourTubeJson.Dig(renderer, ["timeRangeStartMillis"]))
+                    if title <> "" and startMs >= 0
+                        chapters.Push({ title: title, startMs: startMs })
+                    end if
+                end for
+            end if
+        end if
+        if chapters.Count() = 0
+            items = []
+            CollectRenderers(YourTubeJson.Dig(nextResponse, ["engagementPanels"]), "macroMarkersListItemRenderer", items, 0)
+            for each item in items
+                title = YourTubeJson.RunsText(item["title"])
+                seconds = YourTubeJson.Dig(item, ["onTap", "watchEndpoint", "startTimeSeconds"])
+                if title <> "" and seconds <> invalid
+                    chapters.Push({ title: title, startMs: ToMs(seconds) * 1000 })
+                end if
+            end for
+        end if
+        return chapters
+    end function
+
+    ' The heatmap as [{ startMs, durationMs, intensity 0..1 }]: the macroMarkersListEntity mutation
+    ' (markerType MARKER_TYPE_HEATMAP), or the older HEATSEEKER markers map entry. [] when the video has none.
+    function ParseHeatmap(nextResponse as dynamic) as object
+        markers = []
+        mutations = YourTubeJson.Dig(nextResponse, ["frameworkUpdates", "entityBatchUpdate", "mutations"])
+        if YourTubeJson.IsArr(mutations)
+            for each mutation in mutations
+                list = YourTubeJson.Dig(mutation, ["payload", "macroMarkersListEntity", "markersList"])
+                if YourTubeJson.AsString(YourTubeJson.Dig(list, ["markerType"])) = "MARKER_TYPE_HEATMAP" and YourTubeJson.IsArr(list["markers"])
+                    for each marker in list["markers"]
+                        markers.Push({
+                            startMs: ToMs(YourTubeJson.Dig(marker, ["startMillis"]))
+                            durationMs: ToMs(YourTubeJson.Dig(marker, ["durationMillis"]))
+                            intensity: ToFloat(YourTubeJson.Dig(marker, ["intensityScoreNormalized"]))
+                        })
+                    end for
+                    return markers
+                end if
+            end for
+        end if
+        markersMap = YourTubeJson.Dig(nextResponse, ["playerOverlays", "playerOverlayRenderer", "decoratedPlayerBarRenderer", "decoratedPlayerBarRenderer", "playerBar", "multiMarkersPlayerBarRenderer", "markersMap"])
+        if YourTubeJson.IsArr(markersMap)
+            for each entry in markersMap
+                heatMarkers = YourTubeJson.Dig(entry, ["value", "heatmap", "heatmapRenderer", "heatMarkers"])
+                if YourTubeJson.IsArr(heatMarkers)
+                    for each item in heatMarkers
+                        renderer = YourTubeJson.Dig(item, ["heatMarkerRenderer"])
+                        markers.Push({
+                            startMs: ToMs(YourTubeJson.Dig(renderer, ["timeRangeStartMillis"]))
+                            durationMs: ToMs(YourTubeJson.Dig(renderer, ["markerDurationMillis"]))
+                            intensity: ToFloat(YourTubeJson.Dig(renderer, ["heatMarkerIntensityScoreNormalized"]))
+                        })
+                    end for
+                    return markers
+                end if
+            end for
+        end if
+        return markers
+    end function
+
+    ' { title, channel, subscribers, views ("20,849,711 views"), shortViews ("20M views"), date, relativeDate,
+    '   likeCount ("148K"), likeCountExact (148689, 0 when unknown), description }. "" for anything missing.
+    function ParseDetails(nextResponse as dynamic) as object
+        details = { title: "", channel: "", subscribers: "", views: "", shortViews: "", date: "", relativeDate: "", likeCount: "", likeCountExact: 0, description: "" }
+        contents = YourTubeJson.Dig(nextResponse, ["contents", "twoColumnWatchNextResults", "results", "results", "contents"])
+        if not YourTubeJson.IsArr(contents)
+            return details
+        end if
+        primary = invalid
+        secondary = invalid
+        for each item in contents
+            if primary = invalid and YourTubeJson.IsAA(YourTubeJson.Dig(item, ["videoPrimaryInfoRenderer"]))
+                primary = item["videoPrimaryInfoRenderer"]
+            end if
+            if secondary = invalid and YourTubeJson.IsAA(YourTubeJson.Dig(item, ["videoSecondaryInfoRenderer"]))
+                secondary = item["videoSecondaryInfoRenderer"]
+            end if
+        end for
+        if primary <> invalid
+            details.title = YourTubeJson.RunsText(primary["title"])
+            details.views = YourTubeJson.RunsText(YourTubeJson.Dig(primary, ["viewCount", "videoViewCountRenderer", "viewCount"]))
+            details.shortViews = YourTubeJson.RunsText(YourTubeJson.Dig(primary, ["viewCount", "videoViewCountRenderer", "shortViewCount"]))
+            details.date = YourTubeJson.RunsText(primary["dateText"])
+            details.relativeDate = YourTubeJson.RunsText(primary["relativeDateText"])
+            segmented = YourTubeJson.FindKey(primary, "segmentedLikeDislikeButtonViewModel", 0)
+            button = YourTubeJson.Dig(segmented, ["likeButtonViewModel", "likeButtonViewModel", "toggleButtonViewModel", "toggleButtonViewModel", "defaultButtonViewModel", "buttonViewModel"])
+            if YourTubeJson.IsAA(button)
+                details.likeCount = YourTubeJson.AsString(button["title"])
+                details.likeCountExact = FirstNumber(YourTubeJson.AsString(button["accessibilityText"]))
+            end if
+            ' "Like" (no number) when likes are hidden
+            if details.likeCount <> "" and FirstNumber(details.likeCount) = 0
+                details.likeCount = ""
+            end if
+        end if
+        if secondary <> invalid
+            details.channel = YourTubeJson.RunsText(YourTubeJson.Dig(secondary, ["owner", "videoOwnerRenderer", "title"]))
+            details.subscribers = YourTubeJson.RunsText(YourTubeJson.Dig(secondary, ["owner", "videoOwnerRenderer", "subscriberCountText"]))
+            details.description = YourTubeJson.AsString(YourTubeJson.Dig(secondary, ["attributedDescription", "content"]))
+            if details.description = ""
+                details.description = YourTubeJson.RunsText(secondary["description"])
+            end if
+        end if
+        return details
+    end function
+
+    ' ----- player helpers ------------------------------------------------------------------------------
+
+    ' The chapter playing at `ms` (index), or -1 before the first chapter / without chapters.
+    function ChapterIndexAt(chapters as dynamic, ms as integer) as integer
+        found = -1
+        if not YourTubeJson.IsArr(chapters)
+            return found
+        end if
+        for i = 0 to chapters.Count() - 1
+            if chapters[i].startMs <= ms
+                found = i
+            else
+                exit for
+            end if
+        end for
+        return found
+    end function
+
+    function ChapterTitleAt(chapters as dynamic, ms as integer) as string
+        index = ChapterIndexAt(chapters, ms)
+        if index < 0
+            return ""
+        end if
+        return chapters[index].title
+    end function
+
+    ' The chapter starts after 0 (the tick marks on the bar).
+    function ChapterStartsMs(chapters as dynamic) as object
+        starts = []
+        if YourTubeJson.IsArr(chapters)
+            for each chapter in chapters
+                if chapter.startMs > 0
+                    starts.Push(chapter.startMs)
+                end if
+            end for
+        end if
+        return starts
+    end function
+
+    ' Peak centres (ms): markers at least PEAK_MIN_INTENSITY intense that are no lower than either neighbour.
+    function PeaksMs(heatmap as dynamic) as object
+        peaks = []
+        if not YourTubeJson.IsArr(heatmap)
+            return peaks
+        end if
+        n = heatmap.Count()
+        for i = 0 to n - 1
+            intensity = heatmap[i].intensity
+            if intensity >= PEAK_MIN_INTENSITY
+                isPeak = true
+                if i > 0 and heatmap[i - 1].intensity > intensity
+                    isPeak = false
+                end if
+                if i < n - 1 and heatmap[i + 1].intensity > intensity
+                    isPeak = false
+                end if
+                ' a flat top counts once (its first marker)
+                if i > 0 and heatmap[i - 1].intensity = intensity
+                    isPeak = false
+                end if
+                if isPeak
+                    peaks.Push(heatmap[i].startMs + heatmap[i].durationMs \ 2)
+                end if
+            end if
+        end for
+        return peaks
+    end function
+
+    ' The next peak after `fromMs` (dir 1) or the previous one before it (dir -1); -1 when there is none.
+    function NextPeakMs(heatmap as dynamic, fromMs as integer, dir as integer) as integer
+        peaks = PeaksMs(heatmap)
+        if dir > 0
+            for each peak in peaks
+                if peak > fromMs + PEAK_MIN_GAP_MS
+                    return peak
+                end if
+            end for
+        else
+            for i = peaks.Count() - 1 to 0 step -1
+                if peaks[i] < fromMs - PEAK_MIN_GAP_MS
+                    return peaks[i]
+                end if
+            end for
+        end if
+        return -1
+    end function
+
+    ' ----- formatting ----------------------------------------------------------------------------------
+
+    ' "4:16", "1:02:03".
+    function FormatTime(ms as integer) as string
+        secs = ms \ 1000
+        if secs < 0
+            secs = 0
+        end if
+        h = secs \ 3600
+        mn = (secs \ 60) mod 60
+        s = (secs mod 60).ToStr("%02d")
+        if h > 0
+            return h.ToStr() + ":" + mn.ToStr("%02d") + ":" + s
+        end if
+        return mn.ToStr() + ":" + s
+    end function
+
+    ' YouTube-style short count: 950, 1.2K, 148K, 3.4M, 20M, 1.1B.
+    function ShortCount(count as dynamic) as string
+        n = ToFloat(count)
+        if n < 1000
+            return Int(n).ToStr()
+        end if
+        units = [{ size: 1000000000.0, suffix: "B" }, { size: 1000000.0, suffix: "M" }, { size: 1000.0, suffix: "K" }]
+        for each unit in units
+            if n >= unit.size
+                value = n / unit.size
+                if value < 10
+                    tenths = Int(value * 10)
+                    whole = tenths \ 10
+                    if tenths mod 10 = 0
+                        return whole.ToStr() + unit.suffix
+                    end if
+                    return whole.ToStr() + "." + (tenths mod 10).ToStr() + unit.suffix
+                end if
+                return Int(value).ToStr() + unit.suffix
+            end if
+        end for
+        return Int(n).ToStr()
+    end function
+
+    ' ----- private -------------------------------------------------------------------------------------
+
+    ' Milliseconds from a JSON number or numeric string ("256000"); -1 when it is neither.
+    function ToMs(value as dynamic) as integer
+        if GetInterface(value, "ifString") <> invalid
+            if value = ""
+                return -1
+            end if
+            return Int(Val(value))
+        end if
+        if GetInterface(value, "ifInt") <> invalid or GetInterface(value, "ifFloat") <> invalid or GetInterface(value, "ifDouble") <> invalid or GetInterface(value, "ifLongInt") <> invalid
+            return Int(value)
+        end if
+        return -1
+    end function
+
+    function ToFloat(value as dynamic) as float
+        if GetInterface(value, "ifString") <> invalid
+            return Val(value)
+        end if
+        if GetInterface(value, "ifInt") <> invalid or GetInterface(value, "ifFloat") <> invalid or GetInterface(value, "ifDouble") <> invalid or GetInterface(value, "ifLongInt") <> invalid
+            return value * 1.0
+        end if
+        return 0.0
+    end function
+
+    ' The first run of digits in `text`, ignoring thousands commas ("along with 148,689 other" -> 148689).
+    function FirstNumber(text as string) as integer
+        digits = ""
+        started = false
+        for i = 0 to text.Len() - 1
+            ch = text.Mid(i, 1)
+            if ch >= "0" and ch <= "9"
+                digits += ch
+                started = true
+            else if started and ch <> ","
+                exit for
+            end if
+        end for
+        if digits = ""
+            return 0
+        end if
+        return Int(Val(digits))
+    end function
+
+    ' Every `key` renderer below `node` (depth-limited).
+    function CollectRenderers(node as dynamic, key as string, out as object, depth as integer) as void
+        if depth > 20
+            return
+        end if
+        if YourTubeJson.IsAA(node)
+            for each childKey in node
+                if childKey = key and YourTubeJson.IsAA(node[childKey])
+                    out.Push(node[childKey])
+                else
+                    CollectRenderers(node[childKey], key, out, depth + 1)
+                end if
+            end for
+        else if YourTubeJson.IsArr(node)
+            for each child in node
+                CollectRenderers(child, key, out, depth + 1)
+            end for
+        end if
+    end function
+
+end namespace

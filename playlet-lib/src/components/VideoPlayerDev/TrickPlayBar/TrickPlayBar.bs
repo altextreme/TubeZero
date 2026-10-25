@@ -32,6 +32,12 @@ function Init()
     m.top.ObserveField("focused", FuncName(OnFocusChange))
     m.top.ObserveField("glyph", FuncName(OnGlyph))
     m.top.ObserveField("sbFillBlend", FuncName(OnSbFillBlend))
+    ' YourTube: chapter gaps depend only on the starts, the duration and live-ness
+    m.chapterTicks = m.top.findNode("chapterTicks")
+    m.chapterTicksKey = ""
+    for each field in ["chapterStartsMs", "durationMs", "isLive"]
+        m.top.ObserveField(field, FuncName(LayoutChapterTicks))
+    end for
 
     Repaint()
 end function
@@ -214,4 +220,29 @@ function FormatBarTime(seconds as dynamic) as string
         return "0:" + s
     end if
     return mn.ToStr("%02d") + ":" + s
+end function
+
+' YourTube: a 3px gap in the track at each chapter start (VOD only). Rebuilt only when the inputs change.
+function LayoutChapterTicks() as void
+    starts = m.top.chapterStartsMs
+    durationMs = m.top.durationMs
+    if m.top.isLive or not IsArray(starts) or durationMs <= 0
+        starts = []
+    end if
+    key = durationMs.ToStr() + ":" + FormatJson(starts)
+    if key = m.chapterTicksKey
+        return
+    end if
+    m.chapterTicksKey = key
+    m.chapterTicks.removeChildrenIndex(m.chapterTicks.getChildCount(), 0)
+    for each startMs in starts
+        x = startMs / durationMs * 1144
+        if x > 2 and x < 1142
+            tick = m.chapterTicks.createChild("Rectangle")
+            tick.width = 3
+            tick.height = 5
+            tick.color = "#161616FF"
+            tick.translation = [x - 1.5, 3.5]
+        end if
+    end for
 end function

@@ -21,6 +21,8 @@
         <field id="sbBarUri" type="uri" alias="trackBg.uri" />
         <field id="sbFillBlend" type="color" />
         <field id="chapterText" type="string" alias="chapterLabel.text" />
+        <!-- YourTube: YouTube chapter starts (ms, after 0): drawn as small gaps in the track -->
+        <field id="chapterStartsMs" type="array" />
     </interface>
     <children>
         <!-- YourTube: thin 5px track centred in the 12px band, red-to-pink fill (reference/04-player.png). -->
@@ -31,6 +33,8 @@
         <Poster id="trackFill"
             uri="pkg:/images/yt-scrub-fill.$$RES$$.png"
             translation="[0, 3.5]" width="1144" height="5" clippingRect="[0,0,0,12]" loadDisplayMode="scaleToFill" />
+        <!-- YourTube: chapter gaps over the track and fill (built in code from chapterStartsMs) -->
+        <Group id="chapterTicks" />
         <!-- the cursor: a 12px dot that swells half-again while the bar tier holds focus. PositionPlayhead
              moves it; the grow/shrink animations scale it about its center. -->
         <Poster id="playhead"

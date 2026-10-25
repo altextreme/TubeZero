@@ -1,0 +1,191 @@
+import "pkg:/components/YourTube/WatchInfo/YourTubeWatchInfo.bs"
+import "pkg:/components/YourTube/YourTubeText.bs"
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+const PANEL_BOTTOM = 668
+const SCROLL_STEP = 132
+const CHAPTER_ROW = 42
+
+function Init()
+    m.videoTitle = m.top.findNode("VideoTitle")
+    m.channel = m.top.findNode("ChannelLine")
+    m.stats = m.top.findNode("Stats")
+    m.textClip = m.top.findNode("TextClip")
+    m.text = m.top.findNode("DescriptionText")
+    m.textFocusBar = m.top.findNode("TextFocusBar")
+    m.chaptersHeading = m.top.findNode("ChaptersHeading")
+    m.list = m.top.findNode("ChapterList")
+    m.hint = m.top.findNode("Hint")
+    m.slideIn = m.top.findNode("SlideIn")
+    m.panel = m.top.findNode("Panel")
+    m.chapters = []
+    m.scrollY = 0
+    m.clipHeight = 0
+    m.list.ObserveField("itemSelected", FuncName(OnChapterSelected))
+end function
+
+function OnInfoChange() as void
+    info = ValidAssociativeArray(m.top.info)
+    m.chapters = ValidArray(info.chapters)
+
+    title = YourTubeText.Clean(ValidString(info.title))
+    m.videoTitle.text = title.text
+    m.channel.text = ValidString(info.channel)
+    m.stats.text = ValidString(info.stats)
+
+    ' the header block grows with a two-line title
+    y = 86 + m.videoTitle.localBoundingRect().height + 8
+    m.channel.translation = [32, y]
+    y += 26
+    m.stats.translation = [32, y]
+    if m.stats.text <> ""
+        y += m.stats.localBoundingRect().height
+    end if
+    textTop = y + 16
+
+    description = ValidString(info.description).Trim()
+    if description = ""
+        description = "No description."
+    else if description.Len() > 6000
+        description = description.Left(6000) + "..." ' a Label this long is slow to lay out
+    end if
+    m.text.text = YourTubeText.Clean(description).text
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each chapter in m.chapters
+        item = content.CreateChild("ContentNode")
+        item.title = YourTubeWatchInfo.FormatTime(chapter.startMs) + "    " + ValidString(chapter.title)
+    end for
+    m.list.content = content
+
+    hasChapters = m.chapters.Count() > 0
+    if hasChapters
+        ' the chapter list keeps up to 6 rows at the bottom; the description gets the rest (at least 120)
+        rows = m.chapters.Count()
+        if rows > 6
+            rows = 6
+        end if
+        listHeight = rows * CHAPTER_ROW
+        listTop = PANEL_BOTTOM - listHeight
+        headingTop = listTop - 34
+        m.clipHeight = headingTop - 14 - textTop
+        if m.clipHeight < 120
+            m.clipHeight = 120
+        end if
+        m.chaptersHeading.translation = [32, headingTop]
+        m.list.translation = [24, listTop]
+        m.list.numRows = rows
+    else
+        m.clipHeight = PANEL_BOTTOM - textTop
+    end if
+    m.chaptersHeading.visible = hasChapters
+    m.list.visible = hasChapters
+
+    m.textClip.translation = [32, textTop]
+    m.textClip.clippingRect = [0, 0, 496, m.clipHeight]
+    m.textFocusBar.translation = [20, textTop]
+    m.textFocusBar.height = m.clipHeight
+    m.scrollY = 0
+    m.text.translation = [0, 0]
+
+    m.panel.translation = [1280, 0]
+    m.slideIn.control = "start"
+
+    if hasChapters
+        current = YourTubeWatchInfo.ChapterIndexAt(m.chapters, ValidInt(info.currentMs))
+        if current < 0
+            current = 0
+        end if
+        m.list.jumpToItem = current
+        FocusChapters()
+    else
+        FocusText()
+    end if
+end function
+
+function FocusChapters() as void
+    m.textFocusBar.visible = false
+    m.hint.text = "OK to jump to a chapter    Back to close"
+    NodeSetFocus(m.list, true)
+end function
+
+function FocusText() as void
+    m.textFocusBar.visible = TextOverflows() or m.chapters.Count() > 0
+    if m.chapters.Count() > 0
+        m.hint.text = "Up/Down to scroll, Down for chapters    Back to close"
+    else if TextOverflows()
+        m.hint.text = "Up/Down to scroll    Back to close"
+    else
+        m.hint.text = "Back to close"
+    end if
+    NodeSetFocus(m.top, true)
+end function
+
+function TextOverflows() as boolean
+    return m.text.localBoundingRect().height > m.clipHeight
+end function
+
+' Scroll the description by a step; false when it is already at that end.
+function ScrollText(dir as integer) as boolean
+    maxScroll = m.text.localBoundingRect().height - m.clipHeight
+    if maxScroll < 0
+        maxScroll = 0
+    end if
+    target = m.scrollY + dir * SCROLL_STEP
+    if target < 0
+        target = 0
+    else if target > maxScroll
+        target = maxScroll
+    end if
+    if target = m.scrollY
+        return false
+    end if
+    m.scrollY = target
+    m.text.translation = [0, -m.scrollY]
+    return true
+end function
+
+function OnChapterSelected() as void
+    index = m.list.itemSelected
+    if index < 0 or index >= m.chapters.Count()
+        return
+    end if
+    m.top.seekToMs = m.chapters[index].startMs
+    Close()
+end function
+
+function Close() as void
+    ' let go first: the player can't take focus back from a focused child
+    NodeSetFocus(m.list, false)
+    NodeSetFocus(m.top, false)
+    m.top.closed = true
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if not press
+        return true
+    end if
+    if key = RemoteKeys.Back or key = RemoteKeys.Left
+        Close()
+        return true
+    end if
+    listFocused = m.list.hasFocus()
+    if listFocused
+        ' the list didn't take Up: it is at its first row
+        if key = RemoteKeys.Up
+            FocusText()
+        end if
+        return true
+    end if
+    if key = RemoteKeys.Down
+        if not ScrollText(1) and m.chapters.Count() > 0
+            FocusChapters()
+        end if
+    else if key = RemoteKeys.Up
+        ScrollText(-1)
+    end if
+    ' the player underneath must not see the panel's keys
+    return true
+end function

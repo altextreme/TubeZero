@@ -12,6 +12,7 @@ import "pkg:/components/VideoPlayerDev/TransportController.bs"
 import "pkg:/components/VideoPlayerDev/VideoNode.bs"
 import "pkg:/components/VideoQueue/VideoQueueUtils.bs"
 import "pkg:/components/YourTube/PlayerSettings/YourTubePlayerSettings.bs" ' YourTube
+import "pkg:/components/YourTube/WatchInfo/YourTubeWatchInfo.bs" ' YourTube
 import "pkg:/components/YourTube/YourTubeText.bs"
 import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/Locale.bs"
@@ -107,6 +108,11 @@ function Initialize()
     ' YourTube: the open settings/captions sheet ({ kind, values }), and captions switched off in this player
     m.playerSheet = invalid
     m.captionsOff = false
+    ' YourTube: description panel, and the video's chapters/heatmap/details from /next ({ chapters, heatmap, details })
+    m.descriptionPanel = m.top.findNode("descriptionPanel")
+    m.descriptionPanel.ObserveField("closed", FuncName(OnDescriptionClosed))
+    m.descriptionPanel.ObserveField("seekToMs", FuncName(OnDescriptionSeek))
+    m.watchInfo = invalid
     m.fullScreenHint = m.top.findNode("fullScreenHint")
 
     m.autoHide = m.top.findNode("autoHide")
@@ -319,8 +325,16 @@ function PushTransportToRenderers() as void
 
     ' SponsorBlock chapter label: the segment title while the cursor sits inside a segment (no-op + "" when off
     ' / no segments).
+    ' YourTube: outside a SponsorBlock segment the label shows the YouTube chapter under the cursor.
+    chapterText = ""
     if m.sponsorblock.HasSegments()
-        m.trickPlayBar.chapterText = m.sponsorblock.ChapterTextForCursor(m.transport.cursorMs)
+        chapterText = m.sponsorblock.ChapterTextForCursor(m.transport.cursorMs)
+    end if
+    if chapterText = "" and m.watchInfo <> invalid
+        chapterText = YourTubeWatchInfo.ChapterTitleAt(m.watchInfo.chapters, m.transport.cursorMs)
+    end if
+    if m.trickPlayBar.chapterText <> chapterText
+        m.trickPlayBar.chapterText = chapterText
     end if
 end function
 
@@ -582,6 +596,9 @@ function ActivateButton(index as integer) as void
         AccountAction(index)
     else if index = PlayerCoordinatorLogic.PlayerButton.Captions ' YourTube
         YtOpenCaptionsPicker()
+    else if index = PlayerCoordinatorLogic.PlayerButton.Description ' YourTube
+        OpenDescription()
+        return
     else if index = PlayerCoordinatorLogic.PlayerButton.Settings ' YourTube
         YtOpenSettingsSheet()
     end if
@@ -770,6 +787,76 @@ function OnCommentsClosed() as void
     m.commentsPanel.visible = false
     NodeSetFocus(m.top, true)
     SyncFocus()
+end function
+
+' YourTube: the description panel (channel, views, date, description, chapters) takes real focus; the video keeps
+' playing behind it.
+function OpenDescription() as void
+    content = m.top.content
+    if content = invalid
+        return
+    end if
+    metadata = ValidAssociativeArray(content.metadata)
+    details = {}
+    chapters = []
+    if m.watchInfo <> invalid
+        details = ValidAssociativeArray(m.watchInfo.details)
+        chapters = ValidArray(m.watchInfo.chapters)
+    end if
+    title = ValidString(details.title)
+    if title = ""
+        title = ValidString(content.title)
+    end if
+    channel = ValidString(details.channel)
+    if channel = ""
+        channel = ValidString(metadata.author)
+    end if
+    if ValidString(details.subscribers) <> ""
+        channel = channel + "  •  " + details.subscribers
+    end if
+    description = ValidString(details.description)
+    if description = ""
+        description = ValidString(metadata.description) ' Invidious backends
+    end if
+    HideChrome()
+    m.descriptionPanel.visible = true
+    m.descriptionPanel.info = {
+        title: title
+        channel: channel
+        stats: DescriptionStats(details)
+        description: description
+        chapters: chapters
+        currentMs: m.transport.positionMs
+    }
+end function
+
+' "20,849,711 views  •  Sep 21, 2026  •  148K likes"
+function DescriptionStats(details as object) as string
+    parts = []
+    for each value in [ValidString(details.views), ValidString(details.date)]
+        if value <> ""
+            parts.Push(value)
+        end if
+    end for
+    if ValidString(details.likeCount) <> ""
+        parts.Push(details.likeCount + " likes")
+    end if
+    return parts.Join("  •  ")
+end function
+
+function OnDescriptionClosed() as void
+    m.descriptionPanel.visible = false
+    NodeSetFocus(m.top, true)
+    SyncFocus()
+end function
+
+' OK on a chapter: seek there, keeping the play state (the panel closes itself).
+function OnDescriptionSeek(event as object) as void
+    if m.onCloseCalled = true
+        return
+    end if
+    m.transport.ForceIdleSeek(event.getData(), true)
+    ApplyTransport()
 end function
 
 ' Push the focus state to the renderers. The button row highlights its focused button while the BUTTON tier
@@ -1310,6 +1397,9 @@ function PlayWithContent(contentNode as object)
     StopLiveChat() ' YourTube: chat belongs to the previous video
     ResetAccountActions() ' YourTube
     m.relatedShelf.visible = false ' YourTube
+    m.descriptionPanel.visible = false ' YourTube
+    m.watchInfo = invalid ' YourTube
+    m.trickPlayBar.chapterStartsMs = [] ' YourTube
     videoContentNode = CreateObject("roSGNode", "ContentNode")
 
     if not StringUtils.IsNullOrEmpty(contentNode.videoId)
@@ -1408,6 +1498,10 @@ function OnVideoContentJobDone(event as object) as void
     m.transport.SetLiveDvrWindow(ValidInt(metadata.liveSeekableWindowSec) * 1000)
     m.trickPlayBar.isLive = isLive
     m.buttonRow.chatMode = isLive ' YourTube: the comments button becomes chat
+    ' YourTube: chapters (bar gaps + scrub label), heatmap and description details from /next
+    watchInfo = ValidAssociativeArray(metadata.ytWatchInfo)
+    m.watchInfo = { chapters: ValidArray(watchInfo.chapters), heatmap: ValidArray(watchInfo.heatmap), details: ValidAssociativeArray(watchInfo.details) }
+    m.trickPlayBar.chapterStartsMs = YourTubeWatchInfo.ChapterStartsMs(m.watchInfo.chapters)
     LoadAccountState(ValidString(content.videoId)) ' YourTube
     m.bifDisplay.tileSet = invalid
 

@@ -30,12 +30,12 @@ namespace Tests
 
         @it("exposes its button count and auto-positions the clusters (centered + right-aligned)")
         function _()
-            m.assertEqual(m.top.buttonCount, 9)
+            m.assertEqual(m.top.buttonCount, 10)
             ' YourTube: one right-aligned row. Right cluster (minimize, comments, like, dislike, save, subscribe,
-            ' captions, settings: 8 x 42 + 7 x 20) ends at 1212 -> x=736; the play/pause cluster sits one 20px
-            ' gap to its left -> x=674.
-            m.assertEqual(m.top.findNode("CenterCluster").translation[0], 674.0)
-            m.assertEqual(m.top.findNode("RightCluster").translation[0], 736.0)
+            ' captions, description, settings: 9 x 42 + 8 x 20) ends at 1212 -> x=674; the play/pause cluster
+            ' sits one 20px gap to its left -> x=612.
+            m.assertEqual(m.top.findNode("CenterCluster").translation[0], 612.0)
+            m.assertEqual(m.top.findNode("RightCluster").translation[0], 674.0)
         end function
 
         @describe("virtual-focus highlight")

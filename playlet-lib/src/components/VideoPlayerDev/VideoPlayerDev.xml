@@ -140,6 +140,9 @@
         <!-- YourTube: comments side panel (opened from the button row) -->
         <YourTubeCommentsPanel id="commentsPanel" visible="false" />
 
+        <!-- YourTube: description and chapters side panel (opened from the button row) -->
+        <YourTubeDescriptionPanel id="descriptionPanel" visible="false" />
+
         <!-- YourTube: related videos row (Down from the scrubber) -->
         <YourTubeRelatedShelf id="relatedShelf" visible="false" />
 

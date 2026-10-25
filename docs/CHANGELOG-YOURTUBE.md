@@ -73,6 +73,12 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 - Gear button: a settings sheet with Captions, Speed (0.25x to 2x, the phone is told), Quality (saves
   Preferred quality and reloads the video where it was) and Audio track (only when the stream has more than one;
   switched by the device, no reload).
+- Chapters: YouTube's chapters (from the WEB `/next` the player already fetches, signed out) show as small gaps
+  in the scrubber and as the label under it while scrubbing or with the bar up. SponsorBlock's segment title
+  still wins inside its segments.
+- Description button (i): a side panel like Comments with the title, channel and subscribers, views, date and
+  likes, the description (Up/Down scrolls) and the chapter list (OK jumps to the chapter and closes). Back or
+  Left closes it. Parser `YourTubeWatchInfo` is tested against a saved `/next` (`next-chapters.json`).
 - The title and channel now sit above the action row (it grew to the left under them).
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)

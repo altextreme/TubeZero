@@ -19,6 +19,7 @@ function Init()
         m.top.findNode("SaveButton") ' YourTube
         m.top.findNode("SubscribeButton") ' YourTube
         m.top.findNode("CaptionsButton") ' YourTube
+        m.top.findNode("DescriptionButton") ' YourTube
         m.top.findNode("SettingsButton") ' YourTube
     ]
     m.centerCluster = m.top.findNode("CenterCluster")

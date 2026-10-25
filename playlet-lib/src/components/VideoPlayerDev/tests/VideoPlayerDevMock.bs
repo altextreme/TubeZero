@@ -256,6 +256,12 @@ function TestCaptionsOff() as void
     YtCaptionsOff()
 end function
 
+' YourTube: TestSetWatchInfo — what OnVideoContentJobDone takes from /next ({ chapters, heatmap, details }), minus the job.
+function TestSetWatchInfo(info as object) as void
+    m.watchInfo = info
+    m.trickPlayBar.chapterStartsMs = YourTubeWatchInfo.ChapterStartsMs(info.chapters)
+end function
+
 ' TestCoordinatorFields — every non-function key on the coordinator's m, for the unmodeled-axis meta-test
 ' (the coordinator twin of the brain's reflection test). Call AFTER TestSetup so Initialize/OnNodeReady have
 ' populated m. The ONLY filtering here is the two DYNAMICALLY-named runtime families ("__delay_<uuid>" and
@@ -297,6 +303,7 @@ function TestSnapshot() as object
         transportTimerControl: m.transportTimer.control
         buttonRowVisible: m.buttonRow.visible
         barPositionMs: m.trickPlayBar.positionMs
+        chapterText: m.trickPlayBar.chapterText ' YourTube
         spinnerMode: m.spinner.mode
         brain: TestBrainSnapshot()
     }
