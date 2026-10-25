@@ -68,7 +68,7 @@
             </Label>
             <LabelList
                 id="ChapterList"
-                itemSize="[512,40]"
+                itemSize="[516,40]"
                 itemSpacing="[0,2]"
                 color="0xDDDDDDFF"
                 focusedColor="0xFFFFFFFF"
@@ -78,6 +78,7 @@
                 vertFocusAnimationStyle="floatingFocus"
                 visible="false">
                 <Font role="font" uri="font:SystemFontFile" size="17" />
+                <Font role="focusedFont" uri="font:MediumSystemFontFile" size="17" />
             </LabelList>
             <Label
                 id="Hint"

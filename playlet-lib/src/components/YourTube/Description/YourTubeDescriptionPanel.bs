@@ -56,7 +56,9 @@ function OnInfoChange() as void
     content = CreateObject("roSGNode", "ContentNode")
     for each chapter in m.chapters
         item = content.CreateChild("ContentNode")
-        item.title = YourTubeWatchInfo.FormatTime(chapter.startMs) + "    " + ValidString(chapter.title)
+        ' title first so the names line up (a proportional font can't align a time column); the leading
+        ' spaces inset the text inside the focus pill
+        item.title = "  " + ValidString(chapter.title) + "  ·  " + YourTubeWatchInfo.FormatTime(chapter.startMs)
     end for
     m.list.content = content
 
@@ -75,7 +77,7 @@ function OnInfoChange() as void
             m.clipHeight = 120
         end if
         m.chaptersHeading.translation = [32, headingTop]
-        m.list.translation = [24, listTop]
+        m.list.translation = [22, listTop]
         m.list.numRows = rows
     else
         m.clipHeight = PANEL_BOTTOM - textTop

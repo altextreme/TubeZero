@@ -286,8 +286,21 @@ function YtSetAudioTrack(trackId as string) as void
     end for
 end function
 
+' Only tracks with a name or language, one per label: the device also lists codec variants of the same
+' audio ("dash/a~AAC~~main~~0~"), which aren't a choice anyone wants to make.
 function YtAudioTracks() as object
-    return ValidArray(YtVideoField("availableAudioTracks"))
+    tracks = []
+    seen = {}
+    for each track in ValidArray(YtVideoField("availableAudioTracks"))
+        if IsAssociativeArray(track) and (ValidString(track.Name) <> "" or ValidString(track.Language) <> "")
+            label = YourTubePlayerSettings.AudioLabel(track)
+            if not seen.DoesExist(label)
+                seen[label] = true
+                tracks.Push(track)
+            end if
+        end if
+    end for
+    return tracks
 end function
 
 function YtCurrentAudioLabel(tracks as object) as string
