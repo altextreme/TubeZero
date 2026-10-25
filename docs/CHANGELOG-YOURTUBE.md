@@ -6,6 +6,18 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 
 ## Unreleased: TubeZero
 
+### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
+- Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote
+  and About moved to Settings > More (full-screen pages, Back returns).
+- Shorts tab: the Short plays in a centered 9:16 frame (the shared player in a custom rect), Up/Down for the
+  previous/next Short, title/channel/views beside it, endless feed from `reel/reel_watch_sequence`. Respects
+  Disable Shorts.
+- Subscriptions: a row of your subscribed channels (OK opens the channel), then latest videos as a 4-column grid
+  that pages in as you scroll. Debug route `GET /api/yourtube/debug/subscribed-channels` shows the raw fetch.
+- Home: every shelf YouTube returns for your home page is its own row, plus Live, Music, Gaming, News, Sports,
+  Movies & trailers, Learning & science, Podcasts and Fashion & beauty rows. Empty rows are removed; the home
+  screen editor lists the new rows.
+
 ### Sign-in flow restyle
 - Profile: "Accounts" heading, a signed-out explanation, an "Add account" tile (plus in a dark circle) and a white
   focus ring instead of the floating avatar, drop shadow and square focus frame.

@@ -282,14 +282,14 @@ namespace Tests
             for each channel in channels
                 byId[channel.id] = channel
             end for
-            web = byId["UCwwwwwwwwwwwwwwwwwwwwww"]
-            m.assertNotInvalid(web)
-            m.assertEqual(web.name, "Web")
-            m.assertEqual(web.thumbnail, "https://yt3.googleusercontent.com/w-Web=s176-c-k-c0x00ffffff-no-rj-mo")
+            webChannel = byId["UCwwwwwwwwwwwwwwwwwwwwww"]
+            m.assertNotInvalid(webChannel)
+            m.assertEqual(webChannel.name, "Web")
+            m.assertEqual(webChannel.thumbnail, "https://yt3.googleusercontent.com/w-Web=s176-c-k-c0x00ffffff-no-rj-mo")
             m.assertNotInvalid(byId["UCxxxxxxxxxxxxxxxxxxxxxx"])
-            tab = byId["UCtttttttttttttttttttttt"]
-            m.assertNotInvalid(tab)
-            m.assertEqual(tab.name, "Tab Channel")
+            tabChannel = byId["UCtttttttttttttttttttttt"]
+            m.assertNotInvalid(tabChannel)
+            m.assertEqual(tabChannel.name, "Tab Channel")
         end function
 
         @it("returns no channels for bad or empty input")
