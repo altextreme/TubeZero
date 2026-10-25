@@ -1,6 +1,7 @@
 import "pkg:/components/JobSystem/Jobs.bs"
 import "pkg:/components/JobSystem/JobSystem.bs"
 import "pkg:/components/Navigation/Navigation.bs"
+import "pkg:/components/YourTube/Blocklist/YourTubeBlocklist.bs"
 import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/Logging.bs"
 import "pkg:/source/utils/RemoteKeys.bs"
@@ -594,9 +595,10 @@ function OnLoadDone(event as object) as void
     data = info.data
     m.continuation = ValidString(data.continuation)
     added = 0
+    blocklist = YourTubeBlocklist.FromPreferences(m.preferences) ' TubeZero: channel/keyword blocklist
     for each entry in ValidArray(data.shorts)
         videoId = ValidString(entry.videoId)
-        if videoId <> "" and not m.seenIds.DoesExist(videoId)
+        if videoId <> "" and not m.seenIds.DoesExist(videoId) and not YourTubeBlocklist.IsBlocked(entry, blocklist)
             m.seenIds[videoId] = true
             m.shorts.Push({
                 videoId: videoId

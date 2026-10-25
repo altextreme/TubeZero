@@ -1,6 +1,7 @@
 import "pkg:/components/Services/Invidious/InvidiousToContentNode.bs"
 import "pkg:/components/VideoFeed/FeedLoadState.bs"
 import "pkg:/components/VideoFeed/PaginationType.bs"
+import "pkg:/components/YourTube/Blocklist/YourTubeBlocklist.bs"
 import "pkg:/source/utils/Logging.bs"
 import "pkg:/source/utils/StringUtils.bs"
 import "pkg:/source/utils/Types.bs"
@@ -11,7 +12,7 @@ namespace YourTubeHomeShelvesRows
     ' Inserts one row per extra shelf right after anchorRow (e.g. every shelf of the signed-in
     ' YouTube home after "Recommended"). Each row pages with its own continuation through the
     ' anchor's endpoint. Returns how many rows were added.
-    function InsertShelfRows(anchorRow as object, shelves as object, anchorSource as object, instance as dynamic) as integer
+    function InsertShelfRows(anchorRow as object, shelves as object, anchorSource as object, instance as dynamic, blocklist = invalid as dynamic) as integer
         parent = anchorRow.getParent()
         if parent = invalid or not IsArray(shelves) or shelves.Count() = 0
             return 0
@@ -38,6 +39,9 @@ namespace YourTubeHomeShelvesRows
 
             itemNodes = []
             for each item in shelf.items
+                if YourTubeBlocklist.IsBlocked(item, blocklist) ' TubeZero: blocklist
+                    continue for
+                end if
                 itemNode = InvidiousContent.ToRowCellContentNode(item, instance)
                 if itemNode <> invalid
                     itemNode.feedSourcesIndex = 0

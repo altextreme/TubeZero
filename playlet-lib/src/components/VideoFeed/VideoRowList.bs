@@ -6,6 +6,7 @@ import "pkg:/components/Navigation/LongPress.bs"
 import "pkg:/components/PlaylistView/PlaylistUtils.bs"
 import "pkg:/components/Services/Invidious/InvidiousToContentNode.bs"
 import "pkg:/components/VideoFeed/FeedLoadState.bs"
+import "pkg:/components/YourTube/Blocklist/YourTubeBlocklist.bs"
 import "pkg:/components/YourTube/YourTubeTheme.bs"
 import "pkg:/source/utils/DisposableObserve.bs"
 import "pkg:/source/utils/ErrorUtils.bs"
@@ -175,7 +176,29 @@ function GetContextMenuOptionsForItem(rowItem as object) as object
         return []
     end if
 
+    ' ---- YourTube: blocklist - "Block this channel" (YourTubeBlocklist). Keep other menu additions outside this block. ----
+    if m.top.preferences <> invalid and YourTubeBlocklist.ChannelEntryForItem(rowItem) <> ""
+        options.push(ContextMenuUtils.CreateOption("Block this channel", m.top, "BlockChannel", [rowItem]))
+    end if
+    ' ---- end YourTube blocklist ----
+
     return options
+end function
+
+' YourTube: adds the card's channel to content_feed.blocked_channels and drops its cards from the loaded rows.
+function BlockChannel(rowItem as object) as void
+    preferences = m.top.preferences
+    entry = YourTubeBlocklist.ChannelEntryForItem(rowItem)
+    if preferences = invalid or entry = ""
+        return
+    end if
+    preferences[YourTubeBlocklist.CHANNELS_KEY] = YourTubeBlocklist.AddToList(preferences[YourTubeBlocklist.CHANNELS_KEY], entry)
+    blocklist = YourTubeBlocklist.Create(entry, "")
+    authorId = ValidString(rowItem.authorId)
+    if authorId <> ""
+        blocklist = YourTubeBlocklist.Create(entry + "," + authorId, "")
+    end if
+    YourTubeBlocklist.RemoveBlockedCards(m.top.content, blocklist)
 end function
 
 function OpenPlaylist(playlist as object)

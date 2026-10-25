@@ -1,0 +1,86 @@
+' TubeZero: channel and keyword blocklist
+import "pkg:/components/YourTube/Blocklist/YourTubeBlocklist.bs"
+
+namespace Tests
+
+    @suite
+    class YourTubeBlocklistTests extends Rooibos.BaseTestSuite
+
+        @describe("YourTubeBlocklist.ParseList")
+
+        @it("trims, lowercases, drops blanks, repeats and a leading @")
+        function _()
+            m.assertEqual(YourTubeBlocklist.ParseList(" Foo ,bar,, FOO, @Baz "), ["foo", "bar", "baz"])
+            m.assertEqual(YourTubeBlocklist.ParseList(""), [])
+            m.assertEqual(YourTubeBlocklist.ParseList(invalid), [])
+        end function
+
+        @describe("YourTubeBlocklist.IsBlocked")
+
+        @it("matches channel names case-insensitively, and channel ids")
+        function _()
+            blocklist = YourTubeBlocklist.Create("Some Channel, UCabc123", "")
+            m.assertTrue(YourTubeBlocklist.IsBlocked({ author: "some channel", title: "x" }, blocklist))
+            m.assertTrue(YourTubeBlocklist.IsBlocked({ author: "Other", authorId: "UCabc123" }, blocklist))
+            m.assertTrue(YourTubeBlocklist.IsBlocked({ channel: "@Some Channel", title: "short" }, blocklist))
+            m.assertFalse(YourTubeBlocklist.IsBlocked({ author: "Some Channel Two", title: "x" }, blocklist))
+        end function
+
+        @it("matches keywords as whole words in the title")
+        function _()
+            blocklist = YourTubeBlocklist.Create("", "ai, minecraft, hot take")
+            m.assertTrue(YourTubeBlocklist.IsBlocked({ title: "AI news today" }, blocklist))
+            m.assertTrue(YourTubeBlocklist.IsBlocked({ title: "Best (Minecraft) builds" }, blocklist))
+            m.assertTrue(YourTubeBlocklist.IsBlocked({ title: "My HOT TAKE on it" }, blocklist))
+            m.assertTrue(YourTubeBlocklist.IsBlocked({ title: "ai" }, blocklist))
+            m.assertFalse(YourTubeBlocklist.IsBlocked({ title: "He said hello" }, blocklist))
+            m.assertFalse(YourTubeBlocklist.IsBlocked({ title: "Minecrafter life" }, blocklist))
+        end function
+
+        @it("reads content node fields")
+        function _()
+            node = CreateObject("roSGNode", "ContentNode")
+            node.title = "AI video"
+            node.addFields({ _author: "Blocked", authorId: "UCx" })
+            m.assertTrue(YourTubeBlocklist.IsBlocked(node, YourTubeBlocklist.Create("blocked", "")))
+            m.assertTrue(YourTubeBlocklist.IsBlocked(node, YourTubeBlocklist.Create("", "ai")))
+            m.assertFalse(YourTubeBlocklist.IsBlocked(node, YourTubeBlocklist.Create("other", "news")))
+        end function
+
+        @it("blocks nothing with empty lists or bad input")
+        function _()
+            empty = YourTubeBlocklist.Create("", " , ")
+            m.assertTrue(empty.isEmpty)
+            m.assertFalse(YourTubeBlocklist.IsBlocked({ author: "a", title: "b" }, empty))
+            m.assertFalse(YourTubeBlocklist.IsBlocked(invalid, YourTubeBlocklist.Create("a", "b")))
+            m.assertFalse(YourTubeBlocklist.IsBlocked({ author: "a" }, invalid))
+        end function
+
+        @describe("YourTubeBlocklist.AddToList")
+
+        @it("appends once and strips commas from the entry")
+        function _()
+            m.assertEqual(YourTubeBlocklist.AddToList("", "Foo"), "Foo")
+            m.assertEqual(YourTubeBlocklist.AddToList("Foo", "Bar"), "Foo, Bar")
+            m.assertEqual(YourTubeBlocklist.AddToList("Foo, Bar", "foo"), "Foo, Bar")
+            m.assertEqual(YourTubeBlocklist.AddToList("Foo", "A, B"), "Foo, A  B")
+            m.assertEqual(YourTubeBlocklist.AddToList(invalid, " "), "")
+        end function
+
+        @describe("YourTubeBlocklist.RemoveBlockedCards")
+
+        @it("removes matching cards from every row")
+        function _()
+            root = CreateObject("roSGNode", "ContentNode")
+            row = root.CreateChild("ContentNode")
+            for each name in ["A", "B", "A"]
+                card = row.CreateChild("ContentNode")
+                card.addFields({ _author: name })
+            end for
+            m.assertEqual(YourTubeBlocklist.RemoveBlockedCards(root, YourTubeBlocklist.Create("a", "")), 2)
+            m.assertEqual(row.getChildCount(), 1)
+        end function
+
+    end class
+
+end namespace

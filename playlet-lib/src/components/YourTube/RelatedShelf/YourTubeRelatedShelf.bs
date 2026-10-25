@@ -1,4 +1,5 @@
 import "pkg:/components/Services/Invidious/InvidiousToContentNode.bs"
+import "pkg:/components/YourTube/Blocklist/YourTubeBlocklist.bs"
 import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/RemoteKeys.bs"
 import "pkg:/source/utils/StringUtils.bs"
@@ -13,8 +14,10 @@ end function
 
 function OnVideosChange() as void
     instance = invalid
+    blocklist = invalid
     if m.top.invidious <> invalid
         instance = m.top.invidious@.GetInstance()
+        blocklist = YourTubeBlocklist.FromPreferences(m.top.invidious.preferences) ' TubeZero
     end if
 
     root = CreateObject("roSGNode", "ContentNode")
@@ -25,7 +28,7 @@ function OnVideosChange() as void
         if row.getChildCount() >= MAX_VIDEOS
             exit for
         end if
-        if IsAssociativeArray(video) and not StringUtils.IsNullOrEmpty(video.videoId)
+        if IsAssociativeArray(video) and not StringUtils.IsNullOrEmpty(video.videoId) and not YourTubeBlocklist.IsBlocked(video, blocklist)
             node = InvidiousContent.ToVideoContentNode(invalid, video, instance)
             if node <> invalid
                 row.appendChild(node)

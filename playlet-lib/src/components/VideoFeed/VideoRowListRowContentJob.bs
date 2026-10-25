@@ -1,6 +1,7 @@
 import "pkg:/components/Dialog/DialogUtils.bs"
 import "pkg:/components/Services/Invidious/InvidiousService.bs"
 import "pkg:/components/Services/Invidious/InvidiousToContentNode.bs"
+import "pkg:/components/YourTube/Blocklist/YourTubeBlocklist.bs"
 import "pkg:/components/YourTube/HomeShelves/YourTubeHomeShelvesRows.bs"
 
 @job("VideoRowListRowContentJob")
@@ -18,6 +19,7 @@ function ExecuteJob() as void
         instance = service.GetInstance()
 
         totalfetchedItems = 0
+        blocklist = YourTubeBlocklist.FromPreferences(invidiousNode.preferences) ' YourTube: channel/keyword blocklist
 
         someContentReadySet = false
 
@@ -96,7 +98,13 @@ function ExecuteJob() as void
             end if
 
             itemNodes = []
+            blockedCount = 0 ' YourTube
             for each item in response.result.items
+                ' YourTube: hide blocked channels and keywords (counted so paging carries on past them)
+                if YourTubeBlocklist.IsBlocked(item, blocklist)
+                    blockedCount += 1
+                    continue for
+                end if
                 itemNode = InvidiousContent.ToRowCellContentNode(item, instance)
                 if itemNode <> invalid
                     itemNode.feedSourcesIndex = feedSourcesIndex
@@ -120,7 +128,7 @@ function ExecuteJob() as void
 
             ' YourTube: the signed-in home returns its other shelves with the first page; one row each
             if not hadContinuation and IsArray(response.result.shelves)
-                YourTubeHomeShelvesRows.InsertShelfRows(feedContentNode, response.result.shelves, feedSource, instance)
+                YourTubeHomeShelvesRows.InsertShelfRows(feedContentNode, response.result.shelves, feedSource, instance, blocklist)
             end if
 
             hasContinuation = not StringUtils.IsNullOrEmpty(response.result.continuation)
@@ -130,7 +138,7 @@ function ExecuteJob() as void
                 feedSource.state.sortOptions = response.result.sortOptions
             end if
 
-            if addedItemCount > 0
+            if addedItemCount > 0 or blockedCount > 0 ' YourTube: a page of only blocked cards isn't the end
                 pageType = feedSource.state.paginationType
                 if response.result.isLastPage = true or (hadContinuation and not hasContinuation)
                     feedSource.state.loadState = FeedLoadState.Loaded

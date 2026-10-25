@@ -80,6 +80,21 @@
         type: "boolean",
         defaultValue: false,
       },
+      // TubeZero: blocklist (YourTubeBlocklist), comma-separated
+      {
+        displayText: "Blocked channels",
+        key: "content_feed.blocked_channels",
+        description: "Comma-separated channel names or IDs. Their videos are hidden from every feed and search. Long-press a card to add one.",
+        type: "string",
+        defaultValue: "",
+      },
+      {
+        displayText: "Blocked keywords",
+        key: "content_feed.blocked_keywords",
+        description: "Comma-separated words. Videos whose title contains one are hidden from every feed and search.",
+        type: "string",
+        defaultValue: "",
+      },
     ],
   },
   {

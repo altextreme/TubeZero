@@ -1,0 +1,175 @@
+import "pkg:/source/utils/Types.bs"
+
+' TubeZero: hide cards from blocked channels, or whose title has a blocked keyword. Both lists are
+' comma-separated preferences (content_feed.blocked_channels / content_feed.blocked_keywords). A channel entry
+' matches the channel name (case-insensitive, a leading "@" ignored) or its channel id (UC...). A keyword matches
+' whole words in the title ("ai" hides "AI news", not "said").
+namespace YourTubeBlocklist
+
+    const CHANNELS_KEY = "content_feed.blocked_channels"
+    const KEYWORDS_KEY = "content_feed.blocked_keywords"
+
+    ' "a, B ,,c" -> ["a", "b", "c"] (lowercased, trimmed, no blanks or repeats)
+    function ParseList(csv as dynamic) as object
+        result = []
+        if not IsString(csv)
+            return result
+        end if
+        seen = {}
+        for each part in csv.Split(",")
+            entry = LCase(part.Trim())
+            if entry.StartsWith("@")
+                entry = entry.Mid(1)
+            end if
+            if entry <> "" and not seen.DoesExist(entry)
+                seen[entry] = true
+                result.Push(entry)
+            end if
+        end for
+        return result
+    end function
+
+    function Create(channelsCsv as dynamic, keywordsCsv as dynamic) as object
+        channels = ParseList(channelsCsv)
+        keywords = ParseList(keywordsCsv)
+        channelSet = {}
+        for each channel in channels
+            channelSet[channel] = true
+        end for
+        return {
+            channels: channelSet
+            keywords: keywords
+            isEmpty: channels.Count() = 0 and keywords.Count() = 0
+        }
+    end function
+
+    function FromPreferences(preferences as dynamic) as object
+        if preferences = invalid
+            return Create("", "")
+        end if
+        return Create(preferences[CHANNELS_KEY], preferences[KEYWORDS_KEY])
+    end function
+
+    function IsWordCode(code as integer) as boolean
+        return (code >= 48 and code <= 57) or (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or code >= &hC0
+    end function
+
+    ' Whole-word, case-insensitive (the haystack is already lowercase).
+    function ContainsWord(lowerText as string, word as string) as boolean
+        if word = ""
+            return false
+        end if
+        start = 1
+        while true
+            found = Instr(start, lowerText, word)
+            if found = 0
+                return false
+            end if
+            before = (found = 1) or not IsWordCode(Asc(lowerText.Mid(found - 2, 1)))
+            afterIndex = found - 1 + word.Len()
+            after = (afterIndex >= lowerText.Len()) or not IsWordCode(Asc(lowerText.Mid(afterIndex, 1)))
+            if before and after
+                return true
+            end if
+            start = found + 1
+        end while
+        return false
+    end function
+
+    function FieldString(item as object, fieldName as string) as string
+        value = invalid
+        if type(item) = "roSGNode"
+            value = item.getField(fieldName)
+        else if IsAssociativeArray(item)
+            value = item[fieldName]
+        end if
+        if IsString(value)
+            return value
+        end if
+        return ""
+    end function
+
+    ' item: an Invidious-style item (author, authorId, title), a feed ContentNode (_author, authorId, title) or a
+    ' Shorts entry (channel, title).
+    function IsBlocked(item as dynamic, blocklist as object) as boolean
+        if blocklist = invalid or blocklist.isEmpty or item = invalid
+            return false
+        end if
+        if blocklist.channels.Count() > 0
+            for each fieldName in ["authorId", "author", "_author", "channel"]
+                name = LCase(FieldString(item, fieldName).Trim())
+                if name.StartsWith("@")
+                    name = name.Mid(1)
+                end if
+                if name <> "" and blocklist.channels.DoesExist(name)
+                    return true
+                end if
+            end for
+        end if
+        if blocklist.keywords.Count() > 0
+            title = LCase(FieldString(item, "title"))
+            if title <> ""
+                for each keyword in blocklist.keywords
+                    if ContainsWord(title, keyword)
+                        return true
+                    end if
+                end for
+            end if
+        end if
+        return false
+    end function
+
+    ' Adds a channel to the comma-separated list, unless it's already there.
+    function AddToList(csv as dynamic, entry as string) as string
+        current = ValidString(csv).Trim()
+        entry = entry.Replace(",", " ").Trim()
+        if entry = ""
+            return current
+        end if
+        needle = LCase(entry)
+        if needle.StartsWith("@")
+            needle = needle.Mid(1)
+        end if
+        for each existing in ParseList(current)
+            if existing = needle
+                return current
+            end if
+        end for
+        if current = ""
+            return entry
+        end if
+        return current + ", " + entry
+    end function
+
+    ' The name to block for a feed card (the channel name, or its id when the name is missing).
+    function ChannelEntryForItem(item as object) as string
+        name = FieldString(item, "_author").Trim()
+        if name = ""
+            name = FieldString(item, "author").Trim()
+        end if
+        if name = ""
+            name = FieldString(item, "authorId").Trim()
+        end if
+        return name
+    end function
+
+    ' Removes blocked cards from every row of a RowList content tree.
+    function RemoveBlockedCards(content as dynamic, blocklist as object) as integer
+        removed = 0
+        if content = invalid
+            return removed
+        end if
+        for rowIndex = 0 to content.getChildCount() - 1
+            row = content.getChild(rowIndex)
+            for i = row.getChildCount() - 1 to 0 step -1
+                card = row.getChild(i)
+                if IsBlocked(card, blocklist)
+                    row.removeChildIndex(i)
+                    removed += 1
+                end if
+            end for
+        end for
+        return removed
+    end function
+
+end namespace

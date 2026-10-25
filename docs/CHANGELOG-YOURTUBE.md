@@ -15,6 +15,10 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   a `tz_pair` cookie so plain links work). The phone app and the Live page pair and retry on a 401. Up to 10
   tokens are kept in the registry; Settings > More > "Forget paired phones" revokes them. The X-Playlet CSRF
   check is unchanged, and casting from the YouTube app (DIAL/Lounge) needs no pairing.
+- Blocklist: Settings > Content Feed > "Blocked channels" and "Blocked keywords" (comma-separated). Matching cards
+  are left out of every feed row, the Home shelf rows, search, the Subscriptions grid, Related and Shorts. Channels
+  match by name (any case, "@" ignored) or channel id; keywords match whole words in the title. Long-press a card >
+  "Block this channel" adds it and removes its cards from the screen. A page of only blocked cards keeps paging.
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote
