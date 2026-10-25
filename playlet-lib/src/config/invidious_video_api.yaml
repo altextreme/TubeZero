@@ -225,3 +225,12 @@ yt_browse_mix:
   url: /api/v1/yourtube/browse
   builtInOnly: true
   cacheSeconds: 1800 # 30 minutes
+
+# YourTube: one of your playlists (Watch later = WL, Liked videos = LL, or a PL id) as a feed row on the You screen.
+# Built-in backend only (YourTubeLibraryRouter); an Invidious account's server lacks the route, so the rows that use
+# it are optional and drop out quietly there.
+yt_library_playlist:
+  title: Playlist
+  url: /api/v1/yourtube/library
+  authenticated: true
+  paginationType: Continuation

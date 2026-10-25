@@ -1,4 +1,7 @@
-# YourTube: feeds for the You nav screen (history and playlists, like YouTube's "You" tab)
+# YourTube: feeds for the You nav screen (YouTube's "You" / Library page): history, Watch later, Liked videos and
+# your playlists (YouTube's playlist library lists the ones you saved from others there too). Bookmark groups
+# follow (YourTubeYouScreen.includeBookmarks). Watch later and Liked videos use the built-in backend's
+# yt_library_playlist route, so they are optional: an Invidious account just doesn't show them.
 - title: Watch history
   id: yt_watch_history
   feedSources:
@@ -6,6 +9,28 @@
       title: Watch history
       apiType: Invidious
       endpoint: watch_history
+
+- title: Watch later
+  id: yt_watch_later
+  feedSources:
+    - id: yt_library_watch_later
+      title: Watch later
+      apiType: Invidious
+      endpoint: yt_library_playlist
+      optional: true
+      queryParams:
+        plid: WL
+
+- title: Liked videos
+  id: yt_liked_videos
+  feedSources:
+    - id: yt_library_liked
+      title: Liked videos
+      apiType: Invidious
+      endpoint: yt_library_playlist
+      optional: true
+      queryParams:
+        plid: LL
 
 - title: Playlists
   id: yt_playlists

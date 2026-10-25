@@ -1,0 +1,162 @@
+import "pkg:/components/ContentNode/ProfileContentAuthTokenUtils.bs"
+import "pkg:/components/Services/Innertube/InnertubeService.bs"
+import "pkg:/components/Web/WebServer/Http/HttpRouter.bs"
+import "pkg:/components/YourTube/Library/YourTubeLibrary.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+namespace Http
+
+    ' YourTube: built-in backend routes behind the You screen's library rows, plus a read-only diagnostics route.
+    '   GET .../yourtube/library?plid=WL|LL|PL...&continuation=   one of your playlists as a feed row
+    '                                                            ({ items, continuation }, signed-in TV client)
+    '   GET /api/yourtube/debug/library?videoId=&q=   raw responses of the library calls for the current YouTube
+    '                                                 profile (playlists for videoId, Watch Later, notifications
+    '                                                 on WEB and TV, history search for q). Never returns tokens.
+    class YourTubeLibraryRouter extends HttpRouter
+
+        function new(server as object)
+            super()
+            m.profilesService = server.sceneNodes.profilesService
+        end function
+
+        @get("/playlet-invidious-backend/api/v1/yourtube/library")
+        function GetLibraryPlaylist(context as object) as boolean
+            request = context.request
+            response = context.response
+
+            options = m.AuthOptions(request, response)
+            if options = invalid
+                return true
+            end if
+            playlistId = ValidString(request.query.plid)
+            if playlistId = ""
+                response.Json({ "error": "Missing 'plid' query parameter" })
+                response.http_code = 400
+                return true
+            end if
+            continuation = request.query.continuation
+            if not StringUtils.IsNullOrEmpty(continuation)
+                options.continuation = continuation
+            end if
+
+            playlist = InnertubeService.GetPlaylist(playlistId, options)
+            if playlist.error <> invalid
+                response.Json(playlist)
+                response.http_code = 500
+                return true
+            end if
+            body = { "items": ValidArray(playlist.videos) }
+            if not StringUtils.IsNullOrEmpty(playlist.continuation)
+                body["continuation"] = playlist.continuation
+            end if
+            response.Json(body)
+            return true
+        end function
+
+        ' { accessToken, onBehalfOfUser? } from the request's Bearer header, or invalid after answering 403.
+        function AuthOptions(request as object, response as object) as dynamic
+            accessToken = request.headers["authorization"]
+            if StringUtils.IsNullOrEmpty(accessToken) or not accessToken.StartsWith("Bearer ")
+                response.Json({
+                    "error": "Missing or invalid 'Authorization' header. Please login again."
+                })
+                response.http_code = 403
+                return invalid
+            end if
+            options = { "accessToken": accessToken.Mid("Bearer ".Len()) }
+            activeIdentifyToken = request.query.activeIdentifyToken
+            if not StringUtils.IsNullOrEmpty(activeIdentifyToken)
+                options.onBehalfOfUser = activeIdentifyToken
+            end if
+            return options
+        end function
+
+        @get("/api/yourtube/debug/library")
+        function GetLibraryDebug(context as object) as boolean
+            request = context.request
+            profile = invalid
+            if m.profilesService <> invalid
+                profile = m.profilesService.currentProfile
+            end if
+            if profile = invalid or profile.type <> "youtube"
+                context.response.Json({ "error": "Needs a signed-in YouTube profile" })
+                return true
+            end if
+            auth = ProfileContentAuthTokenUtils.EnsureFreshAccessToken(profile)
+            if auth.state <> ProfileContentAuthTokenUtils.AccessTokenState.Ok
+                context.response.Json({ "error": "No usable access token: " + auth.state })
+                return true
+            end if
+            token = ValidString(auth.token)
+            onBehalfOfUser = ValidString(auth.activeIdentifyToken)
+
+            videoId = ValidString(request.query.videoId)
+            if videoId = ""
+                videoId = "dQw4w9WgXcQ"
+            end if
+            query = ValidString(request.query.q)
+
+            calls = [
+                { name: "get_add_to_playlist", payload: YourTubeLibrary.AddToPlaylistPayload(videoId), parse: "playlists" }
+                { name: "watch_later_tv", payload: { endpoint: "browse", client: "TV", body: { "browseId": "VLWL" } }, parse: "playlist" }
+                { name: "notifications_web", payload: YourTubeLibrary.NotificationsPayload("WEB"), parse: "notifications" }
+                { name: "notifications_tv", payload: YourTubeLibrary.NotificationsPayload("TV"), parse: "notifications" }
+                { name: "unseen_web", payload: YourTubeLibrary.UnseenCountPayload("WEB"), parse: "unseen" }
+            ]
+            if query <> ""
+                calls.Push({ name: "history_search_tv", payload: YourTubeLibrary.HistoryPayload(query, "", "TV"), parse: "feeds" })
+                calls.Push({ name: "history_search_web", payload: YourTubeLibrary.HistoryPayload(query, "", "WEB"), parse: "feeds" })
+            end if
+
+            results = []
+            for each callInfo in calls
+                httpRequest = YourTubeLibrary.CreateRequest(callInfo.payload, token, onBehalfOfUser)
+                httpResponse = httpRequest.Await()
+                entry = { name: callInfo.name, status: httpResponse.StatusCode() }
+                json = httpResponse.Json()
+                if httpResponse.IsSuccess()
+                    entry.parsed = m.ParseForDebug(callInfo.parse, json, httpRequest)
+                else
+                    entry.error = httpResponse.ErrorMessage()
+                end if
+                entry.response = json
+                results.Push(entry)
+            end for
+
+            context.response.Json({ videoId: videoId, query: query, calls: results })
+            return true
+        end function
+
+        function ParseForDebug(kind as string, json as dynamic, httpRequest as object) as dynamic
+            if kind = "playlists"
+                return YourTubeLibrary.ParseAddToPlaylist(json)
+            else if kind = "notifications"
+                return YourTubeLibrary.ParseNotifications(json)
+            else if kind = "unseen"
+                return YourTubeLibrary.ParseUnseenCount(json)
+            else if kind = "playlist"
+                playlist = Innertube.ParsePlaylistPageResponseData("VLWL", json, httpRequest)
+                videos = ValidArray(playlist.videos)
+                sample = []
+                for i = 0 to videos.Count() - 1
+                    if i >= 5
+                        exit for
+                    end if
+                    sample.Push(videos[i])
+                end for
+                return { videoCount: videos.Count(), sample: sample, continuation: playlist.continuation }
+            else if kind = "feeds"
+                feeds = Innertube.ParseResponseDataForFeeds(json, { request: httpRequest, browseId: "FEhistory" })
+                counts = []
+                for each feed in feeds
+                    counts.Push({ title: feed.title, items: ValidArray(feed.items).Count() })
+                end for
+                return counts
+            end if
+            return invalid
+        end function
+
+    end class
+
+end namespace

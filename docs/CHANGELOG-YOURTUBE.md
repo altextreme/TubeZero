@@ -47,6 +47,12 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   card's menu (`feedbackTokens` on the video node); cards that have them get the long-press items. The card leaves
   its row, the token goes to InnerTube `feedback`, and an "Undo" toast (OK to undo) appears when YouTube sent an
   undo token. Hidden when signed out.
+- You screen library rows: Watch history, Watch later, Liked videos, Playlists, then the bookmark groups. Watch later
+  and Liked videos come from a new built-in route `GET .../api/v1/yourtube/library?plid=WL|LL` (endpoint
+  `yt_library_playlist`, optional rows, so Invidious accounts just don't show them). YouTube's playlist library
+  (FEplaylist_aggregation) already mixes your own and saved playlists, so there is no separate "Saved" row.
+- Diagnostics: `GET /api/yourtube/debug/library?videoId=&q=` returns the raw get_add_to_playlist, Watch later,
+  notifications (WEB and TV), unseen count and (with q) history search responses with what the parsers found.
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote
