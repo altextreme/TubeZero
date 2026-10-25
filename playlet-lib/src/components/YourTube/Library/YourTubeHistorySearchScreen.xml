@@ -1,0 +1,33 @@
+<!--
+    YourTube: results of "Search watch history" (You screen top bar). One row of the history videos that match `query`,
+    paged from the built-in route yt_history_search. Pushed on the app stack; Back closes it.
+-->
+<component name="YourTubeHistorySearchScreen" extends="Group" includes="AutoBind,Focus">
+    <interface>
+        <field id="appController" type="node" bind="/AppController" />
+        <field id="query" type="string" />
+    </interface>
+    <children>
+        <Rectangle width="1280" height="720" color="0x0F0F0FFF" />
+        <Label id="HeadingLabel" translation="[90,48]" width="1100" color="0xF1F1F1FF">
+            <Font role="font" uri="font:MediumSystemFontFile" size="30" />
+        </Label>
+        <Label id="HintLabel" translation="[90,92]" width="1100" color="0xAAAAAAFF" font="font:SmallSystemFont" />
+        <VideoRowList
+            itemComponentName="RowCell"
+            id="rowList"
+            translation="[0,150]"
+            numRows="1"
+            rowitemSize="[[350,196]]"
+            rowItemSpacing="[[25,0]]"
+            rowHeights="[326]"
+            itemSize="[1280,326]"
+            itemSpacing="[0,65]"
+            rowLabelOffset="[[90,20]]"
+            focusXOffset="[90]"
+            showRowLabel="[true]"
+            rowFocusAnimationStyle="floatingfocus"
+            variableWidthItems="true"
+            focusBitmapUri="pkg:/images/focus-glow-padding-30.$$RES$$.9.png" />
+    </children>
+</component>

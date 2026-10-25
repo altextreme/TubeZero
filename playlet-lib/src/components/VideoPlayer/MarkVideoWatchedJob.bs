@@ -16,6 +16,13 @@ function ExecuteJob() as void
 
     cancellation = JobGetCancellation()
 
+    ' YourTube: "Pause watch history" - no history ping and no watch-time loop (the player's watchTime updates
+    ' then go nowhere). Checked here so the players don't need to know about it.
+    if invidiousNode <> invalid and invidiousNode.preferences <> invalid and invidiousNode.preferences["playback.pause_watch_history"] = true
+        JobSuccess()
+        return
+    end if
+
     profileType = profile.type
     if profileType <> "invidious" and profileType <> "youtube"
         JobError(`Unsupported profile type: ${profileType}`)

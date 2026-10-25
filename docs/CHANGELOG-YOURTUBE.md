@@ -54,6 +54,12 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 - Edit Watch Later: on the Watch later row (and the Watch Later playlist page) long-press offers "Remove from Watch
   Later" and "Move to top" (`edit_playlist` ACTION_REMOVE_VIDEO_BY_VIDEO_ID / ACTION_MOVE_VIDEO_BEFORE). NodesParser
   keeps each playlist item's `setVideoId`; "Move to top" only shows when both items have one.
+- Search watch history: on You the top bar pill reads "Search watch history"; OK asks for text (Roku keyboard) and
+  opens a results row (`YourTubeHistorySearchScreen`). The built-in route `GET .../api/v1/yourtube/history/search?q=`
+  sends FEhistory with `query` (like YouTube's web history search) and also keeps only title/channel matches on the
+  TV, reading up to 4 pages per call, in case the TV client ignores the query.
+- Pause watch history: new Settings > Playback > "Pause watch history" (`playback.pause_watch_history`, off by
+  default). MarkVideoWatchedJob returns before the history ping and watch-time loop when it is on.
 - Diagnostics: `GET /api/yourtube/debug/library?videoId=&q=` returns the raw get_add_to_playlist, Watch later,
   notifications (WEB and TV), unseen count and (with q) history search responses with what the parsers found.
 

@@ -17,6 +17,7 @@
         <function name="SendFeedback" />
         <function name="RemoveFromWatchLater" />
         <function name="MoveToTopOfWatchLater" />
+        <function name="OpenHistorySearch" />
         <function name="ShowToast" />
     </interface>
 </component>

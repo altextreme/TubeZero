@@ -54,6 +54,58 @@ namespace Http
             return true
         end function
 
+        ' Search your watch history: FEhistory with "query" (what YouTube's web history search sends), then kept to
+        ' the videos whose title or channel match on the TV as well, in case the client ignores the query. Reads up
+        ' to MAX_PAGES pages per call to find matches; the continuation picks up after the last one.
+        @get("/playlet-invidious-backend/api/v1/yourtube/history/search")
+        function GetHistorySearch(context as object) as boolean
+            request = context.request
+            response = context.response
+
+            options = m.AuthOptions(request, response)
+            if options = invalid
+                return true
+            end if
+            query = ValidString(request.query.q)
+            continuation = ValidString(request.query.continuation)
+            onBehalfOfUser = ValidString(options.onBehalfOfUser)
+
+            maxPages = 4
+            matches = []
+            for page = 1 to maxPages
+                payload = YourTubeLibrary.HistoryPayload(query, continuation, "TV")
+                httpRequest = YourTubeLibrary.CreateRequest(payload, options.accessToken, onBehalfOfUser)
+                httpResponse = httpRequest.Await()
+                if not httpResponse.IsSuccess()
+                    if page = 1
+                        response.Json({ "error": httpResponse.ErrorMessage() })
+                        response.http_code = 500
+                        return true
+                    end if
+                    continuation = ""
+                    exit for
+                end if
+                feeds = Innertube.ParseResponseDataForFeeds(httpResponse.Json(), { request: httpRequest, browseId: "FEhistory" })
+                continuation = ""
+                for each feed in feeds
+                    matches.Append(YourTubeLibrary.FilterVideos(ValidArray(feed.items), query))
+                    if not StringUtils.IsNullOrEmpty(feed.continuation)
+                        continuation = feed.continuation
+                    end if
+                end for
+                if continuation = "" or matches.Count() >= 12
+                    exit for
+                end if
+            end for
+
+            body = { "items": matches }
+            if continuation <> ""
+                body["continuation"] = continuation
+            end if
+            response.Json(body)
+            return true
+        end function
+
         ' { accessToken, onBehalfOfUser? } from the request's Bearer header, or invalid after answering 403.
         function AuthOptions(request as object, response as object) as dynamic
             accessToken = request.headers["authorization"]

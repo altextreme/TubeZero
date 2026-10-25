@@ -234,3 +234,10 @@ yt_library_playlist:
   url: /api/v1/yourtube/library
   authenticated: true
   paginationType: Continuation
+
+# YourTube: "Search watch history" results (YourTubeHistorySearchScreen). Built-in backend only.
+yt_history_search:
+  title: Watch history
+  url: /api/v1/yourtube/history/search
+  authenticated: true
+  paginationType: Continuation

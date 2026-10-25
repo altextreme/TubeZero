@@ -96,6 +96,11 @@ end function
 
 ' YourTube: top bar opens Search
 function OnTopBarSelected() as void
+    ' YourTube: on You it searches your watch history (YourTubeLibraryService)
+    if m.top.topBarSearchesHistory and m.global.yourtubeLibrary <> invalid
+        m.global.yourtubeLibrary@.OpenHistorySearch()
+        return
+    end if
     NavigateToRootScreen("SearchScreen")
 end function
 

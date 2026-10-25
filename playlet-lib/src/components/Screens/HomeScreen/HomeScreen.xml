@@ -14,6 +14,8 @@
         <!-- YourTube: the You screen sets includeBookmarks so bookmark groups follow its own rows (Bookmarks left the rail).
              Bound here because a component that extends HomeScreen can't add its own AutoBind fields. -->
         <field id="includeBookmarks" type="boolean" value="false" />
+        <!-- YourTube: the You screen's top bar opens "Search watch history" instead of Search -->
+        <field id="topBarSearchesHistory" type="boolean" value="false" />
         <field id="bookmarksService" type="node" bind="/BookmarksService" />
     </interface>
     <children>

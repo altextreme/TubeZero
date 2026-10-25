@@ -34,6 +34,14 @@
         type: "boolean",
         defaultValue: false,
       },
+      {
+        // YourTube: checked in MarkVideoWatchedJob (no history ping, no watch-time reports)
+        displayText: "Pause watch history",
+        key: "playback.pause_watch_history",
+        description: "Videos you watch on this TV aren't added to your account's watch history, and resume points aren't saved to it.",
+        type: "boolean",
+        defaultValue: false,
+      },
     ],
   },
   {

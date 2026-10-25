@@ -5,4 +5,10 @@ function Init()
     m.top.emptySignedOutMessage = "Your watch history, Watch later and playlists show up here."
     m.top.feedFile = "libpkg:/config/yourtube/you_layout.yaml"
     m.top.includeBookmarks = true ' bookmark groups follow history and playlists (Bookmarks left the nav rail)
+    ' the top bar pill searches your watch history here (YourTubeLibraryService.OpenHistorySearch)
+    m.top.topBarSearchesHistory = true
+    pillLabel = m.top.findNode("PillLabel")
+    if pillLabel <> invalid
+        pillLabel.text = "Search watch history"
+    end if
 end function

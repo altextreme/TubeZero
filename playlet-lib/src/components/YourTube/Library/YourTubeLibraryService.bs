@@ -376,6 +376,38 @@ function OnNewPlaylistKeyboardClosed(event as object) as void
     end if
 end function
 
+' --- search watch history -----------------------------------------------------------------------------------
+
+'' Asks for the text with Roku's keyboard, then opens YourTubeHistorySearchScreen. callFunc target (the You
+'' screen's top bar), hence the unused parameter.
+function OpenHistorySearch(_unused as dynamic) as void
+    if CurrentYouTubeProfile() = invalid
+        ShowToast("Sign in with a YouTube account to search your watch history")
+        return
+    end if
+    keyboard = CreateObject("roSGNode", "StandardKeyboardDialog")
+    keyboard.title = "Search watch history"
+    keyboard.text = ValidString(m.lastHistoryQuery)
+    keyboard.buttons = ["Search", "Cancel"]
+    keyboard.observeFieldScoped("buttonSelected", FuncName(OnHistorySearchKeyboardButton))
+    m.top.getScene().dialog = keyboard
+end function
+
+function OnHistorySearchKeyboardButton(event as object) as void
+    keyboard = event.getRoSGNode()
+    keyboard.unobserveFieldScoped("buttonSelected")
+    query = ValidString(keyboard.text).Trim()
+    keyboard.close = true
+    if keyboard.buttonSelected <> 0 or query = ""
+        return
+    end if
+    m.lastHistoryQuery = query
+    screen = CreateObject("roSGNode", "YourTubeHistorySearchScreen")
+    screen.query = query
+    m.top.appController@.PushScreen(screen)
+    screen@.BindNode()
+end function
+
 ' --- jobs ---------------------------------------------------------------------------------------------------
 
 function QueueLibraryJob(input as object, context as object) as void
