@@ -1,0 +1,103 @@
+import "pkg:/components/Services/Innertube/BrowseEndpoint.bs"
+import "pkg:/components/Services/Innertube/Parser.bs"
+import "pkg:/components/YourTube/YourTubeJson.bs"
+import "pkg:/source/utils/OptionUtils.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: search inside a channel. InnerTube's channel search is a browse of the channel id with the search
+' tab's params and a "query"; the results come back in the page's expandableTabRenderer (the search tab),
+' later pages as normal continuations. Same request as youtubei.js Channel.search().
+namespace YourTubeChannelSearch
+
+    ' params of the channel page's search tab (expandableTabRenderer.endpoint.browseEndpoint.params)
+    const SEARCH_PARAMS = "EgZzZWFyY2jyBgQKAloA"
+
+    ' Returns { items, continuation? } or { error }. options: continuation, cancellation.
+    function Search(channelId as string, query as string, options = invalid as object) as object
+        continuation = OptionUtils.GetOrDefault(options, "continuation", "")
+        requestOptions = {
+            params: SEARCH_PARAMS
+            query: query
+        }
+        if not StringUtils.IsNullOrEmpty(continuation)
+            requestOptions.continuation = continuation
+        end if
+        request = Innertube.CreateBrowseRequest(channelId, Innertube.ClientType.Web, requestOptions)
+        request.Cancellation(OptionUtils.Get(options, "cancellation"))
+
+        response = request.Await()
+        if not response.IsSuccess()
+            return {
+                error: response.ErrorMessage()
+            }
+        end if
+        return ParseResponse(channelId, response.Json(), request, StringUtils.IsNullOrEmpty(continuation))
+    end function
+
+    ' firstPage: the response of the search itself (results in the search tab), not a continuation.
+    function ParseResponse(channelId as string, responseData as object, request as dynamic, firstPage as boolean) as object
+        error = Innertube.ParseResponseDataForError(responseData)
+        if error <> ""
+            return {
+                error: error
+            }
+        end if
+
+        context = {
+            request: request
+            browseId: channelId
+        }
+        author = YourTubeJson.AsString(YourTubeJson.Dig(responseData, ["metadata", "channelMetadataRenderer", "title"]))
+        if author <> ""
+            context["currentAuthor"] = author
+            context["currentAuthorId"] = channelId
+        end if
+
+        if firstPage
+            content = GetSearchTabContent(responseData)
+            if content = invalid
+                return {
+                    items: []
+                }
+            end if
+            context.noContainers = true
+            feeds = Innertube.ParseResponseDataForFeeds([content], context)
+        else
+            feeds = Innertube.ParseResponseDataForFeeds(responseData, context)
+        end if
+
+        items = []
+        continuation = ""
+        for each feed in feeds
+            items.Append(ValidArray(feed.items))
+            if continuation = "" and not StringUtils.IsNullOrEmpty(feed.continuation)
+                continuation = feed.continuation
+            end if
+        end for
+
+        result = {
+            items: items
+        }
+        if continuation <> ""
+            result["continuation"] = continuation
+        end if
+        return result
+    end function
+
+    ' The search tab's content in a channel /browse response, or invalid.
+    function GetSearchTabContent(responseData as object) as dynamic
+        tabs = YourTubeJson.Dig(responseData, ["contents", "twoColumnBrowseResultsRenderer", "tabs"])
+        if not YourTubeJson.IsArr(tabs)
+            return invalid
+        end if
+        for each t in tabs
+            content = YourTubeJson.Dig(t, ["expandableTabRenderer", "content"])
+            if YourTubeJson.IsAA(content)
+                return content
+            end if
+        end for
+        return invalid
+    end function
+
+end namespace

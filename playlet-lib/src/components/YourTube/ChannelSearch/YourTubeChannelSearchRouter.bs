@@ -1,0 +1,48 @@
+import "pkg:/components/Web/WebServer/Http/HttpRouter.bs"
+import "pkg:/components/YourTube/ChannelSearch/YourTubeChannelSearch.bs"
+import "pkg:/source/utils/StringUtils.bs"
+
+namespace Http
+
+    ' YourTube: built-in backend route for searching inside a channel (the channel page's search chip).
+    '   GET .../yourtube/channel-search?ucid=&q=[&continuation=]  ->  { items, continuation? }
+    class YourTubeChannelSearchRouter extends HttpRouter
+
+        function new(_server as object)
+            super()
+        end function
+
+        @get("/playlet-invidious-backend/api/v1/yourtube/channel-search")
+        function GetChannelSearch(context as object) as boolean
+            request = context.request
+            response = context.response
+
+            ucid = request.query.ucid
+            query = request.query.q
+            if StringUtils.IsNullOrEmpty(ucid) or StringUtils.IsNullOrEmpty(query)
+                response.Json({
+                    "error": "Missing 'ucid' or 'q' query parameter"
+                })
+                response.http_code = 400
+                return true
+            end if
+
+            options = {}
+            continuation = request.query.continuation
+            if not StringUtils.IsNullOrEmpty(continuation)
+                options.continuation = continuation
+            end if
+
+            result = YourTubeChannelSearch.Search(ucid, query, options)
+            if result.error <> invalid
+                response.Json(result)
+                response.http_code = 500
+                return true
+            end if
+            response.Json(result)
+            return true
+        end function
+
+    end class
+
+end namespace

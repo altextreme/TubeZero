@@ -1,0 +1,499 @@
+{
+ "metadata": {
+  "channelMetadataRenderer": {
+   "title": "Marques Brownlee",
+   "externalId": "UCBJycsmduvYEL83R_U4JriQ"
+  }
+ },
+ "contents": {
+  "twoColumnBrowseResultsRenderer": {
+   "tabs": [
+    {
+     "tabRenderer": {
+      "title": "Home",
+      "selected": false
+     }
+    },
+    {
+     "expandableTabRenderer": {
+      "endpoint": {
+       "browseEndpoint": {
+        "browseId": "UCBJycsmduvYEL83R_U4JriQ",
+        "params": "EgZzZWFyY2jyBgQKAloA",
+        "canonicalBaseUrl": "/@mkbhd"
+       }
+      },
+      "title": "Search",
+      "selected": true,
+      "expandedText": "iphone",
+      "content": {
+       "sectionListRenderer": {
+        "contents": [
+         {
+          "itemSectionRenderer": {
+           "contents": [
+            {
+             "videoRenderer": {
+              "videoId": "Od6M0AXpcxQ",
+              "thumbnail": {
+               "thumbnails": [
+                {
+                 "url": "https://i.ytimg.com/vi/Od6M0AXpcxQ/hqdefault.jpg?sqp=-oaymwEbCKgBEF5IVfKriqkDDggBFQAAiEIYAXABwAEG&rs=AOn4CLByAlpPgcDs9hvVjx8F86RMigizTQ",
+                 "width": 168,
+                 "height": 94
+                },
+                {
+                 "url": "https://i.ytimg.com/vi/Od6M0AXpcxQ/hqdefault.jpg?sqp=-oaymwEbCMQBEG5IVfKriqkDDggBFQAAiEIYAXABwAEG&rs=AOn4CLCyroGldgmVRMydu3NmhfvZzI7_CQ",
+                 "width": 196,
+                 "height": 110
+                },
+                {
+                 "url": "https://i.ytimg.com/vi/Od6M0AXpcxQ/hqdefault.jpg?sqp=-oaymwEcCPYBEIoBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAMaIIeyU6h3i6nxMRq9AAGedL1SA",
+                 "width": 246,
+                 "height": 138
+                },
+                {
+                 "url": "https://i.ytimg.com/vi/Od6M0AXpcxQ/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDulnWF9z6aUAE_-DCxvZBV-GFPmA",
+                 "width": 336,
+                 "height": 188
+                }
+               ]
+              },
+              "title": {
+               "runs": [
+                {
+                 "text": "iPhone 18 Pro/Duo Impressions: Mogged"
+                }
+               ]
+              },
+              "descriptionSnippet": {
+               "runs": [
+                {
+                 "text": "The first folding iPhone Duo and iPhone 18 Pro are here, and this is everything you need to know.\n\nCheck out Ridge’s latest iPhone tech gear at https://ridge.com/MKBHD\n\niOS 27: https://youtu.be/_..."
+                }
+               ]
+              },
+              "longBylineText": {
+               "runs": [
+                {
+                 "text": "Marques Brownlee",
+                 "navigationEndpoint": {
+                  "browseEndpoint": {
+                   "browseId": "UCBJycsmduvYEL83R_U4JriQ",
+                   "canonicalBaseUrl": "/@mkbhd"
+                  }
+                 }
+                }
+               ]
+              },
+              "publishedTimeText": {
+               "simpleText": "1mo ago"
+              },
+              "lengthText": {
+               "simpleText": "17:14"
+              },
+              "viewCountText": {
+               "simpleText": "28,241,143 views"
+              },
+              "navigationEndpoint": {
+               "watchEndpoint": {
+                "videoId": "Od6M0AXpcxQ",
+                "params": "0gYaEhgaBgoCZW4QASIGCgJlbhABKgYKAmVuEAE%3D",
+                "watchEndpointSupportedOnesieConfig": {
+                 "html5PlaybackOnesieConfig": {
+                  "commonConfig": {
+                   "url": "https://rr4---sn-bvvbax4pcxg-hjpk.googlevideo.com/initplayback?source=youtube&oeis=1&c=WEB&oad=3200&ovd=3200&oaad=11000&oavd=11000&ocs=700&oewis=1&oputc=1&msp=1&odepv=1&id=39de8cd005e97314&ip=2605%3Aa601%3Aad9a%3Ab100%3Ab4df%3Ae024%3Ad33f%3A88da&initcwndbps=5028750&mt=1792890297&oweuc="
+                  }
+                 }
+                }
+               }
+              },
+              "badges": [
+               {
+                "metadataBadgeRenderer": {
+                 "style": "BADGE_STYLE_TYPE_MEDIA",
+                 "label": "CC",
+                 "accessibilityData": {
+                  "label": "Closed captions"
+                 }
+                }
+               }
+              ],
+              "ownerBadges": [
+               {
+                "metadataBadgeRenderer": {
+                 "icon": {
+                  "iconType": "CHECK_CIRCLE_THICK"
+                 },
+                 "style": "BADGE_STYLE_TYPE_VERIFIED",
+                 "tooltip": "Verified",
+                 "accessibilityData": {
+                  "label": "Verified"
+                 }
+                }
+               }
+              ],
+              "ownerText": {
+               "runs": [
+                {
+                 "text": "Marques Brownlee",
+                 "navigationEndpoint": {
+                  "browseEndpoint": {
+                   "browseId": "UCBJycsmduvYEL83R_U4JriQ",
+                   "canonicalBaseUrl": "/@mkbhd"
+                  }
+                 }
+                }
+               ]
+              },
+              "shortBylineText": {
+               "runs": [
+                {
+                 "text": "Marques Brownlee",
+                 "navigationEndpoint": {
+                  "browseEndpoint": {
+                   "browseId": "UCBJycsmduvYEL83R_U4JriQ",
+                   "canonicalBaseUrl": "/@mkbhd"
+                  }
+                 }
+                }
+               ]
+              },
+              "showActionMenu": false,
+              "shortViewCountText": {
+               "simpleText": "28M"
+              },
+              "thumbnailOverlays": [
+               {
+                "thumbnailOverlayTimeStatusRenderer": {
+                 "text": {
+                  "simpleText": "17:14"
+                 },
+                 "style": "DEFAULT"
+                }
+               }
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "itemSectionRenderer": {
+           "contents": [
+            {
+             "videoRenderer": {
+              "videoId": "ESABTN4VtrA",
+              "thumbnail": {
+               "thumbnails": [
+                {
+                 "url": "https://i.ytimg.com/vi/ESABTN4VtrA/hqdefault.jpg?sqp=-oaymwEbCKgBEF5IVfKriqkDDggBFQAAiEIYAXABwAEG&rs=AOn4CLAxgOv0uyWNytR6a_T_NviXwNJiaA",
+                 "width": 168,
+                 "height": 94
+                },
+                {
+                 "url": "https://i.ytimg.com/vi/ESABTN4VtrA/hqdefault.jpg?sqp=-oaymwEbCMQBEG5IVfKriqkDDggBFQAAiEIYAXABwAEG&rs=AOn4CLAVwx2MDNnKS5lGyz_EPtf98L1xCQ",
+                 "width": 196,
+                 "height": 110
+                },
+                {
+                 "url": "https://i.ytimg.com/vi/ESABTN4VtrA/hqdefault.jpg?sqp=-oaymwEcCPYBEIoBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLD3e7wqOKDgi1iunOM5VaN0r2OsjA",
+                 "width": 246,
+                 "height": 138
+                },
+                {
+                 "url": "https://i.ytimg.com/vi/ESABTN4VtrA/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBSk2ANeM8cfNHBe8V9Z9Jp4PYuug",
+                 "width": 336,
+                 "height": 188
+                }
+               ]
+              },
+              "title": {
+               "runs": [
+                {
+                 "text": "iPhone Duo Review: First Generation Fun!"
+                }
+               ]
+              },
+              "descriptionSnippet": {
+               "runs": [
+                {
+                 "text": "What it's actually like to use the first folding iPhone - Duo\n\nDon’t miss Ridge’s friends and family sale at https://ridge.com/MKBHD\nProtect your iPhone Duo at https://dbrand.com/duo \n..."
+                }
+               ]
+              },
+              "longBylineText": {
+               "runs": [
+                {
+                 "text": "Marques Brownlee",
+                 "navigationEndpoint": {
+                  "browseEndpoint": {
+                   "browseId": "UCBJycsmduvYEL83R_U4JriQ",
+                   "canonicalBaseUrl": "/@mkbhd"
+                  }
+                 }
+                }
+               ]
+              },
+              "publishedTimeText": {
+               "simpleText": "3d ago"
+              },
+              "lengthText": {
+               "simpleText": "29:05"
+              },
+              "viewCountText": {
+               "simpleText": "11,085,576 views"
+              },
+              "navigationEndpoint": {
+               "watchEndpoint": {
+                "videoId": "ESABTN4VtrA",
+                "params": "0gYaEhgaBgoCZW4QASIGCgJlbhABKgYKAmVuEAE%3D",
+                "watchEndpointSupportedOnesieConfig": {
+                 "html5PlaybackOnesieConfig": {
+                  "commonConfig": {
+                   "url": "https://rr4---sn-bvvbax4pcxg-hjpk.googlevideo.com/initplayback?source=youtube&oeis=1&c=WEB&oad=3200&ovd=3200&oaad=11000&oavd=11000&ocs=700&oewis=1&oputc=1&msp=1&odepv=1&id=1120014cde15b6b0&ip=2605%3Aa601%3Aad9a%3Ab100%3Ab4df%3Ae024%3Ad33f%3A88da&initcwndbps=5028750&mt=1792890297&oweuc="
+                  }
+                 }
+                }
+               }
+              },
+              "badges": [
+               {
+                "metadataBadgeRenderer": {
+                 "style": "BADGE_STYLE_TYPE_MEDIA",
+                 "label": "CC",
+                 "accessibilityData": {
+                  "label": "Closed captions"
+                 }
+                }
+               }
+              ],
+              "ownerBadges": [
+               {
+                "metadataBadgeRenderer": {
+                 "icon": {
+                  "iconType": "CHECK_CIRCLE_THICK"
+                 },
+                 "style": "BADGE_STYLE_TYPE_VERIFIED",
+                 "tooltip": "Verified",
+                 "accessibilityData": {
+                  "label": "Verified"
+                 }
+                }
+               }
+              ],
+              "ownerText": {
+               "runs": [
+                {
+                 "text": "Marques Brownlee",
+                 "navigationEndpoint": {
+                  "browseEndpoint": {
+                   "browseId": "UCBJycsmduvYEL83R_U4JriQ",
+                   "canonicalBaseUrl": "/@mkbhd"
+                  }
+                 }
+                }
+               ]
+              },
+              "shortBylineText": {
+               "runs": [
+                {
+                 "text": "Marques Brownlee",
+                 "navigationEndpoint": {
+                  "browseEndpoint": {
+                   "browseId": "UCBJycsmduvYEL83R_U4JriQ",
+                   "canonicalBaseUrl": "/@mkbhd"
+                  }
+                 }
+                }
+               ]
+              },
+              "showActionMenu": false,
+              "shortViewCountText": {
+               "simpleText": "11M"
+              },
+              "thumbnailOverlays": [
+               {
+                "thumbnailOverlayTimeStatusRenderer": {
+                 "text": {
+                  "simpleText": "29:05"
+                 },
+                 "style": "DEFAULT"
+                }
+               }
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "itemSectionRenderer": {
+           "contents": [
+            {
+             "videoRenderer": {
+              "videoId": "ohqxP8EEumo",
+              "thumbnail": {
+               "thumbnails": [
+                {
+                 "url": "https://i.ytimg.com/vi/ohqxP8EEumo/hqdefault.jpg?sqp=-oaymwEbCKgBEF5IVfKriqkDDggBFQAAiEIYAXABwAEG&rs=AOn4CLAhx7OB88_NIAKqbxOk2Ot5DRejhg",
+                 "width": 168,
+                 "height": 94
+                },
+                {
+                 "url": "https://i.ytimg.com/vi/ohqxP8EEumo/hqdefault.jpg?sqp=-oaymwEbCMQBEG5IVfKriqkDDggBFQAAiEIYAXABwAEG&rs=AOn4CLDGqO-ceuBA5UNM1uJzmlJOUyo3OA",
+                 "width": 196,
+                 "height": 110
+                },
+                {
+                 "url": "https://i.ytimg.com/vi/ohqxP8EEumo/hqdefault.jpg?sqp=-oaymwEcCPYBEIoBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDZJZ8HH6MmoeiReErG_A_kMtjaJg",
+                 "width": 246,
+                 "height": 138
+                },
+                {
+                 "url": "https://i.ytimg.com/vi/ohqxP8EEumo/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBlPkpfQngifDJFexehpqBxFXRs2A",
+                 "width": 336,
+                 "height": 188
+                }
+               ]
+              },
+              "title": {
+               "runs": [
+                {
+                 "text": "iPhone 18 Pro Review: All About that Chip"
+                }
+               ]
+              },
+              "descriptionSnippet": {
+               "runs": [
+                {
+                 "text": "iPhone 18 Pro is basically an S year upgrade. And one part of it is really impressive.\n\nProtect your new iPhone 18 with a case or screen protector at http://dbrand.com/shop/iphone-18\n\nThe scale..."
+                }
+               ]
+              },
+              "longBylineText": {
+               "runs": [
+                {
+                 "text": "Marques Brownlee",
+                 "navigationEndpoint": {
+                  "browseEndpoint": {
+                   "browseId": "UCBJycsmduvYEL83R_U4JriQ",
+                   "canonicalBaseUrl": "/@mkbhd"
+                  }
+                 }
+                }
+               ]
+              },
+              "publishedTimeText": {
+               "simpleText": "1mo ago"
+              },
+              "lengthText": {
+               "simpleText": "16:36"
+              },
+              "viewCountText": {
+               "simpleText": "11,915,530 views"
+              },
+              "navigationEndpoint": {
+               "watchEndpoint": {
+                "videoId": "ohqxP8EEumo",
+                "params": "0gYaEhgaBgoCZW4QASIGCgJlbhABKgYKAmVuEAE%3D",
+                "watchEndpointSupportedOnesieConfig": {
+                 "html5PlaybackOnesieConfig": {
+                  "commonConfig": {
+                   "url": "https://rr8---sn-bvvbax4pcxg-hjp6.googlevideo.com/initplayback?source=youtube&oeis=1&c=WEB&oad=3200&ovd=3200&oaad=11000&oavd=11000&ocs=700&oewis=1&oputc=1&msp=1&odepv=1&id=a21ab13fc104ba6a&ip=2605%3Aa601%3Aad9a%3Ab100%3Ab4df%3Ae024%3Ad33f%3A88da&initcwndbps=5028750&mt=1792890297&oweuc="
+                  }
+                 }
+                }
+               }
+              },
+              "badges": [
+               {
+                "metadataBadgeRenderer": {
+                 "style": "BADGE_STYLE_TYPE_MEDIA",
+                 "label": "CC",
+                 "accessibilityData": {
+                  "label": "Closed captions"
+                 }
+                }
+               }
+              ],
+              "ownerBadges": [
+               {
+                "metadataBadgeRenderer": {
+                 "icon": {
+                  "iconType": "CHECK_CIRCLE_THICK"
+                 },
+                 "style": "BADGE_STYLE_TYPE_VERIFIED",
+                 "tooltip": "Verified",
+                 "accessibilityData": {
+                  "label": "Verified"
+                 }
+                }
+               }
+              ],
+              "ownerText": {
+               "runs": [
+                {
+                 "text": "Marques Brownlee",
+                 "navigationEndpoint": {
+                  "browseEndpoint": {
+                   "browseId": "UCBJycsmduvYEL83R_U4JriQ",
+                   "canonicalBaseUrl": "/@mkbhd"
+                  }
+                 }
+                }
+               ]
+              },
+              "shortBylineText": {
+               "runs": [
+                {
+                 "text": "Marques Brownlee",
+                 "navigationEndpoint": {
+                  "browseEndpoint": {
+                   "browseId": "UCBJycsmduvYEL83R_U4JriQ",
+                   "canonicalBaseUrl": "/@mkbhd"
+                  }
+                 }
+                }
+               ]
+              },
+              "showActionMenu": false,
+              "shortViewCountText": {
+               "simpleText": "11M"
+              },
+              "thumbnailOverlays": [
+               {
+                "thumbnailOverlayTimeStatusRenderer": {
+                 "text": {
+                  "simpleText": "16:36"
+                 },
+                 "style": "DEFAULT"
+                }
+               }
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "continuationItemRenderer": {
+           "trigger": "CONTINUATION_TRIGGER_ON_ITEM_SHOWN",
+           "continuationEndpoint": {
+            "continuationCommand": {
+             "token": "4qmFsgJ2EhhVQ0JKeWNzbWR1dllFTDgzUl9VNEpyaVEaJkNCNFNCbk5sWVhKamFEQUJPQUZnQVdvQWVnTkhRalM0QVFBJTNEWgZpcGhvbmWaAilicm93c2UtZmVlZFVDQkp5Y3NtZHV2WUVMODNSX1U0SnJpUXNlYXJjaA%3D%3D",
+             "request": "CONTINUATION_REQUEST_TYPE_BROWSE"
+            }
+           }
+          }
+         }
+        ],
+        "targetId": "browse-feedUCBJycsmduvYEL83R_U4JriQsearch"
+       }
+      }
+     }
+    }
+   ]
+  }
+ }
+}

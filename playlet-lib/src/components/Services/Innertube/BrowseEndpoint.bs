@@ -8,6 +8,7 @@ namespace Innertube
     function CreateBrowseRequest(browseId as string, clienType as Innertube.ClientType, options = invalid as object) as HttpClient.Request
         params = OptionUtils.GetOrDefault(options, "params", "")
         continuation = OptionUtils.GetOrDefault(options, "continuation", "")
+        query = OptionUtils.GetOrDefault(options, "query", "") ' YourTube: channel search
 
         deviceInfo = CreateObject("roDeviceInfo")
 
@@ -21,6 +22,10 @@ namespace Innertube
             payload["browseId"] = browseId
             if not StringUtils.IsNullOrEmpty(params)
                 payload["params"] = params
+            end if
+            ' YourTube: channel search (browse with the search tab's params and a query)
+            if not StringUtils.IsNullOrEmpty(query)
+                payload["query"] = query
             end if
         end if
 

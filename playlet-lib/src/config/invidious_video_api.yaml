@@ -241,3 +241,11 @@ yt_history_search:
   url: /api/v1/yourtube/history/search
   authenticated: true
   paginationType: Continuation
+# YourTube: search inside a channel (channel page search chip). Built-in backend only:
+# browse on the channel id with the search tab's params and the query.
+yt_channel_search:
+  title: Channel search
+  url: /api/v1/yourtube/channel-search
+  builtInOnly: true
+  paginationType: Continuation
+  cacheSeconds: 300 # 5 minutes

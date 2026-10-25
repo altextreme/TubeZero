@@ -1,0 +1,58 @@
+' YourTube: discovery features (channel search, Home chips, Subscriptions filters, live now, search chips).
+' Fixtures are signed-out WEB responses captured with youtubei.js (raw execute) into fixtures/yourtube/.
+import "pkg:/components/YourTube/ChannelSearch/YourTubeChannelSearch.bs"
+import "pkg:/source/services/HttpClient.bs"
+import "pkg:/source/utils/StringUtils.bs"
+
+namespace Tests
+
+    @suite
+    class YourTubeDiscoveryTests extends Rooibos.BaseTestSuite
+
+        function Fixture(name as string) as dynamic
+            return StringUtils.ParseJsonSafe(ReadAsciiFile("pkg:/source/tests/fixtures/yourtube/" + name))
+        end function
+
+        function FakeRequest() as object
+            return HttpClient.Post("https://www.youtube.com/youtubei/v1/browse")
+        end function
+
+        @describe("YourTubeChannelSearch.ParseResponse")
+
+        @it("finds the search tab's content")
+        function _()
+            content = YourTubeChannelSearch.GetSearchTabContent(m.Fixture("channel-search.json"))
+            m.assertNotInvalid(content)
+            m.assertNotInvalid(content["sectionListRenderer"])
+        end function
+
+        @it("parses the first page: videos by the channel and a continuation")
+        function _()
+            result = YourTubeChannelSearch.ParseResponse("UCBJycsmduvYEL83R_U4JriQ", m.Fixture("channel-search.json"), m.FakeRequest(), true)
+            m.assertInvalid(result.error)
+            m.assertTrue(result.items.Count() >= 3)
+            first = result.items[0]
+            m.assertEqual(first["type"], "video")
+            m.assertEqual(Len(first["videoId"]), 11)
+            m.assertTrue(Len(first["title"]) > 0)
+            m.assertTrue(Len(result.continuation) > 20)
+        end function
+
+        @it("parses a continuation page")
+        function _()
+            result = YourTubeChannelSearch.ParseResponse("UCBJycsmduvYEL83R_U4JriQ", m.Fixture("channel-search-page2.json"), m.FakeRequest(), false)
+            m.assertTrue(result.items.Count() >= 2)
+            m.assertEqual(result.items[0]["type"], "video")
+        end function
+
+        @it("returns no items without a search tab")
+        function _()
+            result = YourTubeChannelSearch.ParseResponse("UC1", { contents: {} }, m.FakeRequest(), true)
+            m.assertEqual(result.items.Count(), 0)
+            m.assertInvalid(result.continuation)
+            m.assertInvalid(YourTubeChannelSearch.GetSearchTabContent(invalid))
+        end function
+
+    end class
+
+end namespace
