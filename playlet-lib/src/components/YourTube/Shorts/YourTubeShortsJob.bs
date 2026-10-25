@@ -1,5 +1,6 @@
 import "pkg:/components/Services/Innertube/Context.bs"
 import "pkg:/components/YourTube/Shorts/YourTubeShortsParser.bs"
+import "pkg:/components/YourTube/Shorts/YourTubeShortsSubscriptions.bs"
 import "pkg:/components/YourTube/YourTubeText.bs"
 import "pkg:/source/services/HttpClient.bs"
 import "pkg:/source/utils/Types.bs"
@@ -7,6 +8,7 @@ import "pkg:/source/utils/Types.bs"
 ' YourTube: InnerTube (WEB client, signed out) calls for the Shorts tab.
 ' Input { op: "start", seedId? }   -> { shorts, continuation }  (seed: given id, else a random shorts search hit)
 '       { op: "more", continuation, lastVideoId } -> { shorts, continuation }
+'       { op: "subs", profile }    -> { shorts, continuation: "", source }  (signed in: Shorts from your subscriptions)
 '       { op: "info", videoId }    -> { videoId, title, channel, statsText, channelId, likesText, commentsText,
 '                                       needsSystemFont }
 @job("YourTubeShortsJob")
@@ -14,6 +16,24 @@ function ExecuteJob() as void
     input = JobGetInput()
     cancellation = JobGetCancellation()
     op = ValidString(input.op)
+
+    if op = "subs"
+        result = YourTubeShortsSubscriptions.Fetch(input.profile, cancellation)
+        if JobIsCancelled()
+            JobCancel()
+            return
+        end if
+        if result.shorts.Count() = 0
+            JobError(result.error)
+            return
+        end if
+        for each item in result.shorts
+            item.title = YourTubeText.Clean(item.title).text
+            item.channel = YourTubeText.Clean(item.channel).text
+        end for
+        JobSuccessData({ shorts: result.shorts, continuation: "", source: result.source })
+        return
+    end if
 
     if op = "info"
         videoId = ValidString(input.videoId)

@@ -1,0 +1,242 @@
+{
+ "contents": {
+  "tvBrowseRenderer": {
+   "content": {
+    "tvSurfaceContentRenderer": {
+     "content": {
+      "sectionListRenderer": {
+       "contents": [
+        {
+         "shelfRenderer": {
+          "title": {
+           "simpleText": "Shorts"
+          },
+          "content": {
+           "horizontalListRenderer": {
+            "items": [
+             {
+              "tileRenderer": {
+               "contentType": "TILE_CONTENT_TYPE_SHORTS",
+               "contentId": "shortAAAAA1",
+               "header": {
+                "tileHeaderRenderer": {
+                 "thumbnail": {
+                  "thumbnails": [
+                   {
+                    "url": "https://i.ytimg.com/vi/shortAAAAA1/oardefault.jpg",
+                    "width": 405
+                   }
+                  ]
+                 }
+                }
+               },
+               "metadata": {
+                "tileMetadataRenderer": {
+                 "title": {
+                  "simpleText": "First Short"
+                 }
+                }
+               },
+               "onSelectCommand": {
+                "reelWatchEndpoint": {
+                 "videoId": "shortAAAAA1"
+                }
+               },
+               "onLongPressCommand": {
+                "showMenuCommand": {
+                 "menu": {
+                  "menuRenderer": {
+                   "items": [
+                    {
+                     "menuNavigationItemRenderer": {
+                      "navigationEndpoint": {
+                       "browseEndpoint": {
+                        "browseId": "UCchannelAAAAAAAAAAAAAAA"
+                       }
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 }
+                }
+               }
+              }
+             },
+             {
+              "tileRenderer": {
+               "contentType": "TILE_CONTENT_TYPE_SHORTS",
+               "contentId": "shortBBBBB2",
+               "header": {
+                "tileHeaderRenderer": {
+                 "thumbnailOverlays": [
+                  {
+                   "tileMetadataRenderer": {
+                    "title": {
+                     "runs": [
+                      {
+                       "text": "Second "
+                      },
+                      {
+                       "text": "Short"
+                      }
+                     ]
+                    }
+                   }
+                  }
+                 ]
+                }
+               }
+              }
+             },
+             {
+              "tileRenderer": {
+               "contentType": "TILE_CONTENT_TYPE_SHORTS",
+               "contentId": "shortAAAAA1"
+              }
+             }
+            ]
+           }
+          }
+         }
+        },
+        {
+         "shelfRenderer": {
+          "title": {
+           "simpleText": "Latest"
+          },
+          "content": {
+           "horizontalListRenderer": {
+            "items": [
+             {
+              "tileRenderer": {
+               "contentType": "TILE_CONTENT_TYPE_VIDEO",
+               "contentId": "videoCCCCC3",
+               "metadata": {
+                "tileMetadataRenderer": {
+                 "title": {
+                  "simpleText": "A regular video"
+                 }
+                }
+               },
+               "onSelectCommand": {
+                "watchEndpoint": {
+                 "videoId": "videoCCCCC3"
+                }
+               }
+              }
+             },
+             {
+              "tileRenderer": {
+               "contentId": "shortDDDDD4",
+               "onSelectCommand": {
+                "reelWatchEndpoint": {
+                 "videoId": "shortDDDDD4"
+                }
+               }
+              }
+             }
+            ]
+           }
+          }
+         }
+        },
+        {
+         "itemSectionRenderer": {
+          "contents": [
+           {
+            "gridVideoRenderer": {
+             "videoId": "shortEEEEE5",
+             "title": {
+              "runs": [
+               {
+                "text": "Grid Short"
+               }
+              ]
+             },
+             "shortBylineText": {
+              "runs": [
+               {
+                "text": "Channel E",
+                "navigationEndpoint": {
+                 "browseEndpoint": {
+                  "browseId": "UCchannelEEEEEEEEEEEEEEE"
+                 }
+                }
+               }
+              ]
+             },
+             "viewCountText": {
+              "simpleText": "12K views"
+             },
+             "thumbnailOverlays": [
+              {
+               "thumbnailOverlayTimeStatusRenderer": {
+                "style": "SHORTS",
+                "text": {
+                 "simpleText": "SHORTS"
+                }
+               }
+              }
+             ]
+            }
+           },
+           {
+            "gridVideoRenderer": {
+             "videoId": "videoFFFFF6",
+             "title": {
+              "simpleText": "Grid video"
+             },
+             "thumbnailOverlays": [
+              {
+               "thumbnailOverlayTimeStatusRenderer": {
+                "style": "DEFAULT",
+                "text": {
+                 "simpleText": "10:00"
+                }
+               }
+              }
+             ]
+            }
+           },
+           {
+            "shortsLockupViewModel": {
+             "onTap": {
+              "innertubeCommand": {
+               "reelWatchEndpoint": {
+                "videoId": "shortGGGGG7"
+               }
+              }
+             },
+             "overlayMetadata": {
+              "primaryText": {
+               "content": "Lockup Short"
+              },
+              "secondaryText": {
+               "content": "3.1M views"
+              }
+             }
+            }
+           },
+           {
+            "reelItemRenderer": {
+             "videoId": "shortHHHHH8",
+             "headline": {
+              "simpleText": "Reel item Short"
+             },
+             "viewCountText": {
+              "simpleText": "900 views"
+             }
+            }
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    }
+   }
+  }
+ }
+}

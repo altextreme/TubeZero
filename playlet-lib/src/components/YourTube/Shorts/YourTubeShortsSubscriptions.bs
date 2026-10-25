@@ -1,0 +1,89 @@
+import "pkg:/components/ContentNode/ProfileContentAuthTokenUtils.bs"
+import "pkg:/components/Services/Innertube/BrowseEndpoint.bs"
+import "pkg:/components/YourTube/Shorts/YourTubeShortsParser.bs"
+import "pkg:/source/services/HttpClient.bs"
+
+' YourTube: Shorts from the signed-in user's subscriptions, for the Shorts tab's "From subscriptions" feed.
+' Reads the subscriptions feed (TV client first: the device's OAuth token is made for it; WEB as a fallback)
+' and keeps only its Shorts (YourTubeShorts.ParseSubscriptionShorts).
+namespace YourTubeShortsSubscriptions
+
+    function Sources() as object
+        return [
+            { name: "tv_browse_FEsubscriptions", client: "TV" }
+            { name: "web_browse_FEsubscriptions", client: "WEB" }
+        ]
+    end function
+
+    function CreateRequest(source as object, accessToken as string) as object
+        client = Innertube.ClientType.Tv
+        if source.client = "WEB"
+            client = Innertube.ClientType.Web
+        end if
+        request = Innertube.CreateBrowseRequest("FEsubscriptions", client)
+        request.Header("Authorization", "Bearer " + accessToken)
+        request.NoCache()
+        return request
+    end function
+
+    ' Tries each source until one has Shorts. Options: keepRaw (attach each raw response, for the debug route)
+    ' and tryAll (don't stop at the first hit). Result: { shorts, source, error, attempts }.
+    ' Never includes the access token.
+    function Fetch(profile as dynamic, cancellation as dynamic, keepRaw = false as boolean, tryAll = false as boolean) as object
+        result = { shorts: [], source: "", error: "", attempts: [] }
+        if profile = invalid or profile.type <> "youtube"
+            result.error = "Needs a signed-in YouTube profile"
+            return result
+        end if
+        auth = ProfileContentAuthTokenUtils.EnsureFreshAccessToken(profile)
+        if auth.state <> ProfileContentAuthTokenUtils.AccessTokenState.Ok
+            result.error = "No usable access token: " + auth.state
+            return result
+        end if
+
+        for each source in Sources()
+            request = CreateRequest(source, auth.token)
+            if cancellation <> invalid
+                request.Cancellation(cancellation)
+            end if
+            response = request.Await()
+            attempt = { name: source.name, status: response.StatusCode(), shortCount: 0 }
+            if response.IsSuccess()
+                json = response.Json()
+                shorts = YourTubeShorts.ParseSubscriptionShorts(json)
+                attempt.shortCount = shorts.Count()
+                if keepRaw
+                    sample = []
+                    for i = 0 to shorts.Count() - 1
+                        if i >= 5
+                            exit for
+                        end if
+                        sample.Push(shorts[i])
+                    end for
+                    attempt.sample = sample
+                    attempt.response = json
+                end if
+                if shorts.Count() > 0 and result.shorts.Count() = 0
+                    result.shorts = shorts
+                    result.source = source.name
+                end if
+            else
+                attempt.error = response.ErrorMessage()
+                if response.IsCancelled()
+                    result.attempts.Push(attempt)
+                    result.error = "Cancelled"
+                    return result
+                end if
+            end if
+            result.attempts.Push(attempt)
+            if result.shorts.Count() > 0 and not tryAll
+                exit for
+            end if
+        end for
+        if result.shorts.Count() = 0 and result.error = ""
+            result.error = "No Shorts in your subscriptions feed"
+        end if
+        return result
+    end function
+
+end namespace

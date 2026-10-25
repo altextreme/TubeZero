@@ -72,6 +72,14 @@
         type: "boolean",
         defaultValue: false,
       },
+      {
+        // YourTube: Shorts tab feed source (also toggled from the chip on the Shorts screen)
+        displayText: "Shorts from subscriptions only",
+        key: "content_feed.shorts_subscriptions_only",
+        description: "The Shorts tab starts with Shorts from channels you subscribe to. Needs a YouTube account.",
+        type: "boolean",
+        defaultValue: false,
+      },
     ],
   },
   {

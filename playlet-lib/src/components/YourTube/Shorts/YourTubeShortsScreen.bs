@@ -29,6 +29,8 @@ const ACTION_SUBSCRIBE = 3
 const ACTION_COUNT = 4
 ' how far the stage (and the player on it) slides left while the comments panel is docked on the right
 const COMMENTS_SHIFT = 400
+' YourTube: the "From subscriptions" feed preference (also in Settings)
+const SUBS_ONLY_PREF = "content_feed.shorts_subscriptions_only"
 
 function Init()
     m.keySink = m.top.findNode("KeySink")
@@ -48,6 +50,12 @@ function Init()
     m.actions = m.top.findNode("Actions")
     m.comments = m.top.findNode("ShortsComments")
     m.toast = m.top.findNode("ShortsToast")
+    m.subsChip = m.top.findNode("SubsChip")
+    m.subsChipRing = m.top.findNode("SubsChipRing")
+    m.subsChipFill = m.top.findNode("SubsChipFill")
+    m.subsChipIcon = m.top.findNode("SubsChipIcon")
+    m.subsChipLabel = m.top.findNode("SubsChipLabel")
+    m.subsChipHint = m.top.findNode("SubsChipHint")
     m.revealTimer = m.top.findNode("RevealTimer")
     m.skipTimer = m.top.findNode("SkipTimer")
     m.blurTimer = m.top.findNode("BlurTimer")
@@ -78,6 +86,17 @@ function Init()
     m.frameShift = 0
     m.stateJob = invalid
     m.pendingActions = {}
+    m.chipReturnArea = "frame"
+
+    ' "subs" (seeded from your subscriptions' Shorts) or "all"; "" until the first load
+    m.feedMode = ""
+    m.feedDirty = false
+    ' the subscription Shorts' ids: later batches are reel sequences seeded from these, in turn
+    m.subsSeeds = []
+    m.subsSeedIndex = 0
+    ' how many Shorts at the start of the list came from the subscriptions feed itself
+    m.subsCount = 0
+    m.subsEndToastShown = false
     m.top.focusable = true
 end function
 
@@ -92,6 +111,13 @@ function OnNodeReady()
     m.blurTimer.ObserveField("fire", FuncName(OnBlurTimer))
     m.messageState.ObserveField("selected", FuncName(OnRetrySelected))
     m.comments.ObserveField("closed", FuncName(OnCommentsClosed))
+    if m.preferences <> invalid
+        m.preferences.ObserveFieldScoped(SUBS_ONLY_PREF, FuncName(OnFeedSettingChange))
+    end if
+    if m.profilesService <> invalid
+        m.profilesService.ObserveFieldScoped("currentProfile", FuncName(OnFeedSettingChange))
+    end if
+    RenderChip()
     m.videoQueue.ObserveField("player", FuncName(OnQueuePlayerChange))
     ' AppScreens slides right while the nav is open; the player (in the video container) has to follow
     m.screensContainer = m.top.getParent()
@@ -115,7 +141,10 @@ function OnVisibleChange() as void
         return
     end if
     HideMessage()
-    if m.shorts.Count() = 0
+    RenderChip()
+    if m.feedDirty
+        ResetFeed()
+    else if m.shorts.Count() = 0
         LoadShorts()
     else
         ShowCurrent()
@@ -249,6 +278,11 @@ function PlayIndex(index as integer) as void
     ShowCurrent()
     if not m.hasFocus or not m.top.visible
         return
+    end if
+    ' YourTube: past the subscriptions feed's own Shorts, into sequences seeded from them
+    if m.feedMode = "subs" and m.subsCount > 0 and index = m.subsCount and not m.subsEndToastShown
+        m.subsEndToastShown = true
+        m.toast.text = "That's all from your subscriptions. More like them next."
     end if
 
     item = m.shorts[index]
@@ -498,8 +532,21 @@ function LoadShorts() as void
     if m.loadJob <> invalid
         return
     end if
-    m.frameStatus.text = "Loading Shorts..."
     m.thumb.uri = ""
+    ' YourTube: Shorts from your subscriptions when that's on and you're signed in
+    if DesiredFeedMode() = "subs"
+        m.feedMode = "subs"
+        m.frameStatus.text = "Loading Shorts from your subscriptions..."
+        m.loadJob = JobSystem.CreateCallback(OnLoadDone)
+        JobSystem.QueueJob(m.jobQueue, Jobs.YourTubeShortsJob, { op: "subs", profile: CurrentProfile() }, m.loadJob)
+        return
+    end if
+    LoadAllShorts()
+end function
+
+function LoadAllShorts() as void
+    m.feedMode = "all"
+    m.frameStatus.text = "Loading Shorts..."
     m.loadJob = JobSystem.CreateCallback(OnLoadDone)
     JobSystem.QueueJob(m.jobQueue, Jobs.YourTubeShortsJob, { op: "start" }, m.loadJob)
 end function
@@ -509,8 +556,15 @@ function LoadMore() as void
         return
     end if
     lastVideoId = m.shorts[m.shorts.Count() - 1].videoId
+    continuation = m.continuation
+    ' YourTube: subscriptions feed: only sequences seeded from your subscriptions' Shorts, each in turn
+    if m.feedMode = "subs" and m.subsSeeds.Count() > 0
+        lastVideoId = m.subsSeeds[m.subsSeedIndex mod m.subsSeeds.Count()]
+        m.subsSeedIndex += 1
+        continuation = ""
+    end if
     m.loadJob = JobSystem.CreateCallback(OnLoadDone)
-    JobSystem.QueueJob(m.jobQueue, Jobs.YourTubeShortsJob, { op: "more", continuation: m.continuation, lastVideoId: lastVideoId }, m.loadJob)
+    JobSystem.QueueJob(m.jobQueue, Jobs.YourTubeShortsJob, { op: "more", continuation: continuation, lastVideoId: lastVideoId }, m.loadJob)
 end function
 
 function OnLoadDone(event as object) as void
@@ -518,6 +572,14 @@ function OnLoadDone(event as object) as void
     m.loadJob = invalid
     info = event.getInfo()
     wasEmpty = m.shorts.Count() = 0
+
+    ' YourTube: no Shorts in your subscriptions feed (or it failed): fall back to the regular feed
+    if wasEmpty and m.feedMode = "subs" and (not info.success or ValidArray(info.data.shorts).Count() = 0)
+        LogWarn("Shorts: subscriptions feed empty or failed", info.error)
+        m.toast.text = "No Shorts from your subscriptions right now"
+        LoadAllShorts()
+        return
+    end if
 
     if not info.success
         LogWarn("Shorts: load failed", info.error)
@@ -561,6 +623,13 @@ function OnLoadDone(event as object) as void
     end if
 
     if wasEmpty
+        if m.feedMode = "subs"
+            m.subsCount = m.shorts.Count()
+            m.subsSeeds = []
+            for each item in m.shorts
+                m.subsSeeds.Push(item.videoId)
+            end for
+        end if
         m.index = 0
         if m.hasFocus
             PlayIndex(0)
@@ -589,6 +658,7 @@ function ShowMessage(title as string, message as string, actionText as string) a
     m.focusArea = "frame"
     UpdateActions()
     UpdateKeyHints()
+    RenderChip()
     m.stage.visible = false
     m.messageState.title = title
     m.messageState.message = message
@@ -618,11 +688,130 @@ end function
 
 function OnRetrySelected() as void
     HideMessage()
+    ResetFeed()
+end function
+
+' YourTube: drop the list and start over (retry, or the feed source changed).
+function ResetFeed() as void
+    m.feedDirty = false
+    StopPlayback()
+    if m.loadJob <> invalid
+        JobSystem.UnobserveCallback(m.loadJob)
+        m.loadJob.cancel = true
+        m.loadJob = invalid
+    end if
     m.shorts = []
     m.seenIds = {}
     m.index = -1
     m.continuation = ""
-    LoadShorts()
+    m.pendingAdvance = false
+    m.subsSeeds = []
+    m.subsSeedIndex = 0
+    m.subsCount = 0
+    m.subsEndToastShown = false
+    m.thumb.uri = ""
+    m.titleLabel.text = ""
+    m.channelLabel.text = ""
+    m.statsLabel.text = ""
+    m.playStateLabel.text = ""
+    UpdateActions()
+    if m.top.visible and not ShortsDisabled()
+        HideMessage()
+        LoadShorts()
+    end if
+end function
+
+'-------------------------------------------------------------------------------
+' YourTube: "From subscriptions" feed chip.
+'-------------------------------------------------------------------------------
+function SubsOnlyPref() as boolean
+    return m.preferences <> invalid and m.preferences[SUBS_ONLY_PREF] = true
+end function
+
+function DesiredFeedMode() as string
+    if SubsOnlyPref() and IsYouTubeProfile(CurrentProfile())
+        return "subs"
+    end if
+    return "all"
+end function
+
+' The preference (chip or Settings) or the signed-in profile changed.
+function OnFeedSettingChange() as void
+    RenderChip()
+    if m.feedMode = "" or DesiredFeedMode() = m.feedMode
+        return
+    end if
+    if m.top.visible
+        ResetFeed()
+    else
+        m.feedDirty = true
+    end if
+end function
+
+function ToggleSubsFeed() as void
+    if not IsYouTubeProfile(CurrentProfile())
+        m.toast.text = "Sign in with YouTube from Profile first"
+        return
+    end if
+    turnOn = not SubsOnlyPref()
+    if turnOn
+        m.toast.text = "Shorts from your subscriptions"
+    else
+        m.toast.text = "All Shorts"
+    end if
+    ' saved by Preferences; OnFeedSettingChange reloads the feed
+    m.preferences.setField(SUBS_ONLY_PREF, turnOn)
+end function
+
+function RenderChip() as void
+    signedIn = IsYouTubeProfile(CurrentProfile())
+    isOn = SubsOnlyPref() and signedIn
+    focused = m.focusArea = "chip"
+
+    m.subsChipLabel.text = "From subscriptions"
+    width = m.subsChipLabel.localBoundingRect().width + 58
+    m.subsChipFill.width = width
+    m.subsChipRing.width = width + 6
+    m.subsChipRing.visible = focused
+    if isOn
+        m.subsChipFill.color = "#EBEBEBFF"
+        m.subsChipLabel.color = "#161616FF"
+        m.subsChipIcon.blendColor = "#161616FF"
+    else
+        m.subsChipFill.color = "#272727FF"
+        m.subsChipLabel.color = "#AAAAAAFF"
+        m.subsChipIcon.blendColor = "#AAAAAAFF"
+    end if
+    if signedIn
+        m.subsChip.opacity = 1.0
+    else
+        m.subsChip.opacity = 0.6
+    end if
+
+    hint = ""
+    if focused
+        if not signedIn
+            hint = "Sign in with YouTube from Profile to watch Shorts from your subscriptions"
+        else if isOn
+            hint = "OK  Show all Shorts"
+        else
+            hint = "OK  Only Shorts from your subscriptions"
+        end if
+    end if
+    m.subsChipHint.text = hint
+end function
+
+function OnChipKey(key as string) as boolean
+    if key = RemoteKeys.Down or key = RemoteKeys.Back
+        SetFocusArea(m.chipReturnArea)
+        return true
+    else if key = RemoteKeys.Ok
+        ToggleSubsFeed()
+        return true
+    else if key = RemoteKeys.Up or key = RemoteKeys.Right
+        return true
+    end if
+    return false
 end function
 
 '-------------------------------------------------------------------------------
@@ -637,6 +826,16 @@ function OnKeyEvent(key as string, press as boolean) as boolean
     if press and m.focusArea = "actions" and not m.messageState.visible
         return OnActionsKey(key)
     end if
+    ' YourTube: the header chip; Left still goes to the nav (leaving the chip behind)
+    if press and m.focusArea = "chip" and not m.messageState.visible
+        if key <> RemoteKeys.Left
+            return OnChipKey(key)
+        end if
+        m.focusArea = m.chipReturnArea
+        RenderChip()
+        UpdateActions()
+        UpdateKeyHints()
+    end if
     if NavigationKeyHandler(key, press).handled
         return true
     end if
@@ -647,7 +846,12 @@ function OnKeyEvent(key as string, press as boolean) as boolean
         return key = RemoteKeys.Up or key = RemoteKeys.Down or key = RemoteKeys.Right
     end if
     if key = RemoteKeys.Up
-        MoveBy(-1)
+        ' YourTube: Up from the first Short reaches the header chip
+        if m.index <= 0
+            SetFocusArea("chip")
+        else
+            MoveBy(-1)
+        end if
         return true
     else if key = RemoteKeys.Down
         MoveBy(1)
@@ -673,6 +877,8 @@ function OnActionsKey(key as string) as boolean
         if m.actionIndex > 0
             m.actionIndex -= 1
             UpdateActions()
+        else
+            SetFocusArea("chip")
         end if
         return true
     else if key = RemoteKeys.Down
@@ -694,10 +900,14 @@ end function
 ' YourTube: action column (like / dislike / comments / subscribe).
 '-------------------------------------------------------------------------------
 function SetFocusArea(area as string) as void
+    if area = "chip" and m.focusArea <> "chip"
+        m.chipReturnArea = m.focusArea
+    end if
     m.focusArea = area
     NodeSetFocus(m.keySink, true)
     UpdateActions()
     UpdateKeyHints()
+    RenderChip()
 end function
 
 function UpdateKeyHints() as void

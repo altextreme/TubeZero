@@ -4,6 +4,7 @@
     through the reel_watch_sequence feed, OK pauses. The screen keeps focus; playback stops when it loses it.
     Right moves into the action column (Like, Dislike, Comments, Subscribe; Up/Down between them, Left back);
     Comments docks the comments panel on the right and slides the frame left so the two don't overlap.
+    The header chip switches the feed to Shorts from your subscriptions (signed in only).
 -->
 <component name="YourTubeShortsScreen" extends="Group" includes="AutoBind,Focus">
     <interface>
@@ -27,6 +28,25 @@
             color="0xF1F1F1FF"
             translation="[104,48]">
             <Font role="font" uri="font:BoldSystemFontFile" size="30" />
+        </Label>
+
+        <!-- "From subscriptions" feed toggle (content_feed.shorts_subscriptions_only); reached with Up from the
+             first Short or from the top of the action column. Sized and colored in RenderChip. -->
+        <Group id="SubsChip" translation="[226,46]">
+            <RoundedRect id="SubsChipRing" height="46" color="0x3EA6EBFF" translation="[-3,-3]" visible="false" />
+            <RoundedRect id="SubsChipFill" height="40" color="0x272727FF" />
+            <Poster
+                id="SubsChipIcon"
+                uri="pkg:/images/icons/ms/subscriptions.png"
+                width="20"
+                height="20"
+                translation="[14,10]" />
+            <Label id="SubsChipLabel" height="40" vertAlign="center" translation="[42,0]">
+                <Font role="font" uri="font:MediumSystemFontFile" size="16" />
+            </Label>
+        </Group>
+        <Label id="SubsChipHint" width="330" wrap="true" color="0x717171FF" translation="[104,98]">
+            <Font role="font" uri="font:SystemFontFile" size="16" />
         </Label>
 
         <Group id="ShortsStage">

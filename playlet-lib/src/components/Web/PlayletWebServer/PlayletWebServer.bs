@@ -23,6 +23,7 @@ import "pkg:/components/Web/WebServer/Middleware/HttpStaticFilesRouter.bs"
 import "pkg:/components/Web/WebServer/WebSockets/WebSocketMiddleware.bs"
 import "pkg:/components/YourTube/HomeShelves/YourTubeHomeShelvesRouter.bs"
 import "pkg:/components/YourTube/Live/YourTubeLiveRouter.bs"
+import "pkg:/components/YourTube/Shorts/YourTubeShortsRouter.bs"
 
 function Init()
 end function
@@ -91,6 +92,7 @@ function SetupRoutes(server as object)
     server.UseRouter(new Http.InnertubeRouter(server))
     server.UseRouter(new Http.YourTubeLiveRouter(server)) ' YourTube: Live tab phone page + API
     server.UseRouter(new Http.YourTubeHomeShelvesRouter(server)) ' YourTube: Home shelves (one row per shelf)
+    server.UseRouter(new Http.YourTubeShortsRouter(server)) ' YourTube: Shorts diagnostics
 
     etags = new Http.EtagUtils()
     server.UseRouter(new Http.HttpStaticFilesRouter("/", "libpkg:/www", etags, { staticFiles: true, staticCompressed: true }))

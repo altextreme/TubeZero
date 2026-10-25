@@ -150,6 +150,57 @@ namespace Tests
             m.assertEqual(YourTubeShorts.ChannelIdOrEmpty(12), "")
         end function
 
+        @describe("YourTubeShorts.ParseSubscriptionShorts")
+
+        ' subscriptions-shorts.json is synthetic (the signed-in feed can't be captured ahead of time): TV tiles
+        ' in shelves plus the WEB renderer shapes the parser also accepts.
+        @it("collects the Shorts in feed order, skipping videos and duplicates")
+        function _()
+            shorts = YourTubeShorts.ParseSubscriptionShorts(m.Fixture("subscriptions-shorts.json"))
+            ids = []
+            for each item in shorts
+                ids.Push(item.videoId)
+            end for
+            m.assertEqual(ids.Join(","), "shortAAAAA1,shortBBBBB2,shortDDDDD4,shortEEEEE5,shortGGGGG7,shortHHHHH8")
+        end function
+
+        @it("reads titles, channels and views where the entry has them")
+        function _()
+            shorts = YourTubeShorts.ParseSubscriptionShorts(m.Fixture("subscriptions-shorts.json"))
+            m.assertEqual(shorts[0].title, "First Short")
+            m.assertEqual(shorts[0].channelId, "UCchannelAAAAAAAAAAAAAAA")
+            m.assertEqual(shorts[0].thumbnail, "https://i.ytimg.com/vi/shortAAAAA1/frame0.jpg")
+            m.assertEqual(shorts[1].title, "Second Short")
+            m.assertEqual(shorts[1].channelId, "")
+            m.assertEqual(shorts[3].title, "Grid Short")
+            m.assertEqual(shorts[3].channel, "Channel E")
+            m.assertEqual(shorts[3].channelId, "UCchannelEEEEEEEEEEEEEEE")
+            m.assertEqual(shorts[3].viewsText, "12K views")
+            m.assertEqual(shorts[4].title, "Lockup Short")
+            m.assertEqual(shorts[4].viewsText, "3.1M views")
+            m.assertEqual(shorts[5].title, "Reel item Short")
+        end function
+
+        @it("stops at maxCount")
+        function _()
+            shorts = YourTubeShorts.ParseSubscriptionShorts(m.Fixture("subscriptions-shorts.json"), 2)
+            m.assertEqual(shorts.Count(), 2)
+            m.assertEqual(shorts[1].videoId, "shortBBBBB2")
+        end function
+
+        @it("finds no Shorts in a feed of regular videos or bad input")
+        function _()
+            m.assertEqual(YourTubeShorts.ParseSubscriptionShorts(m.Fixture("subscribed-channels-tv.json")).Count(), 0)
+            m.assertEqual(YourTubeShorts.ParseSubscriptionShorts(invalid).Count(), 0)
+            m.assertEqual(YourTubeShorts.ParseSubscriptionShorts({ "contents": [1, "x", {}] }).Count(), 0)
+        end function
+
+        @it("keeps video ids that differ only in case apart")
+        function _()
+            json = { "items": [{ "reelWatchEndpoint": { "videoId": "abcDEF12345" } }, { "reelWatchEndpoint": { "videoId": "ABCdef12345" } }] }
+            m.assertEqual(YourTubeShorts.ParseSubscriptionShorts(json).Count(), 2)
+        end function
+
         @describe("YourTubeShorts.StatsLine")
 
         @it("joins the parts that exist")

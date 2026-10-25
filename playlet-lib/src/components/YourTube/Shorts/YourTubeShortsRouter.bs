@@ -1,0 +1,42 @@
+import "pkg:/components/Web/WebServer/Http/HttpRouter.bs"
+import "pkg:/components/YourTube/Shorts/YourTubeShortsSubscriptions.bs"
+import "pkg:/source/utils/Types.bs"
+
+namespace Http
+
+    ' YourTube: diagnostics for the Shorts tab.
+    class YourTubeShortsRouter extends HttpRouter
+
+        function new(server as object)
+            super()
+            m.profilesService = server.sceneNodes.profilesService
+        end function
+
+        ' Runs every subscriptions-feed source the "From subscriptions" Shorts feed tries (as the current YouTube
+        ' profile) and returns each raw InnerTube response with the Shorts the parser found in it.
+        ' The access token stays on the TV: only response bodies, statuses and parse results are returned.
+        @get("/api/yourtube/debug/shorts-subscriptions")
+        function GetShortsSubscriptionsDebug(context as object) as boolean
+            profile = invalid
+            if m.profilesService <> invalid
+                profile = m.profilesService.currentProfile
+            end if
+            profileType = ""
+            if profile <> invalid
+                profileType = ValidString(profile.type)
+            end if
+            result = YourTubeShortsSubscriptions.Fetch(profile, invalid, true, true)
+            context.response.Json({
+                profileType: profileType
+                source: result.source
+                shortCount: result.shorts.Count()
+                shorts: result.shorts
+                error: result.error
+                attempts: result.attempts
+            })
+            return true
+        end function
+
+    end class
+
+end namespace
