@@ -4,6 +4,7 @@ import "pkg:/components/Dialog/DialogUtils.bs"
 import "pkg:/components/JobSystem/Jobs.bs"
 import "pkg:/components/JobSystem/JobSystem.bs"
 import "pkg:/components/Navigation/Navigation.bs"
+import "pkg:/components/VideoFeed/FeedLoadState.bs"
 import "pkg:/source/utils/DisposableObserve.bs"
 import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/Locale.bs"
@@ -12,40 +13,64 @@ import "pkg:/source/utils/RemoteKeys.bs"
 import "pkg:/source/utils/StringUtils.bs"
 import "pkg:/source/utils/Types.bs"
 
+' YourTube: the channel page is restyled like the YouTube TV app (see ChannelView.xml): tab chips and a grid
+' for the selected tab instead of one row per tab, Subscribe and Play all as chips. Subscribing, tabs, sort
+' options and the bookmarks menu are Playlet's.
+
+' How far the header slides up while the grid has focus (tabs end up at the top of the screen)
+const CHANNEL_HEADER_COLLAPSE = 196
+' Right edge of the Subscribe / Play all chips
+const CHANNEL_ACTIONS_RIGHT = 1190
+
 function Init()
     m.container = m.top.findNode("container")
-    m.scrollAnimation = m.top.findNode("scrollAnimation")
-    m.containerTranslation = m.scrollAnimation.findNode("containerTranslation")
-    m.bannerTranslation = m.scrollAnimation.findNode("bannerTranslation")
+    m.layoutAnimation = m.top.findNode("layoutAnimation")
+    m.containerMove = m.top.findNode("containerMove")
 
     m.banner = m.top.findNode("banner")
+    m.bannerScrim = m.top.findNode("bannerScrim")
     m.thumbnail = m.top.findNode("thumbnail")
     m.authorLabel = m.top.findNode("authorLabel")
     m.subCountLabel = m.top.findNode("subCountLabel")
-    m.subscribeButton = m.top.findNode("subscribeButton")
-    m.rowList = m.top.FindNode("rowList")
-    m.rowList.focusable = true
-    m.rowList.screen = m.top
+    m.actionsBar = m.top.findNode("actionsBar")
+    m.tabsBar = m.top.findNode("tabsBar")
+    m.gridMessage = m.top.findNode("gridMessage")
+    m.videoGrid = m.top.findNode("videoGrid")
+    m.videoGrid.screen = m.top
 
     DisposableObserveFieldScoped(m.banner, "loadStatus", FuncName(OnBannerLoadStatus))
     m.author = ""
     m.authorId = ""
+    ' One feed per tab chip (after the search chip); the channel search results are the last one when present
+    m.tabFeeds = []
+    m.activeTab = -1
+    m.searchTab = -1
+    m.actions = []
+    m.lastSection = invalid
+    m.collapsed = false
 
     InitializeTabs()
     InitializeSortOptions()
 end function
 
 function OnNodeready()
-    m.rowList@.BindNode()
+    m.videoGrid@.BindNode()
 
-    SetNavigation(m.rowList, RemoteKeys.Up, m.subscribeButton)
-    SetNavigation(m.subscribeButton, RemoteKeys.Down, m.rowList)
+    SetNavigation(m.videoGrid, RemoteKeys.Up, m.tabsBar)
+    SetNavigation(m.tabsBar, RemoteKeys.Up, m.actionsBar)
+    SetNavigation(m.tabsBar, RemoteKeys.Down, m.videoGrid)
+    SetNavigation(m.actionsBar, RemoteKeys.Down, m.tabsBar)
+    SetNavigation(m.actionsBar, RemoteKeys.Down, m.videoGrid)
 
-    m.subscribeButton.text = Tr(Locale.Buttons.Subscribe)
-    DisposableObserveFieldScoped(m.subscribeButton, "buttonSelected", FuncName(OnSubscribeButtonSelected))
+    DisposableObserveFieldScoped(m.actionsBar, "selected", FuncName(OnActionSelected))
+    DisposableObserveFieldScoped(m.tabsBar, "selected", FuncName(OnTabSelected))
+    DisposableObserveFieldScoped(m.videoGrid, "focusedChild", FuncName(OnSectionFocus))
+    DisposableObserveFieldScoped(m.tabsBar, "focusedChild", FuncName(OnSectionFocus))
+    DisposableObserveFieldScoped(m.actionsBar, "focusedChild", FuncName(OnSectionFocus))
+    DisposableObserveFieldScoped(m.videoGrid, "feedState", FuncName(OnGridFeedState))
 
-    SetSubscribeButtonVisibility()
-    DisposableObserveFieldScoped(m.profilesService, "currentProfileChanged", FuncName(SetSubscribeButtonVisibility))
+    UpdateActions()
+    DisposableObserveFieldScoped(m.profilesService, "currentProfileChanged", FuncName(UpdateActions))
     OnSubscriptionChanged()
     DisposableObserveFieldScoped(m.invidious, "subscriptions", FuncName(OnSubscriptionChanged))
 end function
@@ -55,7 +80,15 @@ function OnFocusChange() as void
         return
     end if
 
-    NodeSetFocus(m.rowList, true)
+    if m.lastSection <> invalid and m.lastSection.focusable
+        NodeSetFocus(m.lastSection, true)
+        return
+    end if
+    if m.tabFeeds.Count() > 0
+        NodeSetFocus(m.tabsBar, true)
+        return
+    end if
+    NodeSetFocus(m.actionsBar, true)
 end function
 
 function OnContentSet() as void
@@ -74,7 +107,13 @@ function OnContentSet() as void
     end if
     m.subCountLabel.text = subCountText
 
-    m.banner.uri = content.banner
+    if m.banner.uri <> ValidString(content.banner)
+        m.banner.uri = ValidString(content.banner)
+    end if
+    if StringUtils.IsNullOrEmpty(content.banner)
+        m.banner.visible = false
+        m.bannerScrim.visible = false
+    end if
     if StringUtils.IsNullOrEmpty(content.thumbnail)
         m.thumbnail.uri = ""
     else
@@ -93,7 +132,20 @@ function OnContentSet() as void
     if (authorId <> m.authorId or author <> m.author) and IsArray(content.tabs)
         m.authorId = authorId
         m.author = author
-        m.rowList.feeds = CreateChannelFeeds(m.authorId, author, content.tabs, content.tabsParams, content.tabsTitles)
+        feeds = CreateChannelFeeds(m.authorId, author, content.tabs, content.tabsParams, content.tabsTitles)
+        if feeds = invalid
+            feeds = []
+        end if
+        m.tabFeeds = feeds
+        m.searchTab = -1
+        m.activeTab = -1
+        UpdateTabChips()
+        if m.tabFeeds.Count() > 0
+            ShowTab(0)
+        end if
+        if m.top.isInFocusChain() and not m.videoGrid.isInFocusChain() and not m.actionsBar.isInFocusChain()
+            NodeSetFocus(m.tabsBar, true)
+        end if
     end if
 end function
 
@@ -138,6 +190,86 @@ function CreateChannelFeeds(authorId as string, author as string, tabs as object
     return feeds
 end function
 
+' Tab chips: a search icon first, then one chip per tab (the search results tab shows the query).
+function UpdateTabChips() as void
+    chips = [{
+        text: ""
+        iconUri: "pkg:/images/icons/ms/search.png"
+    }]
+    for i = 0 to m.tabFeeds.Count() - 1
+        feed = m.tabFeeds[i]
+        if i = m.searchTab
+            chips.Push({
+                text: ValidString(feed.query)
+                iconUri: "pkg:/images/icons/ms/search.png"
+            })
+        else
+            chips.Push(ValidString(feed.title))
+        end if
+    end for
+    m.tabsBar.chips = chips
+    m.tabsBar.activeIndex = m.activeTab + 1
+end function
+
+function ShowTab(index as integer) as void
+    if index < 0 or index >= m.tabFeeds.Count()
+        return
+    end if
+    m.activeTab = index
+    m.tabsBar.activeIndex = index + 1
+    m.videoGrid.feeds = [m.tabFeeds[index]]
+end function
+
+function OnTabSelected() as void
+    chipIndex = m.tabsBar.selected
+    if chipIndex = 0
+        ShowSearchKeyboard()
+        return
+    end if
+    ShowTab(chipIndex - 1)
+end function
+
+function OnGridFeedState() as void
+    feedState = m.videoGrid.feedState
+    m.videoGrid.focusable = feedState = "ready" or feedState = "loading"
+    m.gridMessage.visible = feedState = "empty"
+    if m.activeTab >= 0 and m.activeTab = m.searchTab
+        m.gridMessage.text = `No results for "${ValidString(m.tabFeeds[m.activeTab].query)}" on this channel.`
+    else
+        m.gridMessage.text = "Nothing here yet."
+    end if
+    if not m.videoGrid.focusable and m.videoGrid.isInFocusChain()
+        m.lastSection = m.tabsBar
+        NodeSetFocus(m.tabsBar, true)
+    end if
+end function
+
+' The header slides up while the grid has focus, and back when the tabs or actions get it.
+function OnSectionFocus() as void
+    collapsed = m.collapsed
+    if m.videoGrid.hasFocus()
+        m.lastSection = m.videoGrid
+        collapsed = true
+    else if m.tabsBar.hasFocus()
+        m.lastSection = m.tabsBar
+        collapsed = false
+    else if m.actionsBar.hasFocus()
+        m.lastSection = m.actionsBar
+        collapsed = false
+    end if
+    if collapsed = m.collapsed
+        return
+    end if
+    m.collapsed = collapsed
+    target = [0, 0]
+    if collapsed
+        target = [0, -CHANNEL_HEADER_COLLAPSE]
+    end if
+    m.layoutAnimation.control = "stop"
+    m.containerMove.keyValue = [m.container.translation, target]
+    m.layoutAnimation.control = "start"
+end function
+
 function OnKeyEvent(key as string, press as boolean) as boolean
     if NavigationKeyHandler(key, press).handled
         return true
@@ -161,7 +293,7 @@ function Close()
 end function
 
 function OnDispose()
-    m.rowList.dispose = true
+    m.videoGrid.dispose = true
     DisposeObservers()
     if m.subscribeJob <> invalid
         m.subscribeJob.cancel = true
@@ -171,6 +303,7 @@ function OnDispose()
         m.fetchSubscriptionStatusJob.cancel = true
         m.fetchSubscriptionStatusJob = invalid
     end if
+    StopPlayAllLoad()
 end function
 
 function OnSubscribeButtonSelected() as void
@@ -207,29 +340,206 @@ end function
 
 function OnBannerLoadStatus() as void
     status = m.banner.loadStatus
-    if status <> "ready"
+    ready = status = "ready"
+    m.banner.visible = ready
+    m.bannerScrim.visible = ready
+end function
+
+' YourTube: Subscribe (signed in only) and Play all, right-aligned on the name row.
+function UpdateActions() as void
+    m.actions = []
+    chips = []
+    if IsLoggedIn() and not StringUtils.IsNullOrEmpty(m.top.authorId)
+        m.actions.Push("subscribe")
+        if m.top.isSubscribed
+            chips.Push("Subscribed")
+        else
+            chips.Push(Tr(Locale.Buttons.Subscribe))
+        end if
+    end if
+    m.actions.Push("playAll")
+    chips.Push({
+        text: "Play all"
+        iconUri: "pkg:/images/icons/ms/play_arrow.png"
+    })
+    m.actionsBar.chips = chips
+    ' Not subscribed yet: the Subscribe chip is the light one, like YouTube's white Subscribe button
+    if m.actions[0] = "subscribe" and not m.top.isSubscribed
+        m.actionsBar.activeIndex = 0
+    else
+        m.actionsBar.activeIndex = -1
+    end if
+    m.actionsBar.translation = [CHANNEL_ACTIONS_RIGHT - m.actionsBar.contentWidth, m.actionsBar.translation[1]]
+end function
+
+function OnActionSelected() as void
+    index = m.actionsBar.selected
+    if index < 0 or index >= m.actions.Count()
+        return
+    end if
+    action = m.actions[index]
+    if action = "subscribe"
+        OnSubscribeButtonSelected()
+    else if action = "playAll"
+        PlayAll()
+    end if
+end function
+
+' YourTube: Play all. On the Videos tab the loaded videos play right away; otherwise the first page of the
+' channel's uploads playlist (UU...) loads, newest first.
+function PlayAll() as void
+    if m.videoQueue = invalid or StringUtils.IsNullOrEmpty(m.authorId)
         return
     end if
 
-    bannerAspect = m.banner.bitmapWidth / m.banner.bitmapHeight
-    bannerHeight = m.banner.width / bannerAspect
-    m.banner.height = bannerHeight
-    m.banner.translation = [0, -bannerHeight]
-    m.banner.visible = true
+    playlist = CreateObject("roSGNode", "PlaylistContentNode")
+    ' NOTE: "_author" not "author". See PlaylistContentNode.xml for explanation.
+    playlist._author = m.author
+    playlist.authorId = m.authorId
+    playlist.title = `${m.author} - Videos`
 
-    startPos = [0, -bannerHeight]
-    endPos = [0, 0]
-    midPos = [0, (startPos[1] + endPos[1]) / 2]
+    videos = GetLoadedVideosOfActiveTab("channel_videos")
+    if videos.Count() > 0
+        for i = 0 to videos.Count() - 1
+            videos[i] = videos[i].clone(false)
+        end for
+        playlist.appendChildren(videos)
+        playlist.loadState = FeedLoadState.Loaded
+        m.videoQueue.playPlaylist = {
+            playlistNode: playlist
+            playlistIndex: 0
+        }
+        return
+    end if
 
-    m.bannerTranslation.keyValue = [startPos, midPos, endPos]
+    if not m.authorId.StartsWith("UC")
+        return
+    end if
+    uploadsId = "UU" + m.authorId.Mid(2)
+    playlist.id = uploadsId
+    playlist.playlistId = uploadsId
+    StopPlayAllLoad()
+    m.playAllPlaylist = playlist
+    playlist.ObserveFieldScoped("loadState", FuncName(OnPlayAllLoadState))
+    playlist@.LoadPlaylistPage(m.invidious, m.jobQueue)
+end function
 
-    startPos = [0, 0]
-    endPos = [0, bannerHeight - m.thumbnail.height * 0.4]
-    midPos = [0, (startPos[1] + endPos[1]) / 2]
+function OnPlayAllLoadState() as void
+    playlist = m.playAllPlaylist
+    if playlist = invalid
+        return
+    end if
+    loadState = playlist.loadState
+    if loadState = FeedLoadState.Error
+        StopPlayAllLoad()
+        DialogUtils.ShowDialogEx({
+            title: "Play all"
+            message: "Couldn't load this channel's videos."
+        })
+        return
+    end if
+    if loadState <> FeedLoadState.LoadedPage and loadState <> FeedLoadState.Loaded
+        return
+    end if
+    StopPlayAllLoad()
+    if playlist.getChildCount() = 0
+        return
+    end if
+    ' One page is enough for a queue; mark it loaded so the queue doesn't fetch the whole channel.
+    playlist.loadState = FeedLoadState.Loaded
+    m.videoQueue.playPlaylist = {
+        playlistNode: playlist
+        playlistIndex: 0
+    }
+end function
 
-    m.containerTranslation.keyValue = [startPos, midPos, endPos]
+function StopPlayAllLoad() as void
+    if m.playAllPlaylist <> invalid
+        m.playAllPlaylist.UnobserveFieldScoped("loadState")
+        m.playAllPlaylist = invalid
+    end if
+end function
 
-    m.scrollAnimation.control = "start"
+' Videos already loaded into the grid, when the active tab uses the given endpoint.
+function GetLoadedVideosOfActiveTab(endpoint as string) as object
+    videos = []
+    if m.activeTab < 0 or m.activeTab >= m.tabFeeds.Count()
+        return videos
+    end if
+    feedSources = m.tabFeeds[m.activeTab].feedSources
+    if not IsArray(feedSources) or feedSources.Count() = 0 or feedSources[0].endpoint <> endpoint
+        return videos
+    end if
+    content = m.videoGrid.content
+    if content = invalid
+        return videos
+    end if
+    for each row in content.getChildren(-1, 0)
+        for each item in row.getChildren(-1, 0)
+            if ValidString(item.type) = "video"
+                videos.Push(item)
+            end if
+        end for
+    end for
+    return videos
+end function
+
+' YourTube: channel search. OK on the search chip opens the keyboard; the results become the last tab.
+function ShowSearchKeyboard() as void
+    keyboardDialog = CreateObject("roSGNode", "StandardKeyboardDialog")
+    keyboardDialog.title = `Search ${m.author}`
+    query = ""
+    if m.searchTab >= 0
+        query = ValidString(m.tabFeeds[m.searchTab].query)
+    end if
+    keyboardDialog.text = query
+    keyboardDialog.buttons = [Tr(Locale.NavBar.Search), Tr(Locale.Buttons.Cancel)]
+    keyboardDialog.observeField("buttonSelected", FuncName(OnSearchKeyboardButton))
+    m.top.getScene().dialog = keyboardDialog
+end function
+
+function OnSearchKeyboardButton(event as object) as void
+    keyboard = event.getRoSGNode()
+    buttonSelected = keyboard.buttonSelected
+    query = ValidString(keyboard.text).Trim()
+    keyboard.close = true
+    if buttonSelected <> 0 or query = "" or StringUtils.IsNullOrEmpty(m.authorId)
+        return
+    end if
+    SearchChannel(query)
+end function
+
+function SearchChannel(query as string) as void
+    feed = CreateChannelSearchFeed(m.authorId, m.author, query)
+    if m.searchTab >= 0 and m.searchTab < m.tabFeeds.Count()
+        m.tabFeeds[m.searchTab] = feed
+    else
+        m.tabFeeds.Push(feed)
+        m.searchTab = m.tabFeeds.Count() - 1
+    end if
+    m.activeTab = m.searchTab
+    UpdateTabChips()
+    ShowTab(m.searchTab)
+    m.tabsBar.focusIndex = m.searchTab + 1
+    m.lastSection = m.tabsBar
+    NodeSetFocus(m.tabsBar, true)
+end function
+
+function CreateChannelSearchFeed(ucid as string, author as string, query as string) as object
+    return {
+        title: query
+        query: query
+        feedSources: [{
+            "id": `yt_channel_search_${ucid}_${query.EncodeUriComponent()}`
+            "title": `${author} - ${query}`
+            "apiType": "Invidious"
+            "endpoint": "yt_channel_search"
+            "queryParams": {
+                "ucid": ucid
+                "q": query
+            }
+        }]
+    }
 end function
 
 function InitializeTabs()
@@ -354,8 +664,9 @@ function GetContextMenuOptionsForItem(video as object) as object
     return options
 end function
 
-function GetSortingContextMenuOptionsForItem(video as object) as object
-    feedContentNode = video.getParent()
+function GetSortingContextMenuOptionsForItem(_video as object) as object
+    ' YourTube: the grid moves cards out of the feed node into rows, so ask the grid for the feed
+    feedContentNode = m.videoGrid.feedNode
     if feedContentNode = invalid or not feedContentNode.hasField("feedSources")
         return []
     end if
@@ -366,7 +677,10 @@ function GetSortingContextMenuOptionsForItem(video as object) as object
     end if
 
     feedSource = feedSources[0]
-    sortOptions = feedSource.state.sortOptions
+    sortOptions = invalid
+    if IsAssociativeArray(feedSource.state)
+        sortOptions = feedSource.state.sortOptions
+    end if
     if not IsArray(sortOptions)
         endpoint = feedSource.endpoint
         if not m.sortOptions.DoesExist(endpoint)
@@ -385,18 +699,9 @@ function IsLoggedIn() as boolean
 end function
 
 function OnAuthorIdChange()
-    SetSubscribeButtonVisibility()
+    UpdateActions()
     OnSubscriptionChanged()
     FetchSubscriptionStatus()
-end function
-
-function SetSubscribeButtonVisibility()
-    isEnabled = IsLoggedIn() and not StringUtils.IsNullOrEmpty(m.top.authorId)
-    m.subscribeButton.visible = isEnabled
-    m.subscribeButton.focusable = isEnabled
-    if not isEnabled and m.subscribeButton.hasFocus()
-        NodeSetFocus(m.rowList, true)
-    end if
 end function
 
 function FetchSubscriptionStatus() as void
@@ -431,11 +736,7 @@ function OnFetchSubscriptionStatusDone(event as object) as void
 end function
 
 function OnSubscriptionChanged()
-    if m.top.isSubscribed
-        m.subscribeButton.text = Tr(Locale.Buttons.Unsubscribe)
-    else
-        m.subscribeButton.text = Tr(Locale.Buttons.Subscribe)
-    end if
+    UpdateActions()
 end function
 
 function ShowSortDialog(title as string, sortOptions as object, feedContentNode as object) as void
@@ -477,9 +778,9 @@ function OnSortDialogResult(event as object) as void
     end if
     selectedFeedSource = feedSources[0]
 
-    currentFeeds = m.rowList.feeds
-    for i = 0 to currentFeeds.Count() - 1
-        feed = currentFeeds[i]
+    ' YourTube: tabs live in m.tabFeeds; reload the grid when the sorted tab is showing
+    for i = 0 to m.tabFeeds.Count() - 1
+        feed = m.tabFeeds[i]
         feedSource = feed.feedSources[0]
         if feedSource.id = selectedFeedSource.id
             if feedSource.queryParams = invalid
@@ -487,7 +788,9 @@ function OnSortDialogResult(event as object) as void
             end if
 
             feedSource.queryParams["sort_by"] = selected.id
-            m.rowList.feeds = currentFeeds
+            if i = m.activeTab
+                ShowTab(i)
+            end if
             return
         end if
     end for

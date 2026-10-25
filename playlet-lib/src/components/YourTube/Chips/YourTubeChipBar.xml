@@ -1,0 +1,24 @@
+<!--
+    YourTube: a horizontal row of YouTube TV-style chips (Home topics, channel tabs, Subscriptions and search
+    filters). Focusable as one unit: Left/Right move between chips, OK raises `selected` with the chip's index.
+    Left on the first chip and Up/Down are left to the screen.
+
+    chips: array of strings, or of { text, iconUri } (an icon-only chip has an empty text).
+    activeIndex: the current chip (light pill while the bar is not focused); -1 for none.
+    Resting chips are #272727 with light text; the focused chip is light with dark text.
+-->
+<component name="YourTubeChipBar" extends="Group">
+    <interface>
+        <field id="chips" type="array" onChange="OnChipsChange" />
+        <field id="activeIndex" type="integer" value="0" onChange="UpdateStyles" />
+        <field id="focusIndex" type="integer" value="0" onChange="OnFocusIndexChange" />
+        <field id="selected" type="integer" alwaysNotify="true" />
+        <field id="maxWidth" type="float" value="1100" onChange="UpdateScroll" />
+        <!-- Width of all chips laid out (read-only), so a screen can right-align the bar -->
+        <field id="contentWidth" type="float" />
+    </interface>
+    <children>
+        <Font id="chipFont" uri="font:MediumSystemFontFile" size="16" />
+        <Group id="strip" />
+    </children>
+</component>

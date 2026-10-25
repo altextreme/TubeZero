@@ -3,8 +3,6 @@ import "pkg:/components/JobSystem/JobSystem.bs"
 import "pkg:/components/VideoFeed/FeedLoadState.bs"
 import "pkg:/source/utils/Types.bs"
 
-' Cards per row
-const GRID_COLUMNS = 4
 ' Fetch the next page when focus gets this many rows from the end
 const GRID_LOAD_MORE_ROWS = 2
 ' Skeleton rows shown before the first page arrives
@@ -20,6 +18,7 @@ function InitContent() as void
     CancelCurrentJobs()
     m.gridJob = invalid
     m.feedNode = invalid
+    m.top.feedNode = invalid
     m.top.videoCount = 0
 
     root = CreateObject("roSGNode", "ContentNode")
@@ -33,7 +32,7 @@ function InitContent() as void
         m.top.feedState = "empty"
         return
     end if
-    if profilesService = invalid or profilesService.currentProfile = invalid
+    if m.top.requireSignIn and (profilesService = invalid or profilesService.currentProfile = invalid)
         m.top.content = root
         m.top.feedState = "signedOut"
         return
@@ -50,6 +49,7 @@ function InitContent() as void
     end for
     feedNode.feedSources = feedSources
     m.feedNode = feedNode
+    m.top.feedNode = feedNode
 
     for i = 1 to GRID_PLACEHOLDER_ROWS
         AppendLoadingRow(root)
@@ -159,7 +159,7 @@ function AppendItems(items as object) as void
         if ValidString(item.type) = "loading"
             continue for
         end if
-        if lastRow = invalid or lastRow.getChildCount() >= GRID_COLUMNS
+        if lastRow = invalid or lastRow.getChildCount() >= GetColumns()
             lastRow = root.createChild("ContentNode")
         end if
         lastRow.appendChild(item)
@@ -170,7 +170,7 @@ end function
 
 function AppendLoadingRow(root as object) as void
     row = root.createChild("ContentNode")
-    for i = 1 to GRID_COLUMNS
+    for i = 1 to GetColumns()
         row.createChild("LoadingContentNode")
     end for
 end function
@@ -185,4 +185,12 @@ function RemoveLoadingRows(root as object) as void
         end if
         index -= 1
     end while
+end function
+
+function GetColumns() as integer
+    columns = m.top.columns
+    if columns < 1
+        columns = 1
+    end if
+    return columns
 end function

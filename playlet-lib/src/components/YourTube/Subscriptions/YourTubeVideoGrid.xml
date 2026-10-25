@@ -2,11 +2,17 @@
     YourTube: a vertical grid of video cards for the Subscriptions screen. A VideoRowList (same cards, focus ring,
     OK to play, long-press menu) whose single feed (feeds[0]) is paged into rows of 4 instead of one long row.
     It overrides VideoRowList's InitContent / LoadRowsIfNeeded / OnRowItemFocused; feedState tells the screen
-    what to show ("signedOut", "loading", "ready", "empty").
+    what to show ("signedOut", "loading", "ready", "empty"). Also used for the channel page tabs.
 -->
 <component name="YourTubeVideoGrid" extends="VideoRowList">
     <interface>
         <field id="feedState" type="string" value="loading" />
         <field id="videoCount" type="integer" />
+        <!-- Cards per row (Subscriptions 4, channel page 3) -->
+        <field id="columns" type="integer" value="4" />
+        <!-- false: loads signed out too (channel pages) -->
+        <field id="requireSignIn" type="boolean" value="true" />
+        <!-- The feed being paged (read-only), e.g. for the channel page's sort options -->
+        <field id="feedNode" type="node" />
     </interface>
 </component>

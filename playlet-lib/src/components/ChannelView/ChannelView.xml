@@ -1,3 +1,10 @@
+<!--
+    YourTube: YouTube TV-style channel page. Dimmed banner, round avatar, name and handle/subscriber line,
+    Subscribe and Play all on the right, tab chips (search, Videos, Shorts, Live, Playlists...) and the
+    selected tab as a 3-column grid. Focusing the grid slides the header up so more cards fit; Up from the
+    grid's first row brings the tabs back, Up again the Subscribe / Play all actions.
+    (Playlet showed every tab as its own row under a sliding banner.)
+-->
 <component name="ChannelView" extends="Group" includes="AutoBind,Focus,ContextMenuProvider,Disposable">
     <interface>
         <field id="content" type="node" onChange="OnContentSet" />
@@ -9,6 +16,8 @@
         <field id="preferences" type="node" bind="/Preferences" />
         <field id="jobQueue" type="node" bind="/JobQueue" />
         <field id="bookmarksService" type="node" bind="/BookmarksService" />
+        <!-- YourTube: Play all queues the channel's videos -->
+        <field id="videoQueue" type="node" bind="/VideoQueue" />
         <function name="ShowSortDialog" />
     </interface>
     <children>
@@ -18,77 +27,97 @@
             color="0x242424">
         </Rectangle>
 
-        <Poster
-            id="banner"
-            width="1280"
-            loadWidth="1280"
-            loadHeight="500"
-            loadDisplayMode="limitSize"
-            visible="false" />
-
         <Group id="container">
             <Poster
-                translation="[115,20]"
-                width="104"
-                height="104"
-                blendColor="#DDDDDDFF"
-                uri="pkg:/images/white-circle.png">
+                id="banner"
+                width="1280"
+                height="210"
+                loadWidth="1280"
+                loadHeight="212"
+                loadDisplayMode="scaleToZoom"
+                opacity="0.55"
+                visible="false" />
+            <Poster
+                id="bannerScrim"
+                uri="pkg:/images/yt-player-scrim.png"
+                translation="[0,90]"
+                width="1280"
+                height="120"
+                blendColor="0x0F0F0FFF"
+                visible="false" />
 
+            <Poster
+                id="avatarRing"
+                translation="[88,108]"
+                width="100"
+                height="100"
+                blendColor="0x0F0F0FFF"
+                uri="pkg:/images/white-circle.png">
                 <CirclePoster
                     id="thumbnail"
-                    width="100"
-                    height="100"
-                    translation="[2,2]"
+                    width="92"
+                    height="92"
+                    translation="[4,4]"
                     failedBitmapUri="pkg:/images/thumbnail-missing.jpg" />
-
-                <Label
-                    id="authorLabel"
-                    translation="[115,40]"
-                    font="font:MediumBoldSystemFont" />
-                <Label
-                    id="subCountLabel"
-                    translation="[115,70]"
-                    font="font:SmallestSystemFont" />
             </Poster>
 
-            <ButtonEx
-                id="subscribeButton"
-                iconVisible="false"
-                anchor="[0.5,0.5]"
-                padding="[30,30]"
-                translation="[1050,90]" />
+            <Label
+                id="authorLabel"
+                translation="[208,118]"
+                width="600"
+                color="0xF1F1F1FF"
+                wrap="false">
+                <Font role="font" uri="font:BoldSystemFontFile" size="30" />
+            </Label>
+            <Label
+                id="subCountLabel"
+                translation="[208,162]"
+                width="600"
+                color="0xAAAAAAFF"
+                wrap="false">
+                <Font role="font" uri="font:SystemFontFile" size="16" />
+            </Label>
 
-            <VideoRowList
+            <!-- Subscribe (signed in) and Play all; right-aligned in code -->
+            <YourTubeChipBar
+                id="actionsBar"
+                translation="[880,140]"
+                maxWidth="320"
+                activeIndex="-1" />
+
+            <YourTubeChipBar
+                id="tabsBar"
+                translation="[90,236]"
+                maxWidth="1110" />
+
+            <Label
+                id="gridMessage"
+                translation="[90,310]"
+                width="1100"
+                color="0xAAAAAAFF"
+                visible="false">
+                <Font role="font" uri="font:SystemFontFile" size="20" />
+            </Label>
+
+            <YourTubeVideoGrid
+                id="videoGrid"
                 itemComponentName="RowCell"
-                id="rowList"
-                focusable="false"
-                translation="[0,160]"
+                translation="[0,292]"
                 numRows="2"
-                rowitemSize="[[350,196]]"
+                columns="3"
+                requireSignIn="false"
+                rowItemSize="[[350,196]]"
                 rowItemSpacing="[[25,0]]"
+                rowHeights="[326]"
                 itemSize="[1280,326]"
-                itemSpacing="[0,65]"
-                rowLabelOffset="[[115,20]]"
-                focusXOffset="[115]"
-                showRowLabel="[true]"
-                rowFocusAnimationStyle="floatingfocus"
-                variableWidthItems="true"
-                focusBitmapUri="pkg:/images/focus-glow-padding-30.$$RES$$.9.png" />
-
-            <Animation
-                id="scrollAnimation"
-                delay="0.3"
-                duration="0.6">
-                <Vector2DFieldInterpolator
-                    id="bannerTranslation"
-                    key="[ 0.0, 0.5, 1.0 ]"
-                    fieldToInterp="banner.translation" />
-                <Vector2DFieldInterpolator
-                    id="containerTranslation"
-                    key="[ 0.0, 0.5, 1.0 ]"
-                    fieldToInterp="container.translation" />
-            </Animation>
-
+                itemSpacing="[0,0]"
+                focusXOffset="[90]"
+                showRowLabel="[false]"
+                rowFocusAnimationStyle="floatingfocus" />
         </Group>
+
+        <Animation id="layoutAnimation" duration="0.2" easeFunction="outQuad">
+            <Vector2DFieldInterpolator id="containerMove" key="[0.0,1.0]" fieldToInterp="container.translation" />
+        </Animation>
     </children>
 </component>

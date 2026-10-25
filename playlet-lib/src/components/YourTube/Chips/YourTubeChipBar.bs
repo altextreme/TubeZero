@@ -1,0 +1,193 @@
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
+
+const CHIP_HEIGHT = 36
+const CHIP_PAD = 16
+const CHIP_GAP = 12
+const CHIP_ICON = 20
+const CHIP_ICON_GAP = 8
+
+function Init()
+    m.top.focusable = true
+    m.strip = m.top.findNode("strip")
+    m.chipFont = m.top.findNode("chipFont")
+    m.items = []
+    m.scrollX = 0
+    m.hadFocus = false
+    m.top.ObserveField("focusedChild", FuncName(OnFocusedChildChange))
+end function
+
+function OnChipsChange() as void
+    m.strip.removeChildrenIndex(m.strip.getChildCount(), 0)
+    m.items = []
+    chips = m.top.chips
+    if not IsArray(chips)
+        chips = []
+    end if
+
+    x = 0
+    for each chip in chips
+        text = ""
+        iconUri = ""
+        if IsString(chip)
+            text = chip
+        else if IsAssociativeArray(chip)
+            text = ValidString(chip.text)
+            iconUri = ValidString(chip.iconUri)
+        end if
+        m.items.Push(CreateChip(text, iconUri, x))
+        x += m.items[m.items.Count() - 1].width + CHIP_GAP
+    end for
+
+    contentWidth = 0
+    if m.items.Count() > 0
+        contentWidth = x - CHIP_GAP
+    end if
+    m.top.contentWidth = contentWidth
+
+    if m.top.focusIndex >= m.items.Count() or m.top.focusIndex < 0
+        m.top.focusIndex = 0
+    end if
+    m.scrollX = 0
+    UpdateStyles()
+    UpdateScroll()
+end function
+
+function CreateChip(text as string, iconUri as string, x as float) as object
+    bg = m.strip.createChild("Poster")
+    bg.uri = "pkg:/images/yt-pill-light.$$RES$$.9.png"
+    bg.height = CHIP_HEIGHT
+    bg.translation = [x, 0]
+
+    iconInset = (CHIP_HEIGHT - CHIP_ICON) / 2
+    innerX = CHIP_PAD
+    icon = invalid
+    if iconUri <> ""
+        if text = ""
+            innerX = iconInset
+        end if
+        icon = bg.createChild("Poster")
+        icon.uri = iconUri
+        icon.width = CHIP_ICON
+        icon.height = CHIP_ICON
+        icon.translation = [innerX, iconInset]
+        innerX += CHIP_ICON
+        if text <> ""
+            innerX += CHIP_ICON_GAP
+        end if
+    end if
+
+    label = bg.createChild("Label")
+    label.font = m.chipFont
+    label.height = CHIP_HEIGHT
+    label.vertAlign = "center"
+    label.translation = [innerX, 0]
+    label.text = text
+
+    width = innerX
+    if text <> ""
+        width += label.localBoundingRect().width + CHIP_PAD
+    else
+        width += iconInset
+    end if
+    if width < CHIP_HEIGHT
+        width = CHIP_HEIGHT
+    end if
+    bg.width = width
+
+    return {
+        bg: bg
+        label: label
+        icon: icon
+        x: x
+        width: width
+    }
+end function
+
+function OnFocusedChildChange() as void
+    focused = m.top.hasFocus()
+    ' Focus lands on the current chip, like the YouTube TV app
+    if focused and not m.hadFocus and m.top.activeIndex >= 0 and m.top.activeIndex < m.items.Count()
+        m.top.focusIndex = m.top.activeIndex
+    end if
+    m.hadFocus = focused
+    UpdateStyles()
+end function
+
+function OnFocusIndexChange() as void
+    UpdateStyles()
+    UpdateScroll()
+end function
+
+function UpdateStyles() as void
+    focused = m.top.hasFocus()
+    for i = 0 to m.items.Count() - 1
+        item = m.items[i]
+        isFocus = focused and i = m.top.focusIndex
+        isActive = i = m.top.activeIndex
+        if isFocus or (isActive and not focused)
+            item.bg.blendColor = "#EBEBEBFF"
+            item.label.color = "#161616FF"
+            if item.icon <> invalid
+                item.icon.blendColor = "#161616FF"
+            end if
+        else
+            if isActive
+                item.bg.blendColor = "#3F3F3FFF"
+            else
+                item.bg.blendColor = "#272727FF"
+            end if
+            item.label.color = "#EBEBEBFF"
+            if item.icon <> invalid
+                item.icon.blendColor = "#EBEBEBFF"
+            end if
+        end if
+    end for
+end function
+
+' Keeps the focused chip inside maxWidth by sliding the strip.
+function UpdateScroll() as void
+    m.top.clippingRect = [0, 0, m.top.maxWidth, CHIP_HEIGHT]
+    index = m.top.focusIndex
+    if index < 0 or index >= m.items.Count()
+        m.strip.translation = [0, 0]
+        return
+    end if
+    item = m.items[index]
+    maxWidth = m.top.maxWidth
+    if item.x + item.width - m.scrollX > maxWidth
+        m.scrollX = item.x + item.width - maxWidth
+    end if
+    if item.x < m.scrollX
+        m.scrollX = item.x
+    end if
+    if m.scrollX < 0
+        m.scrollX = 0
+    end if
+    m.strip.translation = [-m.scrollX, 0]
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if not press
+        return false
+    end if
+    count = m.items.Count()
+    if key = RemoteKeys.Left
+        if m.top.focusIndex > 0
+            m.top.focusIndex = m.top.focusIndex - 1
+            return true
+        end if
+        return false
+    else if key = RemoteKeys.Right
+        if m.top.focusIndex < count - 1
+            m.top.focusIndex = m.top.focusIndex + 1
+        end if
+        return true
+    else if key = RemoteKeys.Ok
+        if m.top.focusIndex >= 0 and m.top.focusIndex < count
+            m.top.selected = m.top.focusIndex
+        end if
+        return true
+    end if
+    return false
+end function
