@@ -1,0 +1,235 @@
+{
+ "responseContext": {
+  "visitorData": "x"
+ },
+ "items": [
+  {
+   "guideSectionRenderer": {
+    "items": [
+     {
+      "guideEntryRenderer": {
+       "navigationEndpoint": {
+        "browseEndpoint": {
+         "browseId": "FEwhat_to_watch"
+        }
+       },
+       "icon": {
+        "iconType": "TAB_HOME_CAIRO"
+       },
+       "formattedTitle": {
+        "simpleText": "Home"
+       }
+      }
+     },
+     {
+      "guideEntryRenderer": {
+       "navigationEndpoint": {
+        "commandMetadata": {
+         "webCommandMetadata": {
+          "url": "/@x"
+         }
+        },
+        "browseEndpoint": {
+         "browseId": "UCownchannel000000000000",
+         "canonicalBaseUrl": "/@x"
+        }
+       },
+       "formattedTitle": {
+        "simpleText": "Your channel"
+       },
+       "title": "Your channel",
+       "presentationStyle": "GUIDE_ENTRY_PRESENTATION_STYLE_NEW_CONTENT",
+       "entryData": {
+        "guideEntryData": {
+         "guideEntryId": "UCownchannel000000000000"
+        }
+       },
+       "thumbnail": {
+        "thumbnails": [
+         {
+          "url": "https://yt3.ggpht.com/av-Yourchannel=s88-c-k-c0x00ffffff-no-rj",
+          "width": 88,
+          "height": 88
+         }
+        ]
+       }
+      }
+     }
+    ]
+   }
+  },
+  {
+   "guideSubscriptionsSectionRenderer": {
+    "formattedTitle": {
+     "simpleText": "Subscriptions"
+    },
+    "items": [
+     {
+      "guideEntryRenderer": {
+       "navigationEndpoint": {
+        "commandMetadata": {
+         "webCommandMetadata": {
+          "url": "/@x"
+         }
+        },
+        "browseEndpoint": {
+         "browseId": "UCaaaaaaaaaaaaaaaaaaaaaa",
+         "canonicalBaseUrl": "/@x"
+        }
+       },
+       "formattedTitle": {
+        "simpleText": "Alpha Channel"
+       },
+       "title": "Alpha Channel",
+       "presentationStyle": "GUIDE_ENTRY_PRESENTATION_STYLE_NEW_CONTENT",
+       "entryData": {
+        "guideEntryData": {
+         "guideEntryId": "UCaaaaaaaaaaaaaaaaaaaaaa"
+        }
+       },
+       "thumbnail": {
+        "thumbnails": [
+         {
+          "url": "https://yt3.ggpht.com/av-AlphaChannel=s88-c-k-c0x00ffffff-no-rj",
+          "width": 88,
+          "height": 88
+         }
+        ]
+       }
+      }
+     },
+     {
+      "guideEntryRenderer": {
+       "navigationEndpoint": {
+        "commandMetadata": {
+         "webCommandMetadata": {
+          "url": "/@x"
+         }
+        },
+        "browseEndpoint": {
+         "browseId": "UCbbbbbbbbbbbbbbbbbbbbbb",
+         "canonicalBaseUrl": "/@x"
+        }
+       },
+       "formattedTitle": {
+        "simpleText": "Beta Channel"
+       },
+       "title": "Beta Channel",
+       "presentationStyle": "GUIDE_ENTRY_PRESENTATION_STYLE_NEW_CONTENT",
+       "entryData": {
+        "guideEntryData": {
+         "guideEntryId": "UCbbbbbbbbbbbbbbbbbbbbbb"
+        }
+       },
+       "thumbnail": {
+        "thumbnails": [
+         {
+          "url": "https://yt3.ggpht.com/av-BetaChannel=s88-c-k-c0x00ffffff-no-rj",
+          "width": 88,
+          "height": 88
+         }
+        ]
+       }
+      }
+     },
+     {
+      "guideCollapsibleEntryRenderer": {
+       "expanderItem": {
+        "guideEntryRenderer": {
+         "icon": {
+          "iconType": "EXPAND"
+         },
+         "formattedTitle": {
+          "simpleText": "Show 1 more"
+         }
+        }
+       },
+       "expandableItems": [
+        {
+         "guideEntryRenderer": {
+          "navigationEndpoint": {
+           "commandMetadata": {
+            "webCommandMetadata": {
+             "url": "/@x"
+            }
+           },
+           "browseEndpoint": {
+            "browseId": "UCcccccccccccccccccccccc",
+            "canonicalBaseUrl": "/@x"
+           }
+          },
+          "formattedTitle": {
+           "simpleText": "Gamma Channel"
+          },
+          "title": "Gamma Channel",
+          "presentationStyle": "GUIDE_ENTRY_PRESENTATION_STYLE_NEW_CONTENT",
+          "entryData": {
+           "guideEntryData": {
+            "guideEntryId": "UCcccccccccccccccccccccc"
+           }
+          },
+          "thumbnail": {
+           "thumbnails": [
+            {
+             "url": "https://yt3.ggpht.com/av-GammaChannel=s88-c-k-c0x00ffffff-no-rj",
+             "width": 88,
+             "height": 88
+            }
+           ]
+          }
+         }
+        },
+        {
+         "guideEntryRenderer": {
+          "navigationEndpoint": {
+           "browseEndpoint": {
+            "browseId": "FEchannels"
+           }
+          },
+          "icon": {
+           "iconType": "VIEW_LIST"
+          },
+          "formattedTitle": {
+           "simpleText": "All subscriptions"
+          }
+         }
+        }
+       ],
+       "collapserItem": {
+        "guideEntryRenderer": {
+         "formattedTitle": {
+          "simpleText": "Show less"
+         }
+        }
+       }
+      }
+     }
+    ]
+   }
+  },
+  {
+   "guideSectionRenderer": {
+    "formattedTitle": {
+     "simpleText": "Explore"
+    },
+    "items": [
+     {
+      "guideEntryRenderer": {
+       "navigationEndpoint": {
+        "browseEndpoint": {
+         "browseId": "UC-9-kyTW8ZkZNDHQJ6FgpwQ"
+        }
+       },
+       "icon": {
+        "iconType": "MUSIC_CAIRO"
+       },
+       "formattedTitle": {
+        "simpleText": "Music"
+       }
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

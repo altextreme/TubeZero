@@ -1,2 +1,65 @@
-<!-- YourTube: "Subscriptions" nav screen. Home's screen (top bar + rows) with its own feeds (set in Init). -->
-<component name="YourTubeSubscriptionsScreen" extends="HomeScreen" />
+<!--
+    YourTube: "Subscriptions" nav screen, YouTube TV style: top bar, a row of your subscribed channels (round
+    avatars, OK opens the channel) and below it the latest videos from them as a 4-column grid that pages in
+    as you scroll down. Focusing the grid slides it up over the channel row; Up from its first row brings the
+    channels back, Up again reaches the top bar. Signed out it shows the sign-in empty state.
+-->
+<component name="YourTubeSubscriptionsScreen" extends="Group" includes="AutoBind,Focus,ContextMenuProvider">
+    <interface>
+        <field id="navBar" type="node" bind="/NavBar" />
+        <field id="appController" type="node" bind="/AppController" />
+        <field id="profilesService" type="node" bind="/ProfilesService" />
+        <field id="preferences" type="node" bind="/Preferences" />
+        <field id="jobQueue" type="node" bind="/JobQueue" />
+        <field id="feedFile" type="string" value="libpkg:/config/yourtube/subscriptions_layout.yaml" />
+        <function name="Refresh" />
+    </interface>
+    <children>
+        <YourTubeTopBar id="topBar" />
+        <YourTubeEmptyState id="emptyState" visible="false" focusable="false" />
+
+        <RowList
+            id="channelRow"
+            itemComponentName="YourTubeChannelTile"
+            translation="[0,112]"
+            numRows="1"
+            rowItemSize="[[120,156]]"
+            rowItemSpacing="[[12,0]]"
+            rowHeights="[160]"
+            itemSize="[1280,160]"
+            focusXOffset="[78]"
+            showRowLabel="[false]"
+            rowFocusAnimationStyle="floatingfocus"
+            drawFocusFeedback="false"
+            visible="false"
+            focusable="false" />
+
+        <Label
+            id="gridMessage"
+            translation="[90,300]"
+            width="1100"
+            color="0xAAAAAAFF"
+            visible="false">
+            <Font role="font" uri="font:SystemFontFile" size="20" />
+        </Label>
+
+        <YourTubeVideoGrid
+            id="videoGrid"
+            itemComponentName="RowCell"
+            translation="[0,118]"
+            numRows="3"
+            rowItemSize="[[264,148]]"
+            rowItemSpacing="[[24,0]]"
+            rowHeights="[290]"
+            itemSize="[1280,290]"
+            itemSpacing="[0,0]"
+            focusXOffset="[90]"
+            showRowLabel="[false]"
+            rowFocusAnimationStyle="floatingfocus" />
+
+        <Animation id="layoutAnimation" duration="0.2" easeFunction="outQuad">
+            <Vector2DFieldInterpolator id="gridMove" key="[0.0,1.0]" fieldToInterp="videoGrid.translation" />
+            <FloatFieldInterpolator id="channelFade" key="[0.0,1.0]" fieldToInterp="channelRow.opacity" />
+        </Animation>
+    </children>
+</component>

@@ -1,0 +1,255 @@
+import "pkg:/components/ContentNode/ProfileContentAuthTokenUtils.bs"
+import "pkg:/components/Services/Innertube/BrowseEndpoint.bs"
+import "pkg:/components/Services/Innertube/Context.bs"
+import "pkg:/components/YourTube/YourTubeJson.bs"
+import "pkg:/source/services/HttpClient.bs"
+
+' YourTube: the signed-in user's subscribed channels (for the Subscriptions screen's channel row).
+' The exact response shape isn't known ahead of time (it needs a signed-in account), so the parser looks for
+' channel entries anywhere: any "...Renderer" object with a UC channel id, a title and a thumbnail
+' (guideEntryRenderer, channelRenderer, gridChannelRenderer, tileRenderer, tabRenderer, ...).
+namespace YourTubeSubscriptions
+
+    const MAX_PARSE_DEPTH = 40
+    const MAX_CHANNELS = 500
+
+    ' [{ id, name, thumbnail }] in the response's order, without duplicates.
+    function ParseChannels(response as dynamic) as object
+        channels = []
+        if not YourTubeJson.IsAA(response) and not YourTubeJson.IsArr(response)
+            return channels
+        end if
+        ' The guide also lists Explore entries (Music, Gaming...) with UC ids; keep to the subscriptions section.
+        scope = FindValue(response, "guideSubscriptionsSectionRenderer", 0)
+        if scope = invalid
+            scope = response
+        end if
+        seen = CreateObject("roAssociativeArray")
+        seen.SetModeCaseSensitive()
+        CollectChannels(scope, channels, seen, 0)
+        return channels
+    end function
+
+    function CollectChannels(node as dynamic, channels as object, seen as object, depth as integer) as void
+        if depth > MAX_PARSE_DEPTH or channels.Count() >= MAX_CHANNELS
+            return
+        end if
+        if YourTubeJson.IsAA(node)
+            for each key in node
+                child = node[key]
+                if YourTubeJson.IsAA(child) and key.EndsWith("Renderer")
+                    channel = ChannelFromRenderer(child)
+                    if channel <> invalid
+                        if not seen.DoesExist(channel.id)
+                            seen[channel.id] = true
+                            channels.Push(channel)
+                        end if
+                        continue for
+                    end if
+                end if
+                CollectChannels(child, channels, seen, depth + 1)
+            end for
+        else if YourTubeJson.IsArr(node)
+            for each child in node
+                CollectChannels(child, channels, seen, depth + 1)
+            end for
+        end if
+    end function
+
+    ' { id, name, thumbnail } when the renderer is a channel entry, else invalid.
+    function ChannelFromRenderer(renderer as object) as dynamic
+        id = ""
+        for each key in ["channelId", "contentId"]
+            value = YourTubeJson.AsString(renderer[key])
+            if IsChannelId(value)
+                id = value
+                exit for
+            end if
+        end for
+        if id = ""
+            ' The entry's own endpoint only (not menus or owner links inside it)
+            for each key in ["navigationEndpoint", "onSelectCommand", "endpoint", "command"]
+                value = YourTubeJson.AsString(YourTubeJson.Dig(renderer, [key, "browseEndpoint", "browseId"]))
+                if IsChannelId(value)
+                    id = value
+                    exit for
+                end if
+            end for
+        end if
+        if id = ""
+            return invalid
+        end if
+
+        name = ""
+        for each path in [["title"], ["formattedTitle"], ["metadata", "tileMetadataRenderer", "title"], ["displayName"]]
+            name = TextOf(YourTubeJson.Dig(renderer, path))
+            if name <> ""
+                exit for
+            end if
+        end for
+
+        thumbnail = ""
+        for each path in [["thumbnail", "thumbnails"], ["header", "tileHeaderRenderer", "thumbnail", "thumbnails"], ["avatar", "thumbnails"], ["thumbnail", "sources"]]
+            thumbnail = BestThumbnail(YourTubeJson.Dig(renderer, path))
+            if thumbnail <> ""
+                exit for
+            end if
+        end for
+
+        if name = "" or thumbnail = ""
+            return invalid
+        end if
+        return { id: id, name: name, thumbnail: thumbnail }
+    end function
+
+    function IsChannelId(value as string) as boolean
+        return value.Len() >= 20 and value.StartsWith("UC")
+    end function
+
+    function TextOf(value as dynamic) as string
+        if GetInterface(value, "ifString") <> invalid
+            return value.Trim()
+        end if
+        return YourTubeJson.RunsText(value).Trim()
+    end function
+
+    ' The widest thumbnail's https URL, asking yt3 for a 176px avatar (lists usually carry 88px ones).
+    function BestThumbnail(thumbnails as dynamic) as string
+        if not YourTubeJson.IsArr(thumbnails)
+            return ""
+        end if
+        best = ""
+        bestWidth = -1
+        for each thumb in thumbnails
+            url = YourTubeJson.AsString(YourTubeJson.Dig(thumb, ["url"]))
+            width = YourTubeJson.AsInt(YourTubeJson.Dig(thumb, ["width"]))
+            if url <> "" and width >= bestWidth
+                best = url
+                bestWidth = width
+            end if
+        end for
+        if best.StartsWith("//")
+            best = "https:" + best
+        end if
+        if best.InStr("ggpht.com") <> -1 or best.InStr("googleusercontent.com") <> -1
+            match = CreateObject("roRegex", "=s(\d+)-", "").Match(best)
+            if match.Count() > 1 and match[1].ToInt() < 176
+                best = best.Replace(match[0], "=s176-")
+            end if
+        end if
+        return best
+    end function
+
+    function FindValue(node as dynamic, key as string, depth as integer) as dynamic
+        if depth > MAX_PARSE_DEPTH
+            return invalid
+        end if
+        if YourTubeJson.IsAA(node)
+            if node.DoesExist(key)
+                return node[key]
+            end if
+            for each childKey in node
+                found = FindValue(node[childKey], key, depth + 1)
+                if found <> invalid
+                    return found
+                end if
+            end for
+        else if YourTubeJson.IsArr(node)
+            for each child in node
+                found = FindValue(child, key, depth + 1)
+                if found <> invalid
+                    return found
+                end if
+            end for
+        end if
+        return invalid
+    end function
+
+    ' Where to look, in order. The TV client is the one the device's OAuth token is made for; WEB is a fallback.
+    function Sources() as object
+        return [
+            { name: "tv_browse_FEchannels", client: "TV", browseId: "FEchannels" }
+            { name: "tv_browse_FEsubscriptions", client: "TV", browseId: "FEsubscriptions" }
+            { name: "web_guide", client: "WEB", browseId: "" }
+            { name: "web_browse_FEchannels", client: "WEB", browseId: "FEchannels" }
+        ]
+    end function
+
+    function CreateRequest(source as object, accessToken as string) as object
+        client = Innertube.ClientType.Tv
+        if source.client = "WEB"
+            client = Innertube.ClientType.Web
+        end if
+        if source.browseId = ""
+            body = { "context": Innertube.CreateContext(client, CreateObject("roDeviceInfo")) }
+            request = HttpClient.Post("https://www.youtube.com/youtubei/v1/guide?prettyPrint=false&alt=json").JsonBody(body)
+            request.Headers(Innertube.CreateHeaders(client))
+        else
+            request = Innertube.CreateBrowseRequest(source.browseId, client)
+        end if
+        request.Header("Authorization", "Bearer " + accessToken)
+        request.NoCache()
+        return request
+    end function
+
+    ' Tries each source until one lists channels. Options: keepRaw (attach each raw response, for the debug
+    ' route) and tryAll (don't stop at the first hit). Result: { channels, source, error, attempts }.
+    ' Never includes the access token.
+    function Fetch(profile as dynamic, cancellation as dynamic, keepRaw = false as boolean, tryAll = false as boolean) as object
+        result = { channels: [], source: "", error: "", attempts: [] }
+        if profile = invalid or profile.type <> "youtube"
+            result.error = "Needs a signed-in YouTube profile"
+            return result
+        end if
+        auth = ProfileContentAuthTokenUtils.EnsureFreshAccessToken(profile)
+        if auth.state <> ProfileContentAuthTokenUtils.AccessTokenState.Ok
+            result.error = "No usable access token: " + auth.state
+            return result
+        end if
+
+        for each source in Sources()
+            request = CreateRequest(source, auth.token)
+            if cancellation <> invalid
+                request.Cancellation(cancellation)
+            end if
+            response = request.Await()
+            attempt = { name: source.name, status: response.StatusCode(), channelCount: 0 }
+            if response.IsSuccess()
+                json = response.Json()
+                channels = ParseChannels(json)
+                attempt.channelCount = channels.Count()
+                if keepRaw
+                    sample = []
+                    for i = 0 to channels.Count() - 1
+                        if i >= 5
+                            exit for
+                        end if
+                        sample.Push(channels[i])
+                    end for
+                    attempt.sample = sample
+                    attempt.response = json
+                end if
+                if channels.Count() > 0 and result.channels.Count() = 0
+                    result.channels = channels
+                    result.source = source.name
+                end if
+            else
+                attempt.error = response.ErrorMessage()
+                if response.IsCancelled()
+                    result.attempts.Push(attempt)
+                    result.error = "Cancelled"
+                    return result
+                end if
+            end if
+            result.attempts.Push(attempt)
+            if result.channels.Count() > 0 and not tryAll
+                exit for
+            end if
+        end for
+        if result.channels.Count() = 0 and result.error = ""
+            result.error = "No channels found"
+        end if
+        return result
+    end function
+
+end namespace

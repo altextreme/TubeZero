@@ -1,0 +1,142 @@
+{
+ "contents": {
+  "twoColumnBrowseResultsRenderer": {
+   "tabs": [
+    {
+     "tabRenderer": {
+      "selected": true,
+      "content": {
+       "sectionListRenderer": {
+        "contents": [
+         {
+          "itemSectionRenderer": {
+           "contents": [
+            {
+             "shelfRenderer": {
+              "content": {
+               "expandedShelfContentsRenderer": {
+                "items": [
+                 {
+                  "channelRenderer": {
+                   "channelId": "UCwwwwwwwwwwwwwwwwwwwwww",
+                   "title": {
+                    "simpleText": "Web"
+                   },
+                   "thumbnail": {
+                    "thumbnails": [
+                     {
+                      "url": "//yt3.googleusercontent.com/w-Web=s88-c-k-c0x00ffffff-no-rj-mo",
+                      "width": 88,
+                      "height": 88
+                     }
+                    ]
+                   },
+                   "navigationEndpoint": {
+                    "browseEndpoint": {
+                     "browseId": "UCwwwwwwwwwwwwwwwwwwwwww"
+                    }
+                   },
+                   "subscribeButton": {
+                    "subscribeButtonRenderer": {
+                     "channelId": "UCwwwwwwwwwwwwwwwwwwwwww",
+                     "subscribed": true
+                    }
+                   }
+                  }
+                 },
+                 {
+                  "channelRenderer": {
+                   "channelId": "UCxxxxxxxxxxxxxxxxxxxxxx",
+                   "title": {
+                    "simpleText": "Xray"
+                   },
+                   "thumbnail": {
+                    "thumbnails": [
+                     {
+                      "url": "//yt3.googleusercontent.com/w-Xray=s88-c-k-c0x00ffffff-no-rj-mo",
+                      "width": 88,
+                      "height": 88
+                     }
+                    ]
+                   },
+                   "navigationEndpoint": {
+                    "browseEndpoint": {
+                     "browseId": "UCxxxxxxxxxxxxxxxxxxxxxx"
+                    }
+                   },
+                   "subscribeButton": {
+                    "subscribeButtonRenderer": {
+                     "channelId": "UCxxxxxxxxxxxxxxxxxxxxxx",
+                     "subscribed": true
+                    }
+                   }
+                  }
+                 }
+                ]
+               }
+              }
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      }
+     }
+    }
+   ]
+  }
+ },
+ "secondary": {
+  "tvSecondaryNavRenderer": {
+   "sections": [
+    {
+     "tvSecondaryNavSectionRenderer": {
+      "tabs": [
+       {
+        "tabRenderer": {
+         "title": "All",
+         "endpoint": {
+          "browseEndpoint": {
+           "browseId": "FEsubscriptions"
+          }
+         },
+         "selected": true
+        }
+       },
+       {
+        "tabRenderer": {
+         "title": {
+          "runs": [
+           {
+            "text": "Tab "
+           },
+           {
+            "text": "Channel"
+           }
+          ]
+         },
+         "thumbnail": {
+          "thumbnails": [
+           {
+            "url": "https://yt3.ggpht.com/tab=s68-c-k",
+            "width": 68,
+            "height": 68
+           }
+          ]
+         },
+         "endpoint": {
+          "browseEndpoint": {
+           "browseId": "UCtttttttttttttttttttttt"
+          }
+         }
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

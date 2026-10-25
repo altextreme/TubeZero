@@ -1,0 +1,18 @@
+import "pkg:/components/YourTube/Subscriptions/YourTubeSubscriptions.bs"
+
+' YourTube: the signed-in user's subscribed channels for the Subscriptions screen's channel row.
+' Input: { profile } (a YouTube profile). Output: { channels: [{ id, name, thumbnail }], source }.
+@job("YourTubeSubscribedChannelsJob")
+function ExecuteJob() as void
+    input = JobGetInput()
+    result = YourTubeSubscriptions.Fetch(input.profile, JobGetCancellation())
+    if JobIsCancelled()
+        JobCancel()
+        return
+    end if
+    if result.channels.Count() = 0
+        JobError(result.error)
+        return
+    end if
+    JobSuccessData({ channels: result.channels, source: result.source })
+end function

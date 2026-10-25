@@ -1,0 +1,224 @@
+{
+ "contents": {
+  "tvBrowseRenderer": {
+   "content": {
+    "tvSurfaceContentRenderer": {
+     "content": {
+      "gridRenderer": {
+       "items": [
+        {
+         "tileRenderer": {
+          "contentType": "TILE_CONTENT_TYPE_CHANNEL",
+          "contentId": "UCzzzzzzzzzzzzzzzzzzzzzz",
+          "style": "TILE_STYLE_YTLR_ROUND",
+          "header": {
+           "tileHeaderRenderer": {
+            "thumbnail": {
+             "thumbnails": [
+              {
+               "url": "https://yt3.ggpht.com/t-Z=s88-c-k",
+               "width": 88,
+               "height": 88
+              },
+              {
+               "url": "https://yt3.ggpht.com/t-Z=s240-c-k",
+               "width": 240,
+               "height": 240
+              }
+             ]
+            }
+           }
+          },
+          "metadata": {
+           "tileMetadataRenderer": {
+            "title": {
+             "simpleText": "Zeta"
+            },
+            "lines": [
+             {
+              "lineRenderer": {
+               "items": [
+                {
+                 "lineItemRenderer": {
+                  "text": {
+                   "simpleText": "1.2M subscribers"
+                  }
+                 }
+                }
+               ]
+              }
+             }
+            ]
+           }
+          },
+          "onSelectCommand": {
+           "browseEndpoint": {
+            "browseId": "UCzzzzzzzzzzzzzzzzzzzzzz"
+           }
+          }
+         }
+        },
+        {
+         "tileRenderer": {
+          "contentType": "TILE_CONTENT_TYPE_VIDEO",
+          "contentId": "dQw4w9WgXcQ",
+          "header": {
+           "tileHeaderRenderer": {
+            "thumbnail": {
+             "thumbnails": [
+              {
+               "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+               "width": 480
+              }
+             ]
+            }
+           }
+          },
+          "metadata": {
+           "tileMetadataRenderer": {
+            "title": {
+             "simpleText": "A video"
+            }
+           }
+          },
+          "onSelectCommand": {
+           "watchEndpoint": {
+            "videoId": "dQw4w9WgXcQ"
+           }
+          },
+          "onLongPressCommand": {
+           "showMenuCommand": {
+            "menu": {
+             "menuRenderer": {
+              "items": [
+               {
+                "menuNavigationItemRenderer": {
+                 "text": {
+                  "simpleText": "Go to channel"
+                 },
+                 "navigationEndpoint": {
+                  "browseEndpoint": {
+                   "browseId": "UCvideoowner000000000000"
+                  }
+                 }
+                }
+               }
+              ]
+             }
+            }
+           }
+          }
+         }
+        },
+        {
+         "tileRenderer": {
+          "contentType": "TILE_CONTENT_TYPE_CHANNEL",
+          "contentId": "UCyyyyyyyyyyyyyyyyyyyyyy",
+          "style": "TILE_STYLE_YTLR_ROUND",
+          "header": {
+           "tileHeaderRenderer": {
+            "thumbnail": {
+             "thumbnails": [
+              {
+               "url": "https://yt3.ggpht.com/t-Y=s88-c-k",
+               "width": 88,
+               "height": 88
+              },
+              {
+               "url": "https://yt3.ggpht.com/t-Y=s240-c-k",
+               "width": 240,
+               "height": 240
+              }
+             ]
+            }
+           }
+          },
+          "metadata": {
+           "tileMetadataRenderer": {
+            "title": {
+             "simpleText": "Ypsilon"
+            },
+            "lines": [
+             {
+              "lineRenderer": {
+               "items": [
+                {
+                 "lineItemRenderer": {
+                  "text": {
+                   "simpleText": "1.2M subscribers"
+                  }
+                 }
+                }
+               ]
+              }
+             }
+            ]
+           }
+          },
+          "onSelectCommand": {
+           "browseEndpoint": {
+            "browseId": "UCyyyyyyyyyyyyyyyyyyyyyy"
+           }
+          }
+         }
+        },
+        {
+         "tileRenderer": {
+          "contentType": "TILE_CONTENT_TYPE_CHANNEL",
+          "contentId": "UCzzzzzzzzzzzzzzzzzzzzzz",
+          "style": "TILE_STYLE_YTLR_ROUND",
+          "header": {
+           "tileHeaderRenderer": {
+            "thumbnail": {
+             "thumbnails": [
+              {
+               "url": "https://yt3.ggpht.com/t-Z=s88-c-k",
+               "width": 88,
+               "height": 88
+              },
+              {
+               "url": "https://yt3.ggpht.com/t-Z=s240-c-k",
+               "width": 240,
+               "height": 240
+              }
+             ]
+            }
+           }
+          },
+          "metadata": {
+           "tileMetadataRenderer": {
+            "title": {
+             "simpleText": "Zeta"
+            },
+            "lines": [
+             {
+              "lineRenderer": {
+               "items": [
+                {
+                 "lineItemRenderer": {
+                  "text": {
+                   "simpleText": "1.2M subscribers"
+                  }
+                 }
+                }
+               ]
+              }
+             }
+            ]
+           }
+          },
+          "onSelectCommand": {
+           "browseEndpoint": {
+            "browseId": "UCzzzzzzzzzzzzzzzzzzzzzz"
+           }
+          }
+         }
+        }
+       ]
+      }
+     }
+    }
+   }
+  }
+ }
+}

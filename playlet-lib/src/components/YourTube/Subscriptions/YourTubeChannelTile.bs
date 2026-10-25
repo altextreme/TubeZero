@@ -1,0 +1,31 @@
+import "pkg:/components/YourTube/YourTubeText.bs"
+import "pkg:/source/utils/Types.bs"
+
+function Init()
+    m.ring = m.top.findNode("Ring")
+    m.avatar = m.top.findNode("Avatar")
+    m.nameLabel = m.top.findNode("NameLabel")
+end function
+
+function OnContentSet() as void
+    content = m.top.itemContent
+    if content = invalid
+        return
+    end if
+    ' NOTE: "_author" not "author". See PlaylistContentNode.xml for explanation.
+    m.nameLabel.text = YourTubeText.Clean(ValidString(content._author)).text
+    m.avatar.uri = ValidString(content.thumbnail)
+end function
+
+function OnFocusChange() as void
+    focus = 0.0
+    if m.top.rowListHasFocus
+        focus = m.top.focusPercent
+    end if
+    m.ring.opacity = focus
+    if focus > 0.5
+        m.nameLabel.color = "#EBEBEBFF"
+    else
+        m.nameLabel.color = "#AAAAAAFF"
+    end if
+end function

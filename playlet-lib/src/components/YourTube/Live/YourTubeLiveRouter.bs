@@ -1,4 +1,5 @@
 import "pkg:/components/Web/WebServer/Http/HttpRouter.bs"
+import "pkg:/components/YourTube/Subscriptions/YourTubeSubscriptions.bs"
 import "pkg:/source/utils/Types.bs"
 
 namespace Http
@@ -9,8 +10,9 @@ namespace Http
     ' recent and favorite links. Writes go through CsrfMiddleware, so the page sends the X-Playlet header.
     class YourTubeLiveRouter extends HttpRouter
 
-        function new(_server as object)
+        function new(server as object)
             super()
+            m.profilesService = server.sceneNodes.profilesService
         end function
 
         @get("/live")
@@ -39,6 +41,31 @@ namespace Http
             response.http_code = 200
             response.SetBodyDataString(ValidString(ReadAsciiFile("cachefs:/last_generated_dash.xml")))
             response.ContentType("application/dash+xml")
+            return true
+        end function
+
+        ' Diagnostics: runs every subscribed-channels source the Subscriptions screen tries (as the current
+        ' YouTube profile) and returns each raw InnerTube response with what the parser found in it.
+        ' The access token stays on the TV: only response bodies, statuses and parse results are returned.
+        @get("/api/yourtube/debug/subscribed-channels")
+        function GetSubscribedChannelsDebug(context as object) as boolean
+            profile = invalid
+            if m.profilesService <> invalid
+                profile = m.profilesService.currentProfile
+            end if
+            profileType = ""
+            if profile <> invalid
+                profileType = ValidString(profile.type)
+            end if
+            result = YourTubeSubscriptions.Fetch(profile, invalid, true, true)
+            context.response.Json({
+                profileType: profileType
+                source: result.source
+                channelCount: result.channels.Count()
+                channels: result.channels
+                error: result.error
+                attempts: result.attempts
+            })
             return true
         end function
 

@@ -1,7 +1,327 @@
-' feedFile is inherited from HomeScreen; Roku rejects re-declaring it, so it is set here instead.
+import "pkg:/components/ChannelView/ChannelUtils.bs"
+import "pkg:/components/ContextMenu/ContextMenuUtils.bs"
+import "pkg:/components/JobSystem/Jobs.bs"
+import "pkg:/components/JobSystem/JobSystem.bs"
+import "pkg:/components/Navigation/Navigation.bs"
+import "pkg:/components/Screens/HomeScreen/HomeScreenUtils.bs"
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/Locale.bs"
+import "pkg:/source/utils/Logging.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+' Grid top when the channel row shows above it, and when it doesn't (or the grid has focus)
+const GRID_Y_BELOW_CHANNELS = 284
+const GRID_Y_TOP = 118
+' Grey circles shown while the channel list loads
+const CHANNEL_PLACEHOLDERS = 9
+
 function Init()
-    m.top.emptyIcon = "pkg:/images/icons/ms/empty_subscriptions.png"
-    m.top.emptySignedOutTitle = "Sign in to see your subscriptions"
-    m.top.emptySignedOutMessage = "New videos from the channels you subscribe to show up here."
-    m.top.feedFile = "libpkg:/config/yourtube/subscriptions_layout.yaml"
+    m.top.focusable = true
+    m.topBar = m.top.findNode("topBar")
+    m.emptyState = m.top.findNode("emptyState")
+    m.channelRow = m.top.findNode("channelRow")
+    m.videoGrid = m.top.findNode("videoGrid")
+    m.gridMessage = m.top.findNode("gridMessage")
+    m.layoutAnimation = m.top.findNode("layoutAnimation")
+    m.gridMove = m.top.findNode("gridMove")
+    m.channelFade = m.top.findNode("channelFade")
+    m.videoGrid.screen = m.top
+    m.channelsJob = invalid
+    m.channelsState = "none" ' none | loading | ready
+    m.collapsed = false
+    m.lastSection = invalid
+end function
+
+function OnNodeReady()
+    SetNavigation(invalid, RemoteKeys.Back, m.navBar)
+    SetNavigation(invalid, RemoteKeys.Left, m.navBar)
+    SetNavigation(m.videoGrid, RemoteKeys.Up, m.channelRow)
+    SetNavigation(m.videoGrid, RemoteKeys.Up, m.topBar)
+    SetNavigation(m.channelRow, RemoteKeys.Up, m.topBar)
+    SetNavigation(m.channelRow, RemoteKeys.Down, m.videoGrid)
+    SetNavigation(m.emptyState, RemoteKeys.Up, m.topBar)
+    SetNavigation(m.topBar, RemoteKeys.Down, m.channelRow)
+    SetNavigation(m.topBar, RemoteKeys.Down, m.videoGrid)
+    SetNavigation(m.topBar, RemoteKeys.Down, m.emptyState)
+
+    m.topBar.ObserveField("selected", FuncName(OnTopBarSelected))
+    m.emptyState.ObserveField("selected", FuncName(OnEmptyStateSelected))
+    m.channelRow.ObserveField("rowItemSelected", FuncName(OnChannelSelected))
+    m.channelRow.ObserveField("focusedChild", FuncName(OnSectionFocus))
+    m.videoGrid.ObserveField("focusedChild", FuncName(OnSectionFocus))
+    m.topBar.ObserveField("focusedChild", FuncName(OnSectionFocus))
+    m.videoGrid.ObserveField("feedState", FuncName(UpdateView))
+    m.profilesService.ObserveFieldScoped("currentProfileChanged", FuncName(OnProfileChanged))
+
+    m.videoGrid@.BindNode()
+    m.videoGrid.feeds = HomeScreenUtils.GetFeed(m.top.feedFile, m.preferences)
+    LoadChannels()
+end function
+
+function OnFocusChange() as void
+    if not m.top.focus
+        return
+    end if
+    if m.emptyState.visible and m.emptyState.focusable
+        NodeSetFocus(m.emptyState, true)
+        return
+    end if
+    if m.lastSection <> invalid and m.lastSection.focusable and m.lastSection.visible
+        NodeSetFocus(m.lastSection, true)
+        return
+    end if
+    if m.channelRow.focusable
+        NodeSetFocus(m.channelRow, true)
+        return
+    end if
+    if m.videoGrid.focusable
+        NodeSetFocus(m.videoGrid, true)
+        return
+    end if
+    NodeSetFocus(m.topBar, true)
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if NavigationKeyHandler(key, press).handled
+        return true
+    end if
+    return false
+end function
+
+' The grid slides up over the channel row while it has focus; the channel row or top bar brings it back.
+function OnSectionFocus() as void
+    if m.videoGrid.hasFocus()
+        m.lastSection = m.videoGrid
+        SetCollapsed(true)
+    else if m.channelRow.hasFocus()
+        m.lastSection = m.channelRow
+        SetCollapsed(false)
+    else if m.topBar.isInFocusChain()
+        SetCollapsed(false)
+    end if
+end function
+
+function SetCollapsed(collapsed as boolean) as void
+    m.collapsed = collapsed
+    ApplyLayout(true)
+end function
+
+function ApplyLayout(animate as boolean) as void
+    channelsShown = m.channelRow.visible
+    gridY = GRID_Y_TOP
+    channelOpacity = 1.0
+    if channelsShown
+        if m.collapsed
+            channelOpacity = 0.0
+        else
+            gridY = GRID_Y_BELOW_CHANNELS
+        end if
+    end if
+    m.gridMessage.translation = [90, gridY + 20]
+
+    current = m.videoGrid.translation
+    if current[1] = gridY and m.channelRow.opacity = channelOpacity
+        return
+    end if
+    if not animate
+        m.layoutAnimation.control = "stop"
+        m.videoGrid.translation = [0, gridY]
+        m.channelRow.opacity = channelOpacity
+        return
+    end if
+    m.layoutAnimation.control = "stop"
+    m.gridMove.keyValue = [current, [0, gridY]]
+    m.channelFade.keyValue = [m.channelRow.opacity, channelOpacity]
+    m.layoutAnimation.control = "start"
+end function
+
+' Show the empty state, channel row, grid or a short message depending on what has loaded.
+function UpdateView() as void
+    feedState = m.videoGrid.feedState
+    signedIn = m.profilesService <> invalid and m.profilesService.currentProfile <> invalid
+    hasChannels = m.channelsState = "ready"
+    channelsShown = m.channelsState <> "none"
+    wasFocused = m.top.isInFocusChain()
+
+    showEmpty = false
+    if not signedIn or feedState = "signedOut"
+        showEmpty = true
+        m.emptyState.title = "Sign in to see your subscriptions"
+        m.emptyState.message = "New videos from the channels you subscribe to show up here."
+        m.emptyState.actionText = "Go to Profile"
+        channelsShown = false
+    else if feedState = "empty" and not channelsShown
+        showEmpty = true
+        m.emptyState.title = "Nothing here yet"
+        m.emptyState.message = "Check back later."
+        m.emptyState.actionText = ""
+    else
+        m.emptyState.actionText = ""
+    end if
+    m.emptyState.iconUri = "pkg:/images/icons/ms/empty_subscriptions.png"
+    m.emptyState.visible = showEmpty
+
+    m.channelRow.visible = channelsShown
+    m.channelRow.focusable = channelsShown and hasChannels
+
+    gridHasVideos = m.videoGrid.videoCount > 0
+    m.videoGrid.visible = not showEmpty and feedState <> "empty"
+    m.videoGrid.focusable = m.videoGrid.visible and (gridHasVideos or feedState = "loading")
+    m.gridMessage.visible = not showEmpty and feedState = "empty"
+    m.gridMessage.text = "No new videos from your subscriptions."
+
+    ' Nothing above the grid any more: drop the collapsed state so the layout is simple.
+    if not m.channelRow.visible
+        m.collapsed = false
+    end if
+    ApplyLayout(false)
+
+    if wasFocused
+        if not HasUsableFocus()
+            m.lastSection = invalid
+            OnFocusChange()
+        end if
+    end if
+end function
+
+' A section that still holds focus may have just been hidden or emptied.
+function HasUsableFocus() as boolean
+    if m.topBar.isInFocusChain()
+        return true
+    end if
+    for each section in [m.channelRow, m.videoGrid, m.emptyState]
+        if section.isInFocusChain() and section.visible and section.focusable
+            return true
+        end if
+    end for
+    return false
+end function
+
+function OnProfileChanged() as void
+    ' The grid reloads itself (VideoRowList watches the profile too)
+    LoadChannels()
+end function
+
+function Refresh(_unused as dynamic) as void
+    m.videoGrid@.Refresh()
+    LoadChannels()
+end function
+
+function LoadChannels() as void
+    CancelChannelsJob()
+    profile = invalid
+    if m.profilesService <> invalid
+        profile = m.profilesService.currentProfile
+    end if
+    if profile = invalid or profile.type <> "youtube"
+        ' Channels come from the YouTube account (Invidious profiles get only the video grid)
+        m.channelsState = "none"
+        m.channelRow.content = invalid
+        UpdateView()
+        return
+    end if
+
+    ShowChannelPlaceholders()
+    m.channelsState = "loading"
+    UpdateView()
+    m.channelsJob = JobSystem.CreateCallback(OnChannelsJobDone)
+    JobSystem.QueueJob(m.jobQueue, Jobs.YourTubeSubscribedChannelsJob, { profile: profile }, m.channelsJob)
+end function
+
+function CancelChannelsJob() as void
+    if m.channelsJob <> invalid
+        JobSystem.UnobserveCallback(m.channelsJob)
+        m.channelsJob.cancel = true
+        m.channelsJob = invalid
+    end if
+end function
+
+function OnChannelsJobDone(event as object) as void
+    callback = event.getRoSGNode()
+    JobSystem.UnobserveCallback(callback)
+    if m.channelsJob = invalid or not callback.isSameNode(m.channelsJob)
+        return
+    end if
+    m.channelsJob = invalid
+    info = event.getInfo()
+    if info.cancel = true
+        return
+    end if
+
+    channels = []
+    if info.success and IsAssociativeArray(info.data)
+        channels = ValidArray(info.data.channels)
+    else
+        LogWarnNoTelemetry("Subscribed channels not loaded:", info.error)
+    end if
+
+    if channels.Count() = 0
+        ' Zero subscriptions, or the account call failed: just the video grid.
+        m.channelsState = "none"
+        m.channelRow.content = invalid
+        UpdateView()
+        return
+    end if
+
+    root = CreateObject("roSGNode", "ContentNode")
+    row = root.createChild("ContentNode")
+    for each channel in channels
+        node = CreateObject("roSGNode", "ChannelContentNode")
+        node.loadState = "None"
+        node.id = channel.id
+        node.authorId = channel.id
+        ' NOTE: "_author" not "author". See PlaylistContentNode.xml for explanation.
+        node._author = channel.name
+        node.thumbnail = channel.thumbnail
+        row.appendChild(node)
+    end for
+    m.channelRow.content = root
+    m.channelsState = "ready"
+    UpdateView()
+end function
+
+function ShowChannelPlaceholders() as void
+    root = CreateObject("roSGNode", "ContentNode")
+    row = root.createChild("ContentNode")
+    for i = 1 to CHANNEL_PLACEHOLDERS
+        row.createChild("ChannelContentNode")
+    end for
+    m.channelRow.content = root
+end function
+
+function OnChannelSelected() as void
+    if m.channelsState <> "ready"
+        return
+    end if
+    selection = m.channelRow.rowItemSelected
+    content = m.channelRow.content
+    if content = invalid or not IsArray(selection) or selection.Count() <> 2
+        return
+    end if
+    row = content.getChild(selection[0])
+    if row = invalid
+        return
+    end if
+    channel = row.getChild(selection[1])
+    if channel = invalid or StringUtils.IsNullOrEmpty(channel.authorId)
+        return
+    end if
+    ChannelUtils.Open(channel, m.appController)
+end function
+
+' YourTube: top bar opens Search
+function OnTopBarSelected() as void
+    m.navBar@.SelectRootScreen("SearchScreen")
+end function
+
+' Empty state's "Go to Profile"
+function OnEmptyStateSelected() as void
+    m.navBar@.SelectRootScreen("ProfileScreen")
+end function
+
+function GetContextMenuOptionsForItem(_rowItem as object) as object
+    refreshOption = ContextMenuUtils.CreateOption(Tr(Locale.Buttons.Refresh), m.top, "Refresh", [invalid])
+    return [refreshOption]
 end function

@@ -1,0 +1,188 @@
+import "pkg:/components/JobSystem/Jobs.bs"
+import "pkg:/components/JobSystem/JobSystem.bs"
+import "pkg:/components/VideoFeed/FeedLoadState.bs"
+import "pkg:/source/utils/Types.bs"
+
+' Cards per row
+const GRID_COLUMNS = 4
+' Fetch the next page when focus gets this many rows from the end
+const GRID_LOAD_MORE_ROWS = 2
+' Skeleton rows shown before the first page arrives
+const GRID_PLACEHOLDER_ROWS = 2
+
+function Init()
+    m.feedNode = invalid
+    m.gridJob = invalid
+end function
+
+' Overrides VideoRowList.InitContent (runs on feeds change, Refresh and profile change).
+function InitContent() as void
+    CancelCurrentJobs()
+    m.gridJob = invalid
+    m.feedNode = invalid
+    m.top.videoCount = 0
+
+    root = CreateObject("roSGNode", "ContentNode")
+    ' cards read their size from the content root (see YourTubeVideoCell.ApplyRowSize)
+    root.addFields({ ytRowItemSize: m.top.rowItemSize })
+
+    feeds = m.top.feeds
+    profilesService = m.top.profilesService
+    if not IsArray(feeds) or feeds.Count() = 0
+        m.top.content = root
+        m.top.feedState = "empty"
+        return
+    end if
+    if profilesService = invalid or profilesService.currentProfile = invalid
+        m.top.content = root
+        m.top.feedState = "signedOut"
+        return
+    end if
+
+    feed = feeds[0]
+    feedNode = CreateObject("roSGNode", "FeedContentNode")
+    feedNode.title = ValidString(feed.title)
+    feedNode.feedSourcesIndex = 0
+    feedNode.loadState = FeedLoadState.None
+    feedSources = ValidArray(feed.feedSources)
+    for i = 0 to feedSources.Count() - 1
+        feedSources[i].state = { loadState: FeedLoadState.None }
+    end for
+    feedNode.feedSources = feedSources
+    m.feedNode = feedNode
+
+    for i = 1 to GRID_PLACEHOLDER_ROWS
+        AppendLoadingRow(root)
+    end for
+    m.top.feedState = "loading"
+    m.top.content = root
+    LoadNextPage()
+end function
+
+' Overrides VideoRowList.LoadRowsIfNeeded: page in more when focus nears the last rows.
+function LoadRowsIfNeeded() as void
+    root = m.top.content
+    if m.feedNode = invalid or root = invalid or not m.top.visible
+        return
+    end if
+    if m.feedNode.loadState <> FeedLoadState.LoadedPage
+        return
+    end if
+    focused = m.top.itemFocused
+    if focused < 0
+        focused = 0
+    end if
+    if focused >= root.getChildCount() - GRID_LOAD_MORE_ROWS
+        AppendLoadingRow(root)
+        LoadNextPage()
+    end if
+end function
+
+' Overrides VideoRowList.OnRowItemFocused
+function OnRowItemFocused(_event as object) as void
+    LoadRowsIfNeeded()
+end function
+
+function LoadNextPage() as void
+    if m.feedNode = invalid or m.gridJob <> invalid
+        return
+    end if
+    loadState = m.feedNode.loadState
+    if loadState = FeedLoadState.Loaded or loadState = FeedLoadState.Loading
+        return
+    end if
+
+    m.feedNode.loadState = FeedLoadState.Loading
+    input = {
+        rowList: m.top
+        feedContentNode: m.feedNode
+        invidious: m.top.invidious
+    }
+    callback = JobSystem.CreateCallback(OnGridPageDone)
+    m.gridJob = callback
+    m.pendingLoadJobs[callback.id] = { callback: callback, content: m.feedNode }
+    JobSystem.QueueJob(m.top.jobQueue, Jobs.VideoRowListRowContentJob, input, callback)
+end function
+
+function OnGridPageDone(event as object) as void
+    callback = event.getRoSGNode()
+    JobSystem.UnobserveCallback(callback)
+    m.pendingLoadJobs.Delete(callback.id)
+    if m.gridJob = invalid or not callback.isSameNode(m.gridJob)
+        return
+    end if
+    m.gridJob = invalid
+    info = event.getInfo()
+    if info.cancel = true
+        return
+    end if
+
+    feedNode = m.feedNode
+    ' Still "Loading" when the job dropped the feed (not signed in / endpoint disabled) or threw: treat as done.
+    if feedNode.loadState = FeedLoadState.Loading or feedNode.loadState = FeedLoadState.None
+        feedNode.loadState = FeedLoadState.Loaded
+    end if
+
+    ' The job appends the new page to the (hidden) feed node; move those videos into rows of 4.
+    items = []
+    count = feedNode.getChildCount()
+    if count > 0
+        items = feedNode.getChildren(count, 0)
+        feedNode.removeChildrenIndex(count, 0)
+    end if
+    AppendItems(items)
+
+    if m.top.videoCount > 0
+        m.top.feedState = "ready"
+    else if feedNode.loadState = FeedLoadState.Loaded
+        m.top.feedState = "empty"
+    end if
+
+    ' Fill the screen (and keep going if the page was empty but more exist)
+    LoadRowsIfNeeded()
+end function
+
+function AppendItems(items as object) as void
+    root = m.top.content
+    if root = invalid
+        return
+    end if
+    RemoveLoadingRows(root)
+
+    lastRow = invalid
+    rowCount = root.getChildCount()
+    if rowCount > 0
+        lastRow = root.getChild(rowCount - 1)
+    end if
+    added = 0
+    for each item in items
+        if ValidString(item.type) = "loading"
+            continue for
+        end if
+        if lastRow = invalid or lastRow.getChildCount() >= GRID_COLUMNS
+            lastRow = root.createChild("ContentNode")
+        end if
+        lastRow.appendChild(item)
+        added += 1
+    end for
+    m.top.videoCount = m.top.videoCount + added
+end function
+
+function AppendLoadingRow(root as object) as void
+    row = root.createChild("ContentNode")
+    for i = 1 to GRID_COLUMNS
+        row.createChild("LoadingContentNode")
+    end for
+end function
+
+function RemoveLoadingRows(root as object) as void
+    index = root.getChildCount() - 1
+    while index >= 0
+        row = root.getChild(index)
+        first = row.getChild(0)
+        if first <> invalid and ValidString(first.type) = "loading"
+            root.removeChildIndex(index)
+        end if
+        index -= 1
+    end while
+end function

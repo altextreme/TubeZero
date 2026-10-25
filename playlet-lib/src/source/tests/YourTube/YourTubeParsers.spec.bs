@@ -3,6 +3,7 @@
 import "pkg:/components/YourTube/Account/YourTubeAccount.bs"
 import "pkg:/components/YourTube/Comments/CommentsParser.bs"
 import "pkg:/components/YourTube/LiveChat/LiveChatParser.bs"
+import "pkg:/components/YourTube/Subscriptions/YourTubeSubscriptions.bs"
 import "pkg:/components/YourTube/YourTubeJson.bs"
 import "pkg:/components/YourTube/YourTubeText.bs"
 import "pkg:/source/utils/StringUtils.bs"
@@ -237,6 +238,66 @@ namespace Tests
             m.assertEqual(YourTubeText.Clean("STREAM" + Chr(&h1F525) + "BILLIONS" + red + "!").text, "STREAM BILLIONS!")
             m.assertFalse(YourTubeText.Clean("plain").needsSystemFont)
             m.assertTrue(YourTubeText.Clean("日本語").needsSystemFont)
+        end function
+
+        @describe("YourTubeSubscriptions.ParseChannels")
+
+        @it("reads the guide's subscriptions section, including the collapsed entries")
+        function _()
+            channels = YourTubeSubscriptions.ParseChannels(m.Fixture("subscribed-channels-guide.json"))
+            m.assertEqual(channels.Count(), 3)
+            m.assertEqual(channels[0].id, "UCaaaaaaaaaaaaaaaaaaaaaa")
+            m.assertEqual(channels[0].name, "Alpha Channel")
+            m.assertEqual(channels[0].thumbnail, "https://yt3.ggpht.com/av-AlphaChannel=s176-c-k-c0x00ffffff-no-rj")
+            m.assertEqual(channels[1].name, "Beta Channel")
+            m.assertEqual(channels[2].id, "UCcccccccccccccccccccccc")
+        end function
+
+        @it("skips guide entries outside the subscriptions section")
+        function _()
+            data = m.Fixture("subscribed-channels-guide.json")
+            ' without the subscriptions section only "Your channel" has a thumbnail; Explore's Music has none
+            data["items"].Delete(1)
+            channels = YourTubeSubscriptions.ParseChannels(data)
+            m.assertEqual(channels.Count(), 1)
+            m.assertEqual(channels[0].id, "UCownchannel000000000000")
+        end function
+
+        @it("reads TV channel tiles and ignores video tiles and duplicates")
+        function _()
+            channels = YourTubeSubscriptions.ParseChannels(m.Fixture("subscribed-channels-tv.json"))
+            m.assertEqual(channels.Count(), 2)
+            m.assertEqual(channels[0].id, "UCzzzzzzzzzzzzzzzzzzzzzz")
+            m.assertEqual(channels[0].name, "Zeta")
+            ' widest thumbnail, already larger than 176px so left alone
+            m.assertEqual(channels[0].thumbnail, "https://yt3.ggpht.com/t-Z=s240-c-k")
+            m.assertEqual(channels[1].name, "Ypsilon")
+        end function
+
+        @it("reads WEB channelRenderers and TV secondary-nav channel tabs")
+        function _()
+            channels = YourTubeSubscriptions.ParseChannels(m.Fixture("subscribed-channels-web.json"))
+            m.assertEqual(channels.Count(), 3)
+            byId = {}
+            for each channel in channels
+                byId[channel.id] = channel
+            end for
+            web = byId["UCwwwwwwwwwwwwwwwwwwwwww"]
+            m.assertNotInvalid(web)
+            m.assertEqual(web.name, "Web")
+            m.assertEqual(web.thumbnail, "https://yt3.googleusercontent.com/w-Web=s176-c-k-c0x00ffffff-no-rj-mo")
+            m.assertNotInvalid(byId["UCxxxxxxxxxxxxxxxxxxxxxx"])
+            tab = byId["UCtttttttttttttttttttttt"]
+            m.assertNotInvalid(tab)
+            m.assertEqual(tab.name, "Tab Channel")
+        end function
+
+        @it("returns no channels for bad or empty input")
+        function _()
+            m.assertEqual(YourTubeSubscriptions.ParseChannels(invalid).Count(), 0)
+            m.assertEqual(YourTubeSubscriptions.ParseChannels("x").Count(), 0)
+            m.assertEqual(YourTubeSubscriptions.ParseChannels({}).Count(), 0)
+            m.assertEqual(YourTubeSubscriptions.ParseChannels({ "items": [{ "guideEntryRenderer": { "title": "No id" } }] }).Count(), 0)
         end function
 
     end class

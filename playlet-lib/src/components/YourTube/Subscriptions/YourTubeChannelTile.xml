@@ -1,0 +1,44 @@
+<!--
+    YourTube: round avatar + name tile for the Subscriptions screen's channel row (a RowList cell, like the
+    YouTube TV app's channel strip). Draws its own white ring when focused (the row list's focus bitmap is off).
+-->
+<component name="YourTubeChannelTile" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="OnContentSet" />
+        <field id="focusPercent" type="float" onChange="OnFocusChange" />
+        <field id="rowListHasFocus" type="boolean" onChange="OnFocusChange" />
+    </interface>
+    <children>
+        <Poster
+            id="Ring"
+            uri="pkg:/images/white-circle.png"
+            blendColor="0xEBEBEBFF"
+            width="104"
+            height="104"
+            translation="[8,0]"
+            opacity="0" />
+        <Poster
+            id="AvatarBackdrop"
+            uri="pkg:/images/white-circle.png"
+            blendColor="0x272727FF"
+            width="96"
+            height="96"
+            translation="[12,4]" />
+        <CirclePoster
+            id="Avatar"
+            width="96"
+            height="96"
+            translation="[12,4]"
+            failedBitmapUri="pkg:/images/icons/user-200.png" />
+        <Label
+            id="NameLabel"
+            width="120"
+            translation="[0,114]"
+            horizAlign="center"
+            maxLines="2"
+            wrap="true"
+            color="0xAAAAAAFF">
+            <Font role="font" uri="font:MediumSystemFontFile" size="15" />
+        </Label>
+    </children>
+</component>
