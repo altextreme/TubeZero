@@ -1,0 +1,63 @@
+<!--
+    TubeZero: "Your stats" page, hosted by YourTubeStandaloneScreen from Settings > More. Watch time today, this
+    week and in the last 30 days, the most watched channels and SponsorBlock time saved (YourTubeWatchStats).
+    Read once when the page opens; nothing on it is focusable, Back closes it.
+-->
+<component name="YourTubeStatsScreen" extends="Group">
+    <children>
+        <Group id="Tiles" translation="[104,104]">
+            <Rectangle id="TodayTile" width="340" height="128" color="0x212121FF">
+                <Label id="TodayValue" translation="[24,22]" width="300" color="0xF1F1F1FF">
+                    <Font role="font" uri="font:BoldSystemFontFile" size="40" />
+                </Label>
+                <Label id="TodayCaption" text="Today" translation="[24,82]" width="300" color="0xAAAAAAFF">
+                    <Font role="font" uri="font:SystemFontFile" size="20" />
+                </Label>
+            </Rectangle>
+            <Rectangle id="WeekTile" width="340" height="128" translation="[364,0]" color="0x212121FF">
+                <Label id="WeekValue" translation="[24,22]" width="300" color="0xF1F1F1FF">
+                    <Font role="font" uri="font:BoldSystemFontFile" size="40" />
+                </Label>
+                <Label id="WeekCaption" text="Last 7 days" translation="[24,82]" width="300" color="0xAAAAAAFF">
+                    <Font role="font" uri="font:SystemFontFile" size="20" />
+                </Label>
+            </Rectangle>
+            <Rectangle id="MonthTile" width="340" height="128" translation="[728,0]" color="0x212121FF">
+                <Label id="MonthValue" translation="[24,22]" width="300" color="0xF1F1F1FF">
+                    <Font role="font" uri="font:BoldSystemFontFile" size="40" />
+                </Label>
+                <Label id="MonthCaption" text="Last 30 days" translation="[24,82]" width="300" color="0xAAAAAAFF">
+                    <Font role="font" uri="font:SystemFontFile" size="20" />
+                </Label>
+            </Rectangle>
+        </Group>
+
+        <Label id="ChannelsHeading" text="Most watched channels" translation="[104,268]" color="0xF1F1F1FF">
+            <Font role="font" uri="font:BoldSystemFontFile" size="24" />
+        </Label>
+        <Label id="ChannelsSubheading" text="Last 30 days" translation="[104,302]" color="0xAAAAAAFF">
+            <Font role="font" uri="font:SystemFontFile" size="18" />
+        </Label>
+        <Group id="ChannelRows" translation="[104,344]" />
+        <Label id="NoChannels" visible="false" translation="[104,344]" width="660" wrap="true" color="0xAAAAAAFF"
+            text="Nothing watched yet. Watch time shows up here as you watch.">
+            <Font role="font" uri="font:SystemFontFile" size="20" />
+        </Label>
+
+        <Rectangle id="SavedTile" width="340" height="190" translation="[832,268]" color="0x212121FF">
+            <Label id="SavedHeading" text="SponsorBlock time saved" translation="[24,20]" width="300" color="0xAAAAAAFF">
+                <Font role="font" uri="font:SystemFontFile" size="20" />
+            </Label>
+            <Label id="SavedValue" translation="[24,56]" width="300" color="0xF1F1F1FF">
+                <Font role="font" uri="font:BoldSystemFontFile" size="40" />
+            </Label>
+            <Label id="SavedDetail" translation="[24,116]" width="300" wrap="true" color="0xAAAAAAFF">
+                <Font role="font" uri="font:SystemFontFile" size="18" />
+            </Label>
+        </Rectangle>
+
+        <Label id="PrivacyNote" text="Stats are kept on this TV only and are never sent anywhere." translation="[104,656]" color="0x717171FF">
+            <Font role="font" uri="font:SystemFontFile" size="18" />
+        </Label>
+    </children>
+</component>

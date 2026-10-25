@@ -388,6 +388,12 @@ function CreateVideoPlayer() as object
     m.previousPlayer = invalid
     videoPlayer@.BindNode()
 
+    ' YourTube: watch-time stats observe the player from outside it (YourTubeWatchStatsTracker)
+    if m.yourtubeWatchStats = invalid
+        m.yourtubeWatchStats = CreateObject("roSGNode", "YourTubeWatchStatsTracker")
+    end if
+    m.yourtubeWatchStats.player = videoPlayer
+
     if container.fullscreen
         NodeSetFocus(videoPlayer, true)
 

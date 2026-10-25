@@ -1,0 +1,69 @@
+import "pkg:/components/YourTube/WatchStats/YourTubeWatchStats.bs"
+
+' TubeZero: see YourTubeStatsScreen.xml
+
+const ROW_HEIGHT = 58
+const ROW_WIDTH = 660
+const TOP_CHANNELS = 5
+
+function Init()
+    summary = YourTubeWatchStats.Summary(YourTubeWatchStats.Load(), YourTubeWatchStats.Today(), TOP_CHANNELS)
+
+    m.top.findNode("TodayValue").text = YourTubeWatchStats.FormatDuration(summary.today)
+    m.top.findNode("WeekValue").text = YourTubeWatchStats.FormatDuration(summary.week)
+    m.top.findNode("MonthValue").text = YourTubeWatchStats.FormatDuration(summary.month)
+
+    savedValue = "None yet"
+    if summary.savedTotal > 0
+        savedValue = YourTubeWatchStats.FormatDuration(summary.savedTotal)
+    end if
+    m.top.findNode("SavedValue").text = savedValue
+    m.top.findNode("SavedDetail").text = `${YourTubeWatchStats.FormatDuration(summary.savedWeek)} in the last 7 days, skipping sponsors and other segments`
+
+    ShowChannels(summary.topChannels)
+end function
+
+function ShowChannels(channels as object) as void
+    if channels.Count() = 0
+        m.top.findNode("NoChannels").visible = true
+        return
+    end if
+    rows = m.top.findNode("ChannelRows")
+    most = channels[0].seconds
+    if most < 1
+        most = 1
+    end if
+    for i = 0 to channels.Count() - 1
+        channel = channels[i]
+        row = rows.createChild("Group")
+        row.translation = [0, i * ROW_HEIGHT]
+
+        nameLabel = row.createChild("Label")
+        nameLabel.width = ROW_WIDTH - 180
+        nameLabel.height = 30
+        nameLabel.color = "#EBEBEBFF"
+        nameLabel.font = "font:SmallSystemFont"
+        nameLabel.text = channel.name
+
+        timeLabel = row.createChild("Label")
+        timeLabel.width = 170
+        timeLabel.height = 30
+        timeLabel.translation = [ROW_WIDTH - 170, 0]
+        timeLabel.horizAlign = "right"
+        timeLabel.color = "#AAAAAAFF"
+        timeLabel.font = "font:SmallSystemFont"
+        timeLabel.text = YourTubeWatchStats.FormatDuration(channel.seconds)
+
+        track = row.createChild("Rectangle")
+        track.translation = [0, 36]
+        track.width = ROW_WIDTH
+        track.height = 6
+        track.color = "#303030FF"
+
+        fill = row.createChild("Rectangle")
+        fill.translation = [0, 36]
+        fill.width = Int(ROW_WIDTH * channel.seconds / most)
+        fill.height = 6
+        fill.color = "#AAAAAAFF"
+    end for
+end function

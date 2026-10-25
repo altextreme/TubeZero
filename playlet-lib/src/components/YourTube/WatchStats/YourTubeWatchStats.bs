@@ -1,0 +1,225 @@
+import "pkg:/source/utils/RegistryUtils.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+' TubeZero: local watch-time stats, kept on this TV only (registry key yourtube_watch_stats). Compact so it
+' fits the small Roku registry:
+'   { v: 1, d: { "<day>": [watchedSeconds, sponsorBlockSavedSeconds] }, c: { "<channel>": [seconds, lastDay] },
+'     sb: allTimeSavedSeconds }
+' <day> is the local day number (local seconds / 86400). Days older than KEEP_DAYS and channels not watched in
+' KEEP_DAYS are dropped; at most MAX_CHANNELS channels are kept (the most watched).
+namespace YourTubeWatchStats
+
+    const REGISTRY_KEY = "yourtube_watch_stats"
+    const KEEP_DAYS = 30
+    const MAX_CHANNELS = 25
+    const MAX_CHANNEL_NAME = 60
+
+    function NewStore() as object
+        return { v: 1, d: {}, c: {}, sb: 0 }
+    end function
+
+    function Parse(raw as dynamic) as object
+        store = NewStore()
+        if not IsString(raw) or raw = ""
+            return store
+        end if
+        parsed = StringUtils.ParseJsonSafe(raw)
+        if not IsAssociativeArray(parsed)
+            return store
+        end if
+        if IsAssociativeArray(parsed.d)
+            store.d = parsed.d
+        end if
+        if IsAssociativeArray(parsed.c)
+            store.c = parsed.c
+        end if
+        if IsNumber(parsed.sb)
+            store.sb = parsed.sb
+        end if
+        return store
+    end function
+
+    function NumberAt(arr as dynamic, index as integer) as float
+        if IsArray(arr) and arr.Count() > index and IsNumber(arr[index])
+            return arr[index]
+        end if
+        return 0
+    end function
+
+    ' Local day number for a UTC epoch (seconds).
+    function DayIndex(epochSeconds as integer) as integer
+        date = CreateObject("roDateTime")
+        date.FromSeconds(epochSeconds)
+        date.ToLocalTime()
+        return Int(date.AsSeconds() / 86400)
+    end function
+
+    function Today() as integer
+        return DayIndex(CreateObject("roDateTime").AsSeconds())
+    end function
+
+    function DayEntry(store as object, day as integer) as object
+        key = day.ToStr()
+        entry = store.d[key]
+        if not IsArray(entry)
+            entry = [0, 0]
+        end if
+        return [NumberAt(entry, 0), NumberAt(entry, 1)]
+    end function
+
+    function AddWatch(store as object, day as integer, channel as dynamic, seconds as float) as object
+        if seconds <= 0
+            return store
+        end if
+        entry = DayEntry(store, day)
+        entry[0] = entry[0] + seconds
+        store.d[day.ToStr()] = entry
+
+        name = ValidString(channel).Trim()
+        if name.Len() > MAX_CHANNEL_NAME
+            name = name.Left(MAX_CHANNEL_NAME)
+        end if
+        if name <> ""
+            current = store.c[name]
+            store.c[name] = [NumberAt(current, 0) + seconds, day]
+        end if
+        return store
+    end function
+
+    function AddSaved(store as object, day as integer, seconds as float) as object
+        if seconds <= 0
+            return store
+        end if
+        entry = DayEntry(store, day)
+        entry[1] = entry[1] + seconds
+        store.d[day.ToStr()] = entry
+        store.sb = store.sb + seconds
+        return store
+    end function
+
+    ' Drops old days and channels and keeps the store small. Rounds to whole seconds.
+    function Prune(store as object, today as integer) as object
+        days = {}
+        for each key in store.d
+            day = key.ToInt()
+            if day > today - KEEP_DAYS and day <= today + 1
+                entry = store.d[key]
+                days[key] = [Int(NumberAt(entry, 0) + 0.5), Int(NumberAt(entry, 1) + 0.5)]
+            end if
+        end for
+        store.d = days
+
+        channels = []
+        for each name in store.c
+            entry = store.c[name]
+            lastDay = Int(NumberAt(entry, 1))
+            if lastDay > today - KEEP_DAYS
+                channels.Push({ name: name, seconds: Int(NumberAt(entry, 0) + 0.5), lastDay: lastDay })
+            end if
+        end for
+        channels.SortBy("seconds", "r")
+        kept = {}
+        for i = 0 to channels.Count() - 1
+            if i >= MAX_CHANNELS
+                exit for
+            end if
+            kept[channels[i].name] = [channels[i].seconds, channels[i].lastDay]
+        end for
+        store.c = kept
+        store.sb = Int(store.sb + 0.5)
+        return store
+    end function
+
+    ' { today, week, month, savedToday, savedWeek, savedTotal, topChannels: [{ name, seconds }] } (seconds)
+    function Summary(store as object, today as integer, topCount = 5 as integer) as object
+        result = { today: 0, week: 0, month: 0, savedToday: 0, savedWeek: 0, savedTotal: Int(NumberAt([store.sb], 0)), topChannels: [] }
+        for each key in store.d
+            day = key.ToInt()
+            entry = store.d[key]
+            watched = NumberAt(entry, 0)
+            saved = NumberAt(entry, 1)
+            age = today - day
+            if age >= 0 and age < KEEP_DAYS
+                result.month += watched
+                if age < 7
+                    result.week += watched
+                    result.savedWeek += saved
+                end if
+                if age = 0
+                    result.today += watched
+                    result.savedToday += saved
+                end if
+            end if
+        end for
+
+        channels = []
+        for each name in store.c
+            channels.Push({ name: name, seconds: Int(NumberAt(store.c[name], 0)) })
+        end for
+        channels.SortBy("seconds", "r")
+        for i = 0 to channels.Count() - 1
+            if i >= topCount
+                exit for
+            end if
+            result.topChannels.Push(channels[i])
+        end for
+        result.today = Int(result.today)
+        result.week = Int(result.week)
+        result.month = Int(result.month)
+        result.savedToday = Int(result.savedToday)
+        result.savedWeek = Int(result.savedWeek)
+        return result
+    end function
+
+    ' 45 -> "Under 1 min", 600 -> "10 min", 3900 -> "1 h 5 min", 7200 -> "2 h"
+    function FormatDuration(seconds as dynamic) as string
+        total = 0
+        if IsNumber(seconds)
+            total = Int(seconds)
+        end if
+        if total < 60
+            return "Under 1 min"
+        end if
+        minutes = Int(total / 60)
+        hours = Int(minutes / 60)
+        minutes = minutes - hours * 60
+        if hours = 0
+            return `${minutes} min`
+        end if
+        if minutes = 0
+            return `${hours} h`
+        end if
+        return `${hours} h ${minutes} min`
+    end function
+
+    function Load() as object
+        return Parse(RegistryUtils.Read(REGISTRY_KEY))
+    end function
+
+    function Save(store as object) as void
+        RegistryUtils.Write(REGISTRY_KEY, FormatJson(Prune(store, Today())))
+    end function
+
+    ' Called by the player when a SponsorBlock segment is skipped: counts the segment's length as time saved.
+    function RecordSponsorBlockSkip(segment as dynamic) as void
+        if not IsAssociativeArray(segment)
+            return
+        end if
+        seconds = 0.0
+        if IsNumber(segment["start"]) and IsNumber(segment["end"])
+            seconds = segment["end"] - segment["start"]
+        else if IsArray(segment.segment)
+            seconds = NumberAt(segment.segment, 1) - NumberAt(segment.segment, 0)
+        end if
+        if seconds <= 0 or seconds > 3600
+            return
+        end if
+        Save(AddSaved(Load(), Today(), seconds))
+    end function
+
+    function Reset() as void
+        RegistryUtils.Delete(REGISTRY_KEY)
+    end function
+
+end namespace

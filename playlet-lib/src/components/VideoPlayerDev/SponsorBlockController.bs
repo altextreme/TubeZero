@@ -3,6 +3,7 @@ import "pkg:/components/JobSystem/JobSystem.bs"
 import "pkg:/components/Services/SponsorBlock/Notifications/SponsorBlockNotificationUtils.bs"
 import "pkg:/components/Services/SponsorBlock/SponsorBlockTimeline.bs"
 import "pkg:/components/VideoPlayer/SponsorBlockSegmentAction.bs"
+import "pkg:/components/YourTube/WatchStats/YourTubeWatchStats.bs"
 import "pkg:/source/utils/Logging.bs"
 import "pkg:/source/utils/Types.bs"
 
@@ -196,6 +197,7 @@ namespace SponsorBlockController
                 m.quietUntilMs = targetMs
             end if
             m.SendSegmentViewed(segment.UUID)
+            YourTubeWatchStats.RecordSponsorBlockSkip(segment) ' YourTube: "time saved" in Your stats
         end function
 
         function WithdrawManual() as void

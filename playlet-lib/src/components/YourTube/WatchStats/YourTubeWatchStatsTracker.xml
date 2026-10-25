@@ -1,0 +1,10 @@
+<!--
+    TubeZero: counts watched seconds from outside the player. VideoQueue sets `player` to each new player; this
+    observes its Video position/state, adds the wall-clock time between position ticks while it is playing, and
+    saves to YourTubeWatchStats per channel at most once a minute (and on pause/stop/next player).
+-->
+<component name="YourTubeWatchStatsTracker" extends="Node">
+    <interface>
+        <field id="player" type="node" onChange="OnPlayerChange" />
+    </interface>
+</component>

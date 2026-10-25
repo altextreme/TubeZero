@@ -10,6 +10,7 @@ function Init()
     m.screensByKey = {
         "more.phone_remote": "RemoteScreen"
         "more.about": "AppInfoScreen"
+        "more.stats": "YourTubeStatsScreen" ' TubeZero: watch-time stats
     }
     m.key = ""
     m.button = m.top.findNode("Button")

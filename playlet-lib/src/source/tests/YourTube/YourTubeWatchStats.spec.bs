@@ -1,0 +1,103 @@
+' TubeZero: watch-time stats store (pure functions; no registry access)
+import "pkg:/components/YourTube/WatchStats/YourTubeWatchStats.bs"
+
+namespace Tests
+
+    @suite
+    class YourTubeWatchStatsTests extends Rooibos.BaseTestSuite
+
+        @describe("YourTubeWatchStats.Summary")
+
+        @it("totals today, the last 7 days and the last 30 days")
+        function _()
+            store = YourTubeWatchStats.NewStore()
+            today = 20000
+            YourTubeWatchStats.AddWatch(store, today, "A", 600)
+            YourTubeWatchStats.AddWatch(store, today, "B", 60)
+            YourTubeWatchStats.AddWatch(store, today - 6, "A", 100)
+            YourTubeWatchStats.AddWatch(store, today - 7, "A", 1000)
+            YourTubeWatchStats.AddWatch(store, today - 30, "A", 5000)
+            summary = YourTubeWatchStats.Summary(store, today)
+            m.assertEqual(summary.today, 660)
+            m.assertEqual(summary.week, 760)
+            m.assertEqual(summary.month, 1760)
+        end function
+
+        @it("ranks channels by watch time")
+        function _()
+            store = YourTubeWatchStats.NewStore()
+            YourTubeWatchStats.AddWatch(store, 10, "Small", 30)
+            YourTubeWatchStats.AddWatch(store, 10, "Big", 300)
+            YourTubeWatchStats.AddWatch(store, 11, "Big", 300)
+            YourTubeWatchStats.AddWatch(store, 11, "", 900)
+            summary = YourTubeWatchStats.Summary(store, 11, 5)
+            m.assertEqual(summary.topChannels.Count(), 2)
+            m.assertEqual(summary.topChannels[0].name, "Big")
+            m.assertEqual(summary.topChannels[0].seconds, 600)
+            m.assertEqual(summary.today, 1200)
+        end function
+
+        @it("counts SponsorBlock time saved per day and in total")
+        function _()
+            store = YourTubeWatchStats.NewStore()
+            YourTubeWatchStats.AddSaved(store, 100, 30)
+            YourTubeWatchStats.AddSaved(store, 90, 45)
+            YourTubeWatchStats.AddSaved(store, 100, -5)
+            summary = YourTubeWatchStats.Summary(store, 100)
+            m.assertEqual(summary.savedToday, 30)
+            m.assertEqual(summary.savedWeek, 30)
+            m.assertEqual(summary.savedTotal, 75)
+        end function
+
+        @describe("YourTubeWatchStats.Prune")
+
+        @it("drops old days and channels and caps the channel count")
+        function _()
+            store = YourTubeWatchStats.NewStore()
+            today = 500
+            YourTubeWatchStats.AddWatch(store, today - 40, "Old", 100)
+            for i = 1 to YourTubeWatchStats.MAX_CHANNELS + 5
+                YourTubeWatchStats.AddWatch(store, today, `Channel ${i}`, i * 10)
+            end for
+            pruned = YourTubeWatchStats.Prune(store, today)
+            m.assertFalse(pruned.d.DoesExist((today - 40).ToStr()))
+            m.assertFalse(pruned.c.DoesExist("Old"))
+            m.assertEqual(pruned.c.Count(), YourTubeWatchStats.MAX_CHANNELS)
+            m.assertFalse(pruned.c.DoesExist("Channel 1"))
+            m.assertTrue(pruned.c.DoesExist("Channel 30"))
+        end function
+
+        @it("round-trips through JSON")
+        function _()
+            store = YourTubeWatchStats.NewStore()
+            YourTubeWatchStats.AddWatch(store, 7, "A", 12.6)
+            YourTubeWatchStats.AddSaved(store, 7, 3)
+            parsed = YourTubeWatchStats.Parse(FormatJson(YourTubeWatchStats.Prune(store, 7)))
+            summary = YourTubeWatchStats.Summary(parsed, 7)
+            m.assertEqual(summary.today, 13)
+            m.assertEqual(summary.savedTotal, 3)
+            m.assertEqual(summary.topChannels[0].name, "A")
+        end function
+
+        @it("starts empty on bad data")
+        function _()
+            m.assertEqual(YourTubeWatchStats.Summary(YourTubeWatchStats.Parse("nope"), 1).today, 0)
+            m.assertEqual(YourTubeWatchStats.Summary(YourTubeWatchStats.Parse(invalid), 1).topChannels.Count(), 0)
+            m.assertEqual(YourTubeWatchStats.Summary(YourTubeWatchStats.Parse(`{"d":{"1":"x"},"c":{"A":5}}`), 1).today, 0)
+        end function
+
+        @describe("YourTubeWatchStats.FormatDuration")
+
+        @it("formats minutes and hours")
+        function _()
+            m.assertEqual(YourTubeWatchStats.FormatDuration(0), "Under 1 min")
+            m.assertEqual(YourTubeWatchStats.FormatDuration(59), "Under 1 min")
+            m.assertEqual(YourTubeWatchStats.FormatDuration(600), "10 min")
+            m.assertEqual(YourTubeWatchStats.FormatDuration(3900), "1 h 5 min")
+            m.assertEqual(YourTubeWatchStats.FormatDuration(7200), "2 h")
+            m.assertEqual(YourTubeWatchStats.FormatDuration(invalid), "Under 1 min")
+        end function
+
+    end class
+
+end namespace

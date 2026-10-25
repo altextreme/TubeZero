@@ -404,13 +404,21 @@
   {
     displayText: "More",
     key: "more",
-    description: "Phone remote and app info",
+    description: "Phone remote, your stats and app info",
     visibility: "tv",
     children: [
       {
         displayText: "Phone remote",
         key: "more.phone_remote",
         description: "Control TubeZero from your phone or cast from the YouTube app",
+        visibility: "tv",
+        rokuComponent: "YourTubeOpenScreenControl",
+      },
+      // TubeZero: watch-time stats page (YourTubeStatsScreen)
+      {
+        displayText: "Your stats",
+        key: "more.stats",
+        description: "Watch time today and this week, your most watched channels and SponsorBlock time saved",
         visibility: "tv",
         rokuComponent: "YourTubeOpenScreenControl",
       },

@@ -1,0 +1,85 @@
+import "pkg:/components/YourTube/WatchStats/YourTubeWatchStats.bs"
+import "pkg:/source/utils/Types.bs"
+
+' TubeZero: see YourTubeWatchStatsTracker.xml
+
+' A longer gap between ticks is a stall or a suspended app, not watching.
+const MAX_TICK_SECONDS = 3
+const FLUSH_SECONDS = 60
+
+function Init()
+    m.player = invalid
+    m.clock = CreateObject("roTimespan")
+    m.lastTickMs = -1
+    m.pending = 0.0
+    m.pendingChannel = ""
+end function
+
+function OnPlayerChange() as void
+    Flush()
+    if m.player <> invalid
+        m.player.unobserveFieldScoped("position")
+        m.player.unobserveFieldScoped("state")
+    end if
+    m.player = m.top.player
+    m.lastTickMs = -1
+    if m.player = invalid
+        return
+    end if
+    m.player.observeFieldScoped("position", FuncName(OnPlayerPosition))
+    m.player.observeFieldScoped("state", FuncName(OnPlayerState))
+end function
+
+function OnPlayerPosition() as void
+    nowMs = m.clock.TotalMilliseconds()
+    if m.player = invalid or m.player.state <> "playing"
+        m.lastTickMs = -1
+        return
+    end if
+    if m.lastTickMs >= 0
+        delta = (nowMs - m.lastTickMs) / 1000.0
+        if delta > 0 and delta <= MAX_TICK_SECONDS
+            channel = ChannelName(m.player.content)
+            if channel <> m.pendingChannel
+                Flush()
+                m.pendingChannel = channel
+            end if
+            m.pending += delta
+            if m.pending >= FLUSH_SECONDS
+                Flush()
+            end if
+        end if
+    end if
+    m.lastTickMs = nowMs
+end function
+
+function OnPlayerState() as void
+    if m.player = invalid or m.player.state <> "playing"
+        m.lastTickMs = -1
+        Flush()
+    end if
+end function
+
+function ChannelName(content as dynamic) as string
+    if content = invalid
+        return ""
+    end if
+    metadata = content.metadata
+    if IsAssociativeArray(metadata) and IsString(metadata.author) and metadata.author <> ""
+        return metadata.author
+    end if
+    author = content._author
+    if IsString(author) and author <> ""
+        return author
+    end if
+    return ValidString(content.secondaryTitle)
+end function
+
+function Flush() as void
+    if m.pending <= 0
+        return
+    end if
+    seconds = m.pending
+    m.pending = 0.0
+    YourTubeWatchStats.Save(YourTubeWatchStats.AddWatch(YourTubeWatchStats.Load(), YourTubeWatchStats.Today(), m.pendingChannel, seconds))
+end function

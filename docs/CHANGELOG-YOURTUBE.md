@@ -19,6 +19,10 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   are left out of every feed row, the Home shelf rows, search, the Subscriptions grid, Related and Shorts. Channels
   match by name (any case, "@" ignored) or channel id; keywords match whole words in the title. Long-press a card >
   "Block this channel" adds it and removes its cards from the screen. A page of only blocked cards keeps paging.
+- Your stats (Settings > More): watch time today, in the last 7 and 30 days, the five most watched channels and
+  SponsorBlock time saved. `YourTubeWatchStatsTracker` observes each player's position/state from VideoQueue
+  (wall-clock time while playing, saved at most once a minute); SponsorBlock auto/manual skips add the segment
+  length. Kept only on the TV, in one compact registry value (30 days, 25 channels).
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote
