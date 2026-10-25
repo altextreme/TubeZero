@@ -20,9 +20,9 @@ playlet-lib  (bundled zip inside the app; where everything happens)
 playlet-web  (Svelte phone remote, served by the TV app)
 ```
 
-Build: `tools/yourtube-build.sh` → `out/YourTube-<version>-<sha>.zip` (unsigned, no password).
+Build: `tools/yourtube-build.sh` → `out/TubeZero-<version>-<sha>.zip` (unsigned, no password).
 Theme: `tools/bs-plugins/yourtube-rebrand-plugin.ts` restyles every screen at build time
-(palette, Roboto, focus ring, pill buttons, "Playlet" → "YourTube"), so upstream files stay untouched.
+(palette, Roboto, focus ring, pill buttons, "Playlet" → "TubeZero"), so upstream files stay untouched.
 Assets: `branding/*.svg` + `tools/yourtube/make-assets.sh`. Previews: `tools/yourtube/render-previews.py`.
 
 ## Decision needed: Playlet's support server
@@ -84,6 +84,12 @@ Phase 5 tested and closed: the TV's DASH demuxer won't read YouTube's WebM, and 
 the ceiling (details in docs/device-capabilities.md).
 Phase 2 done and verified with a signed-in account: like, dislike, Watch Later and subscribe in the player, with
 state loaded when a video opens.
+
+After the phases: the rebrand to TubeZero, a restyled sign-in flow, Shorts, a new Subscriptions screen, a deeper
+Home, and two rounds of features picked from docs/FEATURE-IDEAS.md (30 in round 1; live "Go live", SponsorBlock
+extras, a Kids profile and voice search in round 2). All are on the `feat/rebrand-ui` branch and walked through on
+the TV; what was and wasn't checked is listed at the top of docs/CHANGELOG-YOURTUBE.md. Next: merge
+`feat/rebrand-ui` into `main`, try Kids mode with a real PIN, voice dictation, and the account-changing actions.
 
 ## Build order
 

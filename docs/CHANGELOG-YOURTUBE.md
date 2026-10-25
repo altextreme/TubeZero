@@ -6,7 +6,40 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 
 ## Unreleased: TubeZero
 
-### Round 2 (not yet checked on the TV)
+### TV check of the feature rounds (2026-10-24)
+Everything below was merged, installed on the TCL and walked through over ECP. What was checked, and what still
+needs a person at the TV, is noted in each section heading and here.
+- Checked: Settings > More pages (Phone remote, Your stats, About), Shorts action column, comments slide-in and
+  "From subscriptions" feed, Home chips (Music filter), Back to the first row, Subscriptions chips and Live now row,
+  You (watch-history search pill, Watch later row), search result chips, channel page and grid, player row with
+  counts, chapters, heatmap, quick skip, Description panel, settings sheet, phone pairing (code shown, token
+  accepted), live "Go live", SponsorBlock "Ask" skip and the highlight jump, the Kids card, setup dialog and PIN pad.
+- Not checked (would change the account or needs a real person): Like / Dislike / Subscribe / Save to playlist /
+  Not interested / Block channel / Watch later edits / Pause watch history, real voice dictation, Kids mode itself
+  (needs a PIN chosen by the owner), captions and quality changes from the sheet.
+- Fixed during the check:
+  - Every SponsorBlock "Press OK to skip" crashed the player, and watch stats never saved: a `today` parameter in
+    the `YourTubeWatchStats` namespace compiled into a reference to its `Today()` function. The Kids allowlist and
+    daily limit had the same bug (`today`, `allowIndex`). `tools/yourtube/check-shadowed-names.js` now runs in
+    `tools/yourtube-build.sh` and fails the build when a namespaced function shows up as a value with a different
+    spelling from its declaration, which is how a shadowing local or parameter compiles.
+  - The highlight prompt's 10 s window now opens where the content starts (after an opening intro / Non-Music
+    segment), so an intro's own skip prompt doesn't use it up.
+  - Search result chips sat on top of the cards' text; they moved below the row.
+  - Description panel chapters: same font size when focused, and "Title · 4:16" so the names line up.
+  - Settings sheet: the Audio track row listed codec variants by raw id ("dash/a~AAC~~main~~0~"); it now lists only
+    tracks with a name or language, one per label, and shows only when there is a real choice.
+  - Notifications: a TV sign-in gets 400 from both the WEB and TV notification endpoints, so the Profile pill only
+    shows once the unread count loads.
+  - `/api/yourtube/debug/*` routes return raw account responses, so they need a paired phone.
+  - Your stats: the SponsorBlock card explains itself before the first skip instead of "Under 1 min in the last
+    7 days".
+  - Settings > More: the pages keep focus (Back works), and buttons drop Roku's default dot icon and fit their label.
+- Voice search: the Search keyboard shows "Hold the mic button on your remote to search by voice" while it has
+  focus, and text that arrives several characters at once (dictation) searches by itself after 1.2 s. Typing one
+  key at a time doesn't trigger it.
+
+### Round 2 (checked on the TV: Go live, SponsorBlock Ask skip and highlight, Kids card and setup)
 - Live "Go live": the player already rewound live streams inside the DVR window (Left/Right step 5s, Rewind/Fast
   forward scan, Instant replay, over the window the DASH manifest advertises from `GetLiveTimeline`). New: while
   playing behind the live edge, the bar's right end shows the time behind as "-2:15" beside a grey bullet and
@@ -48,7 +81,7 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   - Stored only on this TV in one registry value (`yourtube_kids`): a salted SHA-256 of the PIN (never the PIN), the
     allowlist (up to 40), the limit and today's count. Five wrong PINs lock PIN entry for a minute.
 
-### Personal extras and polish (not yet checked on the TV)
+### Personal extras and polish (checked on the TV: pairing, Your stats, Back to top; blocklist and backdrop not yet)
 - Phone pairing: account and playback routes on the phone web server (every POST/PUT/DELETE except DIAL, DRM
   licenses, the built-in Invidious backend and `/api/pair*`; plus GET `/watch`, `/api/view/open`,
   `/invidious/login`, `/invidious/authenticated-request`, `/api/innertube/potoken`) answer 401 until the phone
@@ -56,7 +89,8 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   (`POST /api/pair {code}`) and gets a token, kept in localStorage and sent as `X-TubeZero-Pair` (the TV also sets
   a `tz_pair` cookie so plain links work). The phone app and the Live page pair and retry on a 401. Up to 10
   tokens are kept in the registry; Settings > More > "Forget paired phones" revokes them. The X-Playlet CSRF
-  check is unchanged, and casting from the YouTube app (DIAL/Lounge) needs no pairing.
+  check is unchanged, and casting from the YouTube app (DIAL/Lounge) needs no pairing. `/api/yourtube/debug/*`
+  routes need pairing too.
 - Blocklist: Settings > Content Feed > "Blocked channels" and "Blocked keywords" (comma-separated). Matching cards
   are left out of every feed row, the Home shelf rows, search, the Subscriptions grid, Related and Shorts. Channels
   match by name (any case, "@" ignored) or channel id; keywords match whole words in the title. Long-press a card >
@@ -79,12 +113,14 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   which reads as a heavy blur, under a #0F0F0F scrim at 85% (`YourTubeThumbBackdrop`, reusable for other opaque
   panels). Not added to the large pause icon, the Related row or live chat: those sit over the video itself, so the
   paused frame already is the backdrop.
-### Library and account (not yet checked on the TV)
+
+### Library and account (checked on the TV: You rows and history search pill; account-changing actions not run)
 - Save to playlist: long-press a video (rows and playlist pages) > "Save to playlist..." opens "Save video to..."
   with your playlists as check boxes (OK adds or removes right away) plus "New playlist" (Roku keyboard; the new
   playlist is private and starts with the video). `playlist/get_add_to_playlist`, `browse/edit_playlist`,
   `playlist/create` on the TV client with the profile's token. The player's Save button can open the same dialog
-  with `m.global.yourtubeLibrary@.OpenSaveToPlaylist(videoId)` (not wired yet).
+  with `m.global.yourtubeLibrary@.OpenSaveToPlaylist(videoId)` (not wired: the player's Save stays a one-press
+  Watch Later toggle).
 - Not interested / Don't recommend channel / Remove from watch history: NodesParser keeps the feedback tokens from a
   card's menu (`feedbackTokens` on the video node); cards that have them get the long-press items. The card leaves
   its row, the token goes to InnerTube `feedback`, and an "Undo" toast (OK to undo) appears when YouTube sent an
@@ -106,20 +142,23 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   profile (Up from the accounts row). OK opens the inbox (`notification/get_notification_menu`, WEB client first,
   TV if WEB returns nothing); OK on an item plays its video or opens its channel. The count comes from
   `notification/get_unseen_count`, refreshed at most once a minute when Profile shows. No badge on the nav icon yet.
+  The pill only shows once that count loads: with a TV sign-in both clients answer 400, so it stays hidden.
 - Diagnostics: `GET /api/yourtube/debug/library?videoId=&q=` returns the raw get_add_to_playlist, Watch later,
   notifications (WEB and TV), unseen count and (with q) history search responses with what the parsers found.
-### Player features (not yet checked on the TV)
+
+### Player features (checked on the TV; picking captions, speed or quality not yet)
 - CC button in the player row: Off or one of the video's caption tracks. The language is remembered
   (`playback.captions_language`) and picked again on the next videos; Off only hides captions in this player.
   Choosing a track also turns Roku's caption mode on if it was off.
 - Gear button: a settings sheet with Captions, Speed (0.25x to 2x, the phone is told), Quality (saves
   Preferred quality and reloads the video where it was) and Audio track (only when the stream has more than one;
-  switched by the device, no reload).
+  switched by the device, no reload; only tracks with a name or language, one per label).
 - Chapters: YouTube's chapters (from the WEB `/next` the player already fetches, signed out) show as small gaps
   in the scrubber and as the label under it while scrubbing or with the bar up. SponsorBlock's segment title
   still wins inside its segments.
 - Description button (i): a side panel like Comments with the title, channel and subscribers, views, date and
-  likes, the description (Up/Down scrolls) and the chapter list (OK jumps to the chapter and closes). Back or
+  likes, the description (Up/Down scrolls) and the chapter list ("Title · 4:16"; OK jumps to the chapter and
+  closes). Back or
   Left closes it. Parser `YourTubeWatchInfo` is tested against a saved `/next` (`next-chapters.json`).
 - Up next card: over the last 10 seconds of a video (not live, not Shorts, not while the bar or a panel is up)
   a corner card shows what plays next (the queue's next video, else autoplay's pick from /next when Autoplay is
@@ -137,7 +176,8 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   exactly as before, and with the controls up Left/Right scrub as before. Settings > Playback > Quick 10-second
   skip (`playback.quick_skip`, on by default).
 - The title and channel now sit above the action row (it grew to the left under them).
-### Discovery: channel page, chips, live now (not yet checked on the TV)
+
+### Discovery: channel page, chips, live now (checked on the TV; channel search and Subscribe not yet)
 - Channel page restyled like the YouTube TV app: dimmed banner, round avatar, name and handle/subscriber line,
   Subscribe and Play all chips, tab chips (search, Videos, Shorts, Live, Playlists...) and the selected tab as a
   3-column grid. Focusing the grid slides the header up. Play all plays the loaded Videos tab, else the first page
@@ -151,11 +191,11 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   Live now asks the server on YouTube accounts).
 - "Live now from your subscriptions": first Home row and a titled row above the Subscriptions grid, from the live
   streams in the newest subscriptions pages (route `/api/v1/yourtube/subscriptions-live`). Hidden when nobody is live.
-- Search results: Upload date, Type, Duration and Sort chips under the results row; OK cycles the value and searches
-  again (same filters as the Filters dialog).
+- Search results: Upload date, Type, Duration and Sort chips under the results row (below the cards' text); OK
+  cycles the value and searches again (same filters as the Filters dialog).
 - `YourTubeChipBar`: the shared chip row (resting `#272727`, light focused / current chip).
 
-### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
+### Shorts, Subscriptions, deeper Home, tidier nav (checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote
   and About moved to Settings > More (full-screen pages, Back returns).
 - Shorts tab: the Short plays in a centered 9:16 frame (the shared player in a custom rect), Up/Down for the

@@ -1,5 +1,16 @@
 # TubeZero feature ideas (2026-10-24)
 
+**Status (2026-10-24):** built on `feat/rebrand-ui`, and described in docs/CHANGELOG-YOURTUBE.md:
+- From the top 10: CC and Settings buttons (1), chapters and the Description panel (2), Up next (3), save to any
+  playlist (4), like and dislike counts (5), most-replayed heatmap (9), Not interested / Don't recommend (10).
+- From the longer list: quick 10-second skip, Watch later and Liked rows, Watch later edits, search watch history and
+  pause watch history, notifications inbox (hidden with a TV sign-in, see the changelog), channel page and search
+  inside a channel, Home chips, Subscriptions filter chips, Live now from subscriptions, search filter chips, Shorts
+  like/comments/subscribe and the subscriptions-only feed, live DVR "Go live", voice search hint and auto-search,
+  phone pairing, blocklist, watch-time stats, SponsorBlock extras, Kids profile, sentence-case titles, Back to top,
+  and the comments panel backdrop.
+- Not built: DeArrow (6), "Who's watching?" (7), the phone companion panel (8) and the rest of the longer list.
+
 What I looked at: docs/CHANGELOG-YOURTUBE.md, docs/PLAN.md, docs/UI-SPEC.md, README.md,
 `playlet-lib/src/config/preferences.json5`, `components/YourTube/*`, `components/Services/Innertube/*`,
 `VideoPlayerDev/*`, `VideoQueue/*`, `Web/PlayletWebServer/*`. YouTube feature claims are cited as [n] (sources at the end).

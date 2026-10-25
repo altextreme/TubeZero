@@ -14,10 +14,26 @@ Upstream Playlet's README is kept at [docs/PLAYLET-README.md](docs/PLAYLET-READM
 
 - A YouTube TV look: near-black surfaces, Roboto, white focus pills, Google Material Symbols, 16:9 cards with
   a large first shelf, a left nav rail, and a player overlay with an action row above the scrubber.
-- Subscriptions and You sections, with empty states when there's nothing to show.
-- A comments panel in the player (Comments button in the action row).
+- Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings.
+- Home: one row per shelf YouTube returns plus category rows, "Live now from your subscriptions", and a chip row
+  (All, Live, Music, Gaming...). Back below the first row jumps to the top.
+- Shorts: a 9:16 player with Up/Down between Shorts, Like/Dislike/Comments/Subscribe beside it, and a
+  "From subscriptions" feed.
+- Subscriptions: your channels in a row, then a video grid with filter chips (Today, Unwatched, Live now...).
+- You: watch history (searchable), Watch later, Liked videos, playlists and bookmarks.
+- Player: CC and settings (captions, speed, quality, audio track), chapters and a most-replayed heatmap on the
+  scrubber, a Description panel, like/dislike counts (Return YouTube Dislike), comments and live chat, an Up next
+  card, quick 10-second skip, and "Go live" on live streams with DVR.
+- Library and account: save to any playlist, Not interested / Don't recommend channel with Undo, Watch later edits,
+  pause watch history.
+- Channel pages styled like the TV app, with tab chips, Play all and search inside the channel. Search has filter
+  chips and voice input.
+- SponsorBlock with per-category Skip / Ask / Show / Off and a "Jump to highlight" prompt; a channel and keyword
+  blocklist; ALL-CAPS titles in sentence case; local watch-time stats (Settings > More > Your stats).
+- A Kids profile: only the channels and playlists you allow, a daily limit, and a PIN to leave.
 - A Live tab, replacing Stream Caster. It plays any HLS, DASH or MP4 link sent from your phone (QR code) or over ECP
   (`launch/dev?u=...`) and keeps favorites and recent links.
+- The phone web remote must pair with a code shown on the TV before it can play, change settings or switch profiles.
 - Telemetry is off and hidden. No update checks against Playlet's GitHub, and the app loads only the library bundled
   in its own zip.
 
@@ -55,7 +71,14 @@ tools/yourtube/capture-all.sh
 
 Most of the restyle happens at build time in `tools/bs-plugins/yourtube-rebrand-plugin.ts` (palette, fonts, focus
 images, widget defaults). New features live in `playlet-lib/src/components/YourTube/`. Upstream files that do change
-carry a `' TubeZero:` (or `<!-- TubeZero: -->`) comment at each edit.
+carry a `' YourTube:` or `' TubeZero:` comment (`<!-- YourTube: -->` in XML) at each edit; YourTube was the
+project's name before the rebrand.
+
+The build also runs `tools/yourtube/check-shadowed-names.js`. BrighterScript compiles a local or parameter that
+shares a name with a function in the same namespace (say `today` next to `Today()`) into a reference to that
+function, which only fails at runtime; the check fails the build instead.
+
+Running the device test suite (`npm run test:run` in `playlet-lib`) wipes the app's registry, which signs you out.
 
 ## Credits
 
