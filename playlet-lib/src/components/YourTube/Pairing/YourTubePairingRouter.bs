@@ -1,0 +1,92 @@
+import "pkg:/components/Dialog/DialogUtils.bs"
+import "pkg:/components/Web/WebServer/Http/HttpRouter.bs"
+import "pkg:/components/YourTube/Pairing/YourTubePairing.bs"
+import "pkg:/source/utils/Types.bs"
+
+namespace Http
+
+    ' TubeZero: runs after CsrfMiddleware. Routes YourTubePairing.RouteNeedsPairing picks answer 401 unless the
+    ' request carries a paired token (X-TubeZero-Pair header, or the tz_pair cookie set when pairing).
+    class YourTubePairingMiddleware extends HttpRouter
+
+        function new()
+            super()
+        end function
+
+        @all("*")
+        function RequirePairing(context as object) as boolean
+            request = context.request
+            if not YourTubePairing.RouteNeedsPairing(request.method, request.route)
+                return false
+            end if
+            if YourTubePairing.IsPaired(YourTubePairing.TokenFromHeaders(request.headers))
+                return false
+            end if
+            response = context.response
+            response.Json({
+                error: "pairing_required"
+                message: "Pair this phone first: open the TubeZero phone page and enter the code shown on the TV."
+            })
+            response.http_code = 401
+            response.headers["X-TubeZero-Pairing"] = "required"
+            return true
+        end function
+
+    end class
+
+    ' TubeZero: POST /api/pair/code shows a code on the TV; POST /api/pair { code } returns { token } and sets
+    ' the tz_pair cookie; GET /api/pair/status says whether the caller's token is still paired.
+    class YourTubePairingRouter extends HttpRouter
+
+        function new()
+            super()
+        end function
+
+        @post("/api/pair/code")
+        function ShowPairCode(context as object) as boolean
+            response = context.response
+            dialog = DialogUtils.ShowOnScreenCodeDialog(DialogUtils.OnScreenCodePurpose.PairPhone, "Pair your phone")
+            if dialog = invalid
+                response.Default(429, "Too Many Requests")
+                return true
+            end if
+            response.Default(204, "OK")
+            return true
+        end function
+
+        @post("/api/pair")
+        function Pair(context as object) as boolean
+            request = context.request
+            response = context.response
+
+            code = invalid
+            payload = request.BodyJson()
+            if IsAssociativeArray(payload)
+                code = payload.code
+            end if
+            if not IsString(code)
+                code = request.query.code
+            end if
+
+            if not DialogUtils.ConsumeOnScreenCode(DialogUtils.OnScreenCodePurpose.PairPhone, code)
+                response.Default(400, "Invalid code. Ask for a new code and try again.")
+                return true
+            end if
+
+            token = YourTubePairing.CreateToken()
+            response.Json({ token: token })
+            ' Lax so a link typed or tapped on the phone (/watch?v=...) still carries it
+            response.headers["Set-Cookie"] = `${YourTubePairing.COOKIE_NAME}=${token}; Path=/; Max-Age=315360000; SameSite=Lax`
+            return true
+        end function
+
+        @get("/api/pair/status")
+        function PairStatus(context as object) as boolean
+            token = YourTubePairing.TokenFromHeaders(context.request.headers)
+            context.response.Json({ paired: YourTubePairing.IsPaired(token) })
+            return true
+        end function
+
+    end class
+
+end namespace

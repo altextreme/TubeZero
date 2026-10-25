@@ -1,6 +1,7 @@
 <script lang="ts">
   import { playletStateStore, translate } from "lib/Stores";
   import { PlayletApi } from "./Api/PlayletApi";
+  import { ensurePaired } from "lib/Api/Pairing"; // TubeZero: phone pairing
   import { get } from "svelte/store";
   import ProfileAvatar from "./ProfileAvatar.svelte";
   import { ProfileAuthState } from "lib/Types";
@@ -64,21 +65,29 @@
     refreshProfiles();
   }
 
-  function loginToInvidious() {
+  async function loginToInvidious() {
     if (!currentInstance) {
       alert("No Invidious instance configured. Please set one in settings.");
       return;
     }
 
+    // TubeZero: /invidious/login needs a paired phone (the tz_pair cookie)
+    if (!(await ensurePaired())) {
+      return;
+    }
     window.location.href = "/invidious/login";
   }
 
-  function relogin(profile) {
+  async function relogin(profile) {
     if (profile.type === "youtube") {
       loginToYoutube();
       return;
     }
 
+    // TubeZero: /invidious/login needs a paired phone (the tz_pair cookie)
+    if (!(await ensurePaired())) {
+      return;
+    }
     window.location.href = `/invidious/login?profile=${encodeURIComponent(profile.id)}`;
   }
 

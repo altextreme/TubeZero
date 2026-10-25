@@ -14,6 +14,7 @@ namespace DialogUtils
     enum OnScreenCodePurpose
         ExportRegistry = "ExportRegistry"
         SetPlayletLibUrls = "SetPlayletLibUrls"
+        PairPhone = "PairPhone" ' YourTube: phone pairing (YourTubePairingRouter)
     end enum
 
     ' YourTube: the open dialog, whether ours (YourTubeDialogHost) or Roku's (scene.dialog).

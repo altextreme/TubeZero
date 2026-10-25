@@ -6,6 +6,16 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 
 ## Unreleased: TubeZero
 
+### Personal extras and polish (not yet checked on the TV)
+- Phone pairing: account and playback routes on the phone web server (every POST/PUT/DELETE except DIAL, DRM
+  licenses, the built-in Invidious backend and `/api/pair*`; plus GET `/watch`, `/api/view/open`,
+  `/invidious/login`, `/invidious/authenticated-request`, `/api/innertube/potoken`) answer 401 until the phone
+  pairs. The phone asks the TV for a code (`POST /api/pair/code`, shown in the on-screen-code dialog), sends it
+  (`POST /api/pair {code}`) and gets a token, kept in localStorage and sent as `X-TubeZero-Pair` (the TV also sets
+  a `tz_pair` cookie so plain links work). The phone app and the Live page pair and retry on a 401. Up to 10
+  tokens are kept in the registry; Settings > More > "Forget paired phones" revokes them. The X-Playlet CSRF
+  check is unchanged, and casting from the YouTube app (DIAL/Lounge) needs no pairing.
+
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote
   and About moved to Settings > More (full-screen pages, Back returns).

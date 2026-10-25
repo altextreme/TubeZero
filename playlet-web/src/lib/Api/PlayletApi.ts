@@ -1,4 +1,5 @@
 import { getHost } from "lib/Api/Host";
+import { pairedFetch } from "lib/Api/Pairing"; // TubeZero: phone pairing
 
 const CsrfHeader = "X-Playlet";
 
@@ -48,7 +49,7 @@ export class PlayletApi {
 
     static async invidiousAuthenticatedRequest(feedSource) {
         const url = PlayletApi.host() + "/invidious/authenticated-request?feed-source=" + encodeURIComponent(JSON.stringify(feedSource));
-        const response = await fetch(url);
+        const response = await pairedFetch(url); // TubeZero: needs a paired phone
         return await response.json();
     }
 
@@ -138,14 +139,14 @@ export class PlayletApi {
         if (continuationVideoId) {
             url += `&videoId=${continuationVideoId}`;
         }
-        await fetch(url);
+        await pairedFetch(url); // TubeZero: needs a paired phone
     }
 
     static async openChannel(authorId) {
         if (!authorId) {
             return;
         }
-        await fetch(`${PlayletApi.host()}/api/view/open?authorId=${authorId}`);
+        await pairedFetch(`${PlayletApi.host()}/api/view/open?authorId=${authorId}`); // TubeZero: needs a paired phone
     }
 
     static async getSearchHistory() {
@@ -167,7 +168,7 @@ export class PlayletApi {
     }
 
     static async getDevicePoToken() {
-        const response = await fetch(`${PlayletApi.host()}/api/innertube/potoken`);
+        const response = await pairedFetch(`${PlayletApi.host()}/api/innertube/potoken`); // TubeZero: needs a paired phone
         if (!response.ok) {
             const body = await response.text().catch(() => "");
             throw new Error(`Failed to read device poToken (HTTP ${response.status}): ${body}`);
@@ -262,11 +263,12 @@ export class PlayletApi {
     }
 
     static send(method: "POST" | "PUT" | "DELETE", url: string, payload?: unknown) {
+        // TubeZero: writes need a paired phone; pairedFetch adds the token and pairs + retries on 401
         const headers: Record<string, string> = { [CsrfHeader]: "1" };
         if (payload === undefined) {
-            return fetch(url, { method, headers });
+            return pairedFetch(url, { method, headers });
         }
         headers["Content-Type"] = "application/json";
-        return fetch(url, { method, headers, body: JSON.stringify(payload) });
+        return pairedFetch(url, { method, headers, body: JSON.stringify(payload) });
     }
 }

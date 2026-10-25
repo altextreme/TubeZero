@@ -24,6 +24,7 @@ import "pkg:/components/Web/WebServer/WebSockets/WebSocketMiddleware.bs"
 import "pkg:/components/YourTube/HomeShelves/YourTubeHomeShelvesRouter.bs"
 import "pkg:/components/YourTube/Live/YourTubeLiveRouter.bs"
 import "pkg:/components/YourTube/Shorts/YourTubeShortsRouter.bs"
+import "pkg:/components/YourTube/Pairing/YourTubePairingRouter.bs"
 
 function Init()
 end function
@@ -69,9 +70,12 @@ function SetupRoutes(server as object)
         ' Every write needs the caller's bearer token.
         "/playlet-invidious-backend/"
     ]))
+    ' YourTube: account and playback routes need a paired phone (YourTubePairing.RouteNeedsPairing)
+    server.UseRouter(new Http.YourTubePairingMiddleware())
     if server.settings.WebSocketsEnabled
         server.UseRouter(new Http.WebSocketMiddleware())
     end if
+    server.UseRouter(new Http.YourTubePairingRouter()) ' YourTube: /api/pair
     server.UseRouter(new Http.HomeRouter())
     server.UseRouter(new Http.StateApiRouter(server))
     server.UseRouter(new Http.DashRouter(server))

@@ -1,0 +1,89 @@
+' TubeZero: phone pairing route rules and token helpers (no registry access)
+import "pkg:/components/YourTube/Pairing/YourTubePairing.bs"
+
+namespace Tests
+
+    @suite
+    class YourTubePairingTests extends Rooibos.BaseTestSuite
+
+        @describe("YourTubePairing.RouteNeedsPairing")
+
+        @it("gates writes")
+        function _()
+            m.assertTrue(YourTubePairing.RouteNeedsPairing("POST", "/api/queue/play"))
+            m.assertTrue(YourTubePairing.RouteNeedsPairing("PUT", "/api/preferences"))
+            m.assertTrue(YourTubePairing.RouteNeedsPairing("DELETE", "/api/profiles"))
+            m.assertTrue(YourTubePairing.RouteNeedsPairing("post", "/api/yourtube/live"))
+        end function
+
+        @it("leaves DIAL, DRM licenses, the Invidious backend and pairing itself open")
+        function _()
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("POST", "/dial/abc/YouTube"))
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("DELETE", "/dial/abc/YouTube/run"))
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("POST", "/api/innertube/get_drm_license"))
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("POST", "/playlet-invidious-backend/api/v1/auth/tokens/unregister"))
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("POST", "/api/pair/code"))
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("POST", "/api/pair"))
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("OPTIONS", "/api/queue"))
+        end function
+
+        @it("gates only the reads that act as the user or start playback")
+        function _()
+            m.assertTrue(YourTubePairing.RouteNeedsPairing("GET", "/watch"))
+            m.assertTrue(YourTubePairing.RouteNeedsPairing("GET", "/api/view/open"))
+            m.assertTrue(YourTubePairing.RouteNeedsPairing("GET", "/invidious/login"))
+            m.assertTrue(YourTubePairing.RouteNeedsPairing("GET", "/invidious/authenticated-request"))
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("GET", "/api/state"))
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("GET", "/"))
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("GET", "/api/dash"))
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("GET", "/invidious/token_callback"))
+            m.assertFalse(YourTubePairing.RouteNeedsPairing("HEAD", "/api/preferences"))
+        end function
+
+        @describe("YourTubePairing.TokenFromHeaders")
+
+        @it("reads the header first, then the cookie")
+        function _()
+            m.assertEqual(YourTubePairing.TokenFromHeaders({ "X-TubeZero-Pair": " abc " }), "abc")
+            m.assertEqual(YourTubePairing.TokenFromHeaders({ "Cookie": "a=1; tz_pair=xyz; b=2" }), "xyz")
+            m.assertEqual(YourTubePairing.TokenFromHeaders({ "X-TubeZero-Pair": "h", "Cookie": "tz_pair=c" }), "h")
+            m.assertEqual(YourTubePairing.TokenFromHeaders({ "Cookie": "tz_pairx=1" }), "")
+            m.assertEqual(YourTubePairing.TokenFromHeaders({}), "")
+            m.assertEqual(YourTubePairing.TokenFromHeaders(invalid), "")
+        end function
+
+        @describe("YourTubePairing tokens")
+
+        @it("parses only well-formed entries")
+        function _()
+            tokens = YourTubePairing.ParseTokens(`[{"t":"0123456789abcdef0123","at":1},{"t":"short"},5,{"x":1}]`)
+            m.assertEqual(tokens.Count(), 1)
+            m.assertEqual(YourTubePairing.ParseTokens("not json").Count(), 0)
+            m.assertEqual(YourTubePairing.ParseTokens(invalid).Count(), 0)
+        end function
+
+        @it("matches only stored tokens of a safe length")
+        function _()
+            tokens = [{ t: "0123456789abcdef0123", at: 1 }]
+            m.assertTrue(YourTubePairing.HasToken(tokens, "0123456789abcdef0123"))
+            m.assertFalse(YourTubePairing.HasToken(tokens, "0123456789abcdef0124"))
+            m.assertFalse(YourTubePairing.HasToken(tokens, ""))
+            m.assertFalse(YourTubePairing.HasToken([{ t: "", at: 1 }], ""))
+        end function
+
+        @it("keeps the newest tokens, without duplicates")
+        function _()
+            tokens = []
+            for i = 1 to 12
+                tokens = YourTubePairing.AddToken(tokens, `token-number-${i}-padding`, i)
+            end for
+            m.assertEqual(tokens.Count(), YourTubePairing.MAX_TOKENS)
+            m.assertEqual(tokens[0].t, "token-number-3-padding")
+            tokens = YourTubePairing.AddToken(tokens, "token-number-5-padding", 99)
+            m.assertEqual(tokens.Count(), YourTubePairing.MAX_TOKENS)
+            m.assertEqual(tokens[tokens.Count() - 1].at, 99)
+        end function
+
+    end class
+
+end namespace

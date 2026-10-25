@@ -1,3 +1,5 @@
+import "pkg:/components/Dialog/DialogUtils.bs"
+import "pkg:/components/YourTube/Pairing/YourTubePairing.bs"
 import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/Types.bs"
 
@@ -26,6 +28,11 @@ function BindPreference(_preferences as object, key as string)
 end function
 
 function OnButtonSelected() as void
+    ' TubeZero: keys that run an action instead of opening a page
+    if m.key = "more.forget_phones"
+        ForgetPairedPhones()
+        return
+    end if
     screenName = m.screensByKey[m.key]
     if screenName = invalid
         return
@@ -38,4 +45,17 @@ function OnButtonSelected() as void
     page.heading = m.top.displayText
     appController@.PushScreen(page)
     page.screenName = screenName
+end function
+
+' TubeZero: revoke every phone pairing token (YourTubePairing); phones are asked for a new code next time.
+function ForgetPairedPhones() as void
+    pairedCount = YourTubePairing.Count()
+    YourTubePairing.ForgetAll()
+    message = "No phones were paired."
+    if pairedCount = 1
+        message = "1 phone was unpaired. It will be asked for a new code next time."
+    else if pairedCount > 1
+        message = `${pairedCount} phones were unpaired. They will be asked for a new code next time.`
+    end if
+    DialogUtils.ShowDialogEx({ title: "Forget paired phones", message: message })
 end function

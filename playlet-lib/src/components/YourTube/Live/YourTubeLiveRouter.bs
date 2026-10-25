@@ -8,6 +8,7 @@ namespace Http
     ' globals come from GetGlobalAA().global.) GET /live is a small form; POST /api/yourtube/live plays a URL
     ' on the TV ({ url, format?, title? } or Stream Caster's { u, f, t }); GET /api/yourtube/live lists
     ' recent and favorite links. Writes go through CsrfMiddleware, so the page sends the X-Playlet header.
+    ' TubeZero: the POST also needs a paired phone (YourTubePairingMiddleware); the page pairs inline on a 401.
     class YourTubeLiveRouter extends HttpRouter
 
         function new(server as object)
@@ -109,9 +110,15 @@ li a{color:#f1f1f1;text-decoration:none;display:block}li small{color:#aaa;word-b
 <button type="submit">Play on TV</button><div id="status" role="status"></div></form><ul id="recent"></ul></main>
 <script>
 const $=id=>document.getElementById(id);
+const PK='tubezero_pair_token_'+location.host;
+async function pair(){await fetch('/api/pair/code',{method:'POST',headers:{'X-Playlet':'1'}});const c=prompt('Pair this phone with TubeZero. Enter the code shown on your TV:');if(!c)return false;
+const r=await fetch('/api/pair',{method:'POST',headers:{'Content-Type':'application/json','X-Playlet':'1'},body:JSON.stringify({code:c.trim()})});if(!r.ok)return false;
+try{localStorage.setItem(PK,(await r.json()).token);}catch(e){}return true;}
+async function send(body){let t=null;try{t=localStorage.getItem(PK);}catch(e){}const h={'Content-Type':'application/json','X-Playlet':'1'};if(t)h['X-TubeZero-Pair']=t;
+return fetch('/api/yourtube/live',{method:'POST',headers:h,body:JSON.stringify(body)});}
 async function play(body){$('status').textContent='Sending...';
-const r=await fetch('/api/yourtube/live',{method:'POST',headers:{'Content-Type':'application/json','X-Playlet':'1'},body:JSON.stringify(body)});
-$('status').textContent=r.ok?'Playing on the TV.':'Could not play: '+await r.text();load();}
+let r=await send(body);if(r.status===401&&await pair())r=await send(body);
+$('status').textContent=r.ok?'Playing on the TV.':(r.status===401?'Pair this phone to play on the TV.':'Could not play: '+await r.text());load();}
 $('f').onsubmit=e=>{e.preventDefault();play({url:$('url').value.trim(),title:$('title').value.trim(),format:$('format').value});};
 async function load(){const d=await (await fetch('/api/yourtube/live')).json();const items=[...d.favorites,...d.recent.filter(r=>!d.favorites.some(f=>f.url===r.url))];
 $('recent').innerHTML='';for(const it of items){const li=document.createElement('li');const a=document.createElement('a');a.href='#';a.textContent=it.title;

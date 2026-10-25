@@ -1,0 +1,158 @@
+import "pkg:/source/utils/RegistryUtils.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+' TubeZero: phone pairing. Anyone on the Wi-Fi can reach the phone web server, so routes that act as the
+' signed-in user or control playback need a token. A phone gets one by typing the code the TV shows
+' (OnScreenCodeDialog, purpose PairPhone). Tokens live in the registry until Settings > More > "Forget paired
+' phones". Casting from the YouTube app (DIAL + Lounge) does not use these routes and needs no token.
+namespace YourTubePairing
+
+    const REGISTRY_KEY = "yourtube_paired_phones"
+    const HEADER_NAME = "X-TubeZero-Pair"
+    const COOKIE_NAME = "tz_pair"
+    const MAX_TOKENS = 10
+    const MIN_TOKEN_LENGTH = 16
+
+    ' Writes that need no token: DIAL (phones can't send headers), the player's license requests, the built-in
+    ' Invidious backend (the TV calls it itself, and it checks a bearer token) and the pairing routes.
+    function ExemptPrefixes() as object
+        return [
+            "/dial/"
+            "/api/innertube/get_drm_license"
+            "/playlet-invidious-backend/"
+            "/api/pair"
+        ]
+    end function
+
+    ' Reads that act as the signed-in user or start playback.
+    function GatedReadRoutes() as object
+        return [
+            "/watch"
+            "/api/view/open"
+            "/invidious/login"
+            "/invidious/authenticated-request"
+            "/api/innertube/potoken"
+            "/api/yourtube/debug/subscribed-channels"
+            "/debug/registry"
+        ]
+    end function
+
+    function RouteNeedsPairing(method as string, route as string) as boolean
+        method = UCase(method)
+        if method = "OPTIONS"
+            return false
+        end if
+        for each prefix in ExemptPrefixes()
+            if route.StartsWith(prefix)
+                return false
+            end if
+        end for
+        if method = "GET" or method = "HEAD"
+            for each gated in GatedReadRoutes()
+                if route = gated
+                    return true
+                end if
+            end for
+            return false
+        end if
+        return true
+    end function
+
+    ' The value of one cookie in a Cookie header ("a=1; tz_pair=xyz"), or "".
+    function CookieValue(cookieHeader as dynamic, name as string) as string
+        if not IsString(cookieHeader)
+            return ""
+        end if
+        for each part in cookieHeader.Split(";")
+            part = part.Trim()
+            eq = part.InStr("=")
+            if eq > 0 and part.Left(eq).Trim() = name
+                return part.Mid(eq + 1).Trim()
+            end if
+        end for
+        return ""
+    end function
+
+    ' The token a request carries: the header first, then the cookie (so plain links like /watch work).
+    function TokenFromHeaders(headers as dynamic) as string
+        if not IsAssociativeArray(headers)
+            return ""
+        end if
+        token = headers[HEADER_NAME]
+        if IsString(token) and token.Trim() <> ""
+            return token.Trim()
+        end if
+        return CookieValue(headers["Cookie"], COOKIE_NAME)
+    end function
+
+    ' [{ t: token, at: seconds since epoch }]
+    function ParseTokens(raw as dynamic) as object
+        result = []
+        if not IsString(raw) or raw = ""
+            return result
+        end if
+        parsed = StringUtils.ParseJsonSafe(raw)
+        if not IsArray(parsed)
+            return result
+        end if
+        for each entry in parsed
+            if IsAssociativeArray(entry) and IsString(entry.t) and entry.t.Len() >= MIN_TOKEN_LENGTH
+                result.Push(entry)
+            end if
+        end for
+        return result
+    end function
+
+    function HasToken(tokens as object, token as string) as boolean
+        if token.Len() < MIN_TOKEN_LENGTH
+            return false
+        end if
+        for each entry in tokens
+            if entry.t = token
+                return true
+            end if
+        end for
+        return false
+    end function
+
+    ' Adds a token, keeping the newest MAX_TOKENS.
+    function AddToken(tokens as object, token as string, nowSeconds as integer) as object
+        result = []
+        for each entry in tokens
+            if entry.t <> token
+                result.Push(entry)
+            end if
+        end for
+        result.Push({ t: token, at: nowSeconds })
+        while result.Count() > MAX_TOKENS
+            result.Shift()
+        end while
+        return result
+    end function
+
+    function ReadTokens() as object
+        return ParseTokens(RegistryUtils.Read(REGISTRY_KEY))
+    end function
+
+    function IsPaired(token as string) as boolean
+        return HasToken(ReadTokens(), token)
+    end function
+
+    function CreateToken() as string
+        deviceInfo = CreateObject("roDeviceInfo")
+        token = (deviceInfo.GetRandomUUID() + deviceInfo.GetRandomUUID()).Replace("-", "")
+        tokens = AddToken(ReadTokens(), token, CreateObject("roDateTime").AsSeconds())
+        RegistryUtils.Write(REGISTRY_KEY, FormatJson(tokens))
+        return token
+    end function
+
+    function Count() as integer
+        return ReadTokens().Count()
+    end function
+
+    function ForgetAll() as void
+        RegistryUtils.Delete(REGISTRY_KEY)
+    end function
+
+end namespace

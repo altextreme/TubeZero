@@ -399,6 +399,14 @@
         visibility: "tv",
         rokuComponent: "YourTubeOpenScreenControl",
       },
+      // TubeZero: revokes phone pairing tokens (YourTubePairing)
+      {
+        displayText: "Forget paired phones",
+        key: "more.forget_phones",
+        description: "Phones you paired with a TV code must pair again before they can control TubeZero",
+        visibility: "tv",
+        rokuComponent: "YourTubeOpenScreenControl",
+      },
       {
         displayText: "About TubeZero",
         key: "more.about",
