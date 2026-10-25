@@ -1,16 +1,22 @@
 import "pkg:/components/JobSystem/Jobs.bs"
 import "pkg:/components/JobSystem/JobSystem.bs"
 import "pkg:/components/VideoFeed/FeedLoadState.bs"
+import "pkg:/components/YourTube/FeedFilters/YourTubeFeedFilters.bs"
 import "pkg:/source/utils/Types.bs"
 
 ' Fetch the next page when focus gets this many rows from the end
 const GRID_LOAD_MORE_ROWS = 2
 ' Skeleton rows shown before the first page arrives
 const GRID_PLACEHOLDER_ROWS = 2
+' With a filter on, stop paging in after this many pages in a row added no matching card
+const GRID_FILTER_MAX_EMPTY_PAGES = 4
 
 function Init()
     m.feedNode = invalid
     m.gridJob = invalid
+    ' Every card loaded so far, in order; the rows show the ones matching the filter
+    m.allItems = []
+    m.emptyFilterPages = 0
 end function
 
 ' Overrides VideoRowList.InitContent (runs on feeds change, Refresh and profile change).
@@ -20,10 +26,10 @@ function InitContent() as void
     m.feedNode = invalid
     m.top.feedNode = invalid
     m.top.videoCount = 0
+    m.allItems = []
+    m.emptyFilterPages = 0
 
-    root = CreateObject("roSGNode", "ContentNode")
-    ' cards read their size from the content root (see YourTubeVideoCell.ApplyRowSize)
-    root.addFields({ ytRowItemSize: m.top.rowItemSize })
+    root = CreateRoot()
 
     feeds = m.top.feeds
     profilesService = m.top.profilesService
@@ -66,6 +72,9 @@ function LoadRowsIfNeeded() as void
         return
     end if
     if m.feedNode.loadState <> FeedLoadState.LoadedPage
+        return
+    end if
+    if m.emptyFilterPages >= GRID_FILTER_MAX_EMPTY_PAGES
         return
     end if
     focused = m.top.itemFocused
@@ -130,15 +139,51 @@ function OnGridPageDone(event as object) as void
         items = feedNode.getChildren(count, 0)
         feedNode.removeChildrenIndex(count, 0)
     end if
+    shownBefore = m.top.videoCount
     AppendItems(items)
-
-    if m.top.videoCount > 0
-        m.top.feedState = "ready"
-    else if feedNode.loadState = FeedLoadState.Loaded
-        m.top.feedState = "empty"
+    if m.top.filter <> "" and m.top.videoCount = shownBefore
+        m.emptyFilterPages += 1
+    else
+        m.emptyFilterPages = 0
     end if
 
+    UpdateFeedState()
+
     ' Fill the screen (and keep going if the page was empty but more exist)
+    LoadRowsIfNeeded()
+end function
+
+function UpdateFeedState() as void
+    if m.top.videoCount > 0
+        m.top.feedState = "ready"
+    else if m.feedNode = invalid or m.feedNode.loadState = FeedLoadState.Loaded or m.emptyFilterPages >= GRID_FILTER_MAX_EMPTY_PAGES
+        m.top.feedState = "empty"
+    else
+        m.top.feedState = "loading"
+    end if
+end function
+
+function CreateRoot() as object
+    root = CreateObject("roSGNode", "ContentNode")
+    ' cards read their size from the content root (see YourTubeVideoCell.ApplyRowSize)
+    root.addFields({ ytRowItemSize: m.top.rowItemSize })
+    return root
+end function
+
+' YourTube: a new filter re-lays the loaded cards; paging continues (bounded) if too few match.
+function OnFilterChange() as void
+    if m.feedNode = invalid
+        return
+    end if
+    m.emptyFilterPages = 0
+    m.top.videoCount = 0
+    root = CreateRoot()
+    m.top.content = root
+    PlaceItems(root, m.allItems)
+    if m.feedNode.loadState = FeedLoadState.Loading
+        AppendLoadingRow(root)
+    end if
+    UpdateFeedState()
     LoadRowsIfNeeded()
 end function
 
@@ -148,6 +193,12 @@ function AppendItems(items as object) as void
         return
     end if
     RemoveLoadingRows(root)
+    m.allItems.Append(items)
+    PlaceItems(root, items)
+end function
+
+function PlaceItems(root as object, items as object) as void
+    filter = ValidString(m.top.filter)
 
     lastRow = invalid
     rowCount = root.getChildCount()
@@ -156,7 +207,7 @@ function AppendItems(items as object) as void
     end if
     added = 0
     for each item in items
-        if ValidString(item.type) = "loading"
+        if ValidString(item.type) = "loading" or not YourTubeFeedFilters.Matches(item, filter)
             continue for
         end if
         if lastRow = invalid or lastRow.getChildCount() >= GetColumns()

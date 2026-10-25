@@ -1,8 +1,9 @@
 <!--
     YourTube: "Subscriptions" nav screen, YouTube TV style: top bar, a row of your subscribed channels (round
-    avatars, OK opens the channel) and below it the latest videos from them as a 4-column grid that pages in
-    as you scroll down. Focusing the grid slides it up over the channel row; Up from its first row brings the
-    channels back, Up again reaches the top bar. Signed out it shows the sign-in empty state.
+    avatars, OK opens the channel), filter chips (All, Today, Unwatched, Live now, Videos, Shorts) and below
+    them the latest videos as a 4-column grid that pages in as you scroll down. Focusing the grid slides the
+    chips and grid up over the channel row; Up from its first row reaches the chips, Up again brings the
+    channels back, Up again the top bar. Signed out it shows the sign-in empty state.
 -->
 <component name="YourTubeSubscriptionsScreen" extends="Group" includes="AutoBind,Focus,ContextMenuProvider">
     <interface>
@@ -34,6 +35,12 @@
             visible="false"
             focusable="false" />
 
+        <YourTubeChipBar
+            id="filterBar"
+            translation="[90,282]"
+            maxWidth="1110"
+            visible="false" />
+
         <Label
             id="gridMessage"
             translation="[90,300]"
@@ -59,6 +66,7 @@
 
         <Animation id="layoutAnimation" duration="0.2" easeFunction="outQuad">
             <Vector2DFieldInterpolator id="gridMove" key="[0.0,1.0]" fieldToInterp="videoGrid.translation" />
+            <Vector2DFieldInterpolator id="filterMove" key="[0.0,1.0]" fieldToInterp="filterBar.translation" />
             <FloatFieldInterpolator id="channelFade" key="[0.0,1.0]" fieldToInterp="channelRow.opacity" />
         </Animation>
     </children>

@@ -1,6 +1,7 @@
 ' YourTube: discovery features (channel search, Home chips, Subscriptions filters, live now, search chips).
 ' Fixtures are signed-out WEB responses captured with youtubei.js (raw execute) into fixtures/yourtube/.
 import "pkg:/components/YourTube/ChannelSearch/YourTubeChannelSearch.bs"
+import "pkg:/components/YourTube/FeedFilters/YourTubeFeedFilters.bs"
 import "pkg:/components/YourTube/HomeChips/YourTubeHomeChips.bs"
 import "pkg:/source/services/HttpClient.bs"
 import "pkg:/source/utils/StringUtils.bs"
@@ -123,6 +124,62 @@ namespace Tests
             m.assertEqual(feed.title, "Music")
             m.assertEqual(feed.feedSources[0].endpoint, "yt_home_shelves")
             m.assertEqual(feed.feedSources[0].queryParams.chip, "TOKEN")
+        end function
+
+        @describe("YourTubeFeedFilters")
+
+        @it("keeps everything with no filter, only videos otherwise")
+        function _()
+            playlist = { type: "playlist", title: "Mix" }
+            m.assertTrue(YourTubeFeedFilters.Matches(playlist, ""))
+            m.assertFalse(YourTubeFeedFilters.Matches(playlist, "today"))
+            m.assertFalse(YourTubeFeedFilters.Matches(invalid, "videos"))
+        end function
+
+        @it("Today: seconds/minutes/hours ago in the published text or the TV client's lines")
+        function _()
+            m.assertTrue(YourTubeFeedFilters.Matches({ type: "video", publishedText: "3 hours ago" }, "today"))
+            m.assertTrue(YourTubeFeedFilters.Matches({ type: "video", lines: ["Channel", "12K views • 1 hour ago"] }, "today"))
+            m.assertTrue(YourTubeFeedFilters.Matches({ type: "video", videoInfo: "Streamed 5 minutes ago" }, "today"))
+            m.assertTrue(YourTubeFeedFilters.Matches({ type: "video", liveNow: true }, "today"))
+            m.assertFalse(YourTubeFeedFilters.Matches({ type: "video", publishedText: "1 day ago" }, "today"))
+            m.assertFalse(YourTubeFeedFilters.Matches({ type: "video", publishedText: "2 weeks ago" }, "today"))
+            m.assertFalse(YourTubeFeedFilters.Matches({ type: "video" }, "today"))
+        end function
+
+        @it("Unwatched: not started")
+        function _()
+            m.assertTrue(YourTubeFeedFilters.Matches({ type: "video" }, "unwatched"))
+            m.assertTrue(YourTubeFeedFilters.Matches({ type: "video", percentDurationWatched: 0 }, "unwatched"))
+            m.assertFalse(YourTubeFeedFilters.Matches({ type: "video", percentDurationWatched: 42 }, "unwatched"))
+        end function
+
+        @it("Live now, Videos and Shorts")
+        function _()
+            live = { type: "video", liveNow: true, lengthText: "" }
+            short = { type: "video", lengthText: "" }
+            shortInvidious = { type: "video", lengthSeconds: 45, lengthText: "0:45" }
+            video = { type: "video", lengthText: "12:34" }
+            upcoming = { type: "video", isUpcoming: true, lengthText: "" }
+            m.assertTrue(YourTubeFeedFilters.Matches(live, "live"))
+            m.assertFalse(YourTubeFeedFilters.Matches(video, "live"))
+            m.assertTrue(YourTubeFeedFilters.Matches(video, "videos"))
+            m.assertFalse(YourTubeFeedFilters.Matches(live, "videos"))
+            m.assertFalse(YourTubeFeedFilters.Matches(short, "videos"))
+            m.assertFalse(YourTubeFeedFilters.Matches(upcoming, "videos"))
+            m.assertTrue(YourTubeFeedFilters.Matches(short, "shorts"))
+            m.assertTrue(YourTubeFeedFilters.Matches(shortInvidious, "shorts"))
+            m.assertFalse(YourTubeFeedFilters.Matches(video, "shorts"))
+            m.assertFalse(YourTubeFeedFilters.Matches(live, "shorts"))
+            m.assertFalse(YourTubeFeedFilters.Matches(upcoming, "shorts"))
+        end function
+
+        @it("parses durations")
+        function _()
+            m.assertEqual(YourTubeFeedFilters.ParseDuration("1:02:03"), 3723)
+            m.assertEqual(YourTubeFeedFilters.ParseDuration("0:45"), 45)
+            m.assertEqual(YourTubeFeedFilters.ParseDuration(""), 0)
+            m.assertEqual(YourTubeFeedFilters.ParseDuration("LIVE"), 0)
         end function
 
     end class

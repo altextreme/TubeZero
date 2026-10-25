@@ -1,0 +1,110 @@
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: client-side filters for the Subscriptions grid (chips above it). They read the fields the feed
+' parsers already fill in (VideoContentNode or the same keys in an AA): publishedText / lines / videoInfo for
+' the age, percentDurationWatched, liveNow / isUpcoming, and the duration for Shorts.
+namespace YourTubeFeedFilters
+
+    ' Shorts are at most this long (when YouTube doesn't mark them, e.g. Invidious feeds)
+    const SHORT_MAX_SECONDS = 60
+    ' "Unwatched": less than this much of the video watched
+    const UNWATCHED_MAX_PERCENT = 1
+
+    function Ids() as object
+        return ["", "today", "unwatched", "live", "videos", "shorts"]
+    end function
+
+    function Titles() as object
+        return ["All", "Today", "Unwatched", "Live now", "Videos", "Shorts"]
+    end function
+
+    function Matches(item as dynamic, filter as string) as boolean
+        if filter = ""
+            return true
+        end if
+        if item = invalid or ValidString(item.type) <> "video"
+            return false
+        end if
+        if filter = "today"
+            return IsToday(item)
+        else if filter = "unwatched"
+            return IsUnwatched(item)
+        else if filter = "live"
+            return IsLive(item)
+        else if filter = "videos"
+            return not IsLive(item) and not ValidBool(item.isUpcoming) and not IsShort(item)
+        else if filter = "shorts"
+            return IsShort(item)
+        end if
+        return true
+    end function
+
+    function IsLive(item as object) as boolean
+        return ValidBool(item.liveNow)
+    end function
+
+    function IsUnwatched(item as object) as boolean
+        return AsNumber(item.percentDurationWatched) < UNWATCHED_MAX_PERCENT
+    end function
+
+    ' Live now, or published seconds/minutes/hours ago ("3 hours ago", "Streamed 5 hours ago").
+    function IsToday(item as object) as boolean
+        if IsLive(item)
+            return true
+        end if
+        regex = CreateObject("roRegex", "\b\d+\s+(second|minute|hour)s?\s+ago\b", "i")
+        return regex.IsMatch(MetadataText(item))
+    end function
+
+    function IsShort(item as object) as boolean
+        if IsLive(item) or ValidBool(item.isUpcoming)
+            return false
+        end if
+        seconds = AsNumber(item.lengthSeconds)
+        if seconds <= 0
+            seconds = ParseDuration(ValidString(item.lengthText))
+        end if
+        ' No duration at all: Shorts tiles and lockups don't carry one
+        return seconds <= SHORT_MAX_SECONDS
+    end function
+
+    ' "1:02:03" -> 3723; "" or not a duration -> 0
+    function ParseDuration(text as string) as integer
+        text = text.Trim()
+        if text = ""
+            return 0
+        end if
+        seconds = 0
+        digits = CreateObject("roRegex", "^\d+$", "")
+        for each part in text.Split(":")
+            value = part.Trim()
+            if value = "" or not digits.IsMatch(value)
+                return 0
+            end if
+            seconds = seconds * 60 + value.ToInt()
+        end for
+        return seconds
+    end function
+
+    function MetadataText(item as object) as string
+        parts = [ValidString(item.publishedText), ValidString(item.videoInfo)]
+        lines = item.lines
+        if IsArray(lines)
+            for each line in lines
+                parts.Push(ValidString(line))
+            end for
+        end if
+        return parts.Join(" ")
+    end function
+
+    function AsNumber(value as dynamic) as float
+        if value = invalid
+            return 0
+        end if
+        if GetInterface(value, "ifInt") <> invalid or GetInterface(value, "ifFloat") <> invalid or GetInterface(value, "ifDouble") <> invalid
+            return value
+        end if
+        return 0
+    end function
+
+end namespace

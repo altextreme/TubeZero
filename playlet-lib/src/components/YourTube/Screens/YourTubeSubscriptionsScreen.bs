@@ -4,6 +4,7 @@ import "pkg:/components/JobSystem/Jobs.bs"
 import "pkg:/components/JobSystem/JobSystem.bs"
 import "pkg:/components/Navigation/Navigation.bs"
 import "pkg:/components/Screens/HomeScreen/HomeScreenUtils.bs"
+import "pkg:/components/YourTube/FeedFilters/YourTubeFeedFilters.bs"
 import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/Locale.bs"
 import "pkg:/source/utils/Logging.bs"
@@ -11,9 +12,11 @@ import "pkg:/source/utils/RemoteKeys.bs"
 import "pkg:/source/utils/StringUtils.bs"
 import "pkg:/source/utils/Types.bs"
 
-' Grid top when the channel row shows above it, and when it doesn't (or the grid has focus)
-const GRID_Y_BELOW_CHANNELS = 284
-const GRID_Y_TOP = 118
+' Filter chips' top when the channel row shows above them, and when it doesn't (or the grid has focus);
+' the grid starts FILTERS_HEIGHT below the chips (or at the chips' place when they're hidden)
+const FILTERS_Y_BELOW_CHANNELS = 282
+const FILTERS_Y_TOP = 112
+const FILTERS_HEIGHT = 48
 ' Grey circles shown while the channel list loads
 const CHANNEL_PLACEHOLDERS = 9
 
@@ -26,6 +29,9 @@ function Init()
     m.gridMessage = m.top.findNode("gridMessage")
     m.layoutAnimation = m.top.findNode("layoutAnimation")
     m.gridMove = m.top.findNode("gridMove")
+    m.filterBar = m.top.findNode("filterBar")
+    m.filterMove = m.top.findNode("filterMove")
+    m.filterIds = YourTubeFeedFilters.Ids()
     m.channelFade = m.top.findNode("channelFade")
     m.videoGrid.screen = m.top
     m.channelsJob = invalid
@@ -37,14 +43,25 @@ end function
 function OnNodeReady()
     SetNavigation(invalid, RemoteKeys.Back, m.navBar)
     SetNavigation(invalid, RemoteKeys.Left, m.navBar)
+    ' Top bar, channels, filter chips, grid (each skipped when hidden / not focusable)
+    SetNavigation(m.videoGrid, RemoteKeys.Up, m.filterBar)
     SetNavigation(m.videoGrid, RemoteKeys.Up, m.channelRow)
     SetNavigation(m.videoGrid, RemoteKeys.Up, m.topBar)
+    SetNavigation(m.filterBar, RemoteKeys.Up, m.channelRow)
+    SetNavigation(m.filterBar, RemoteKeys.Up, m.topBar)
+    SetNavigation(m.filterBar, RemoteKeys.Down, m.videoGrid)
     SetNavigation(m.channelRow, RemoteKeys.Up, m.topBar)
+    SetNavigation(m.channelRow, RemoteKeys.Down, m.filterBar)
     SetNavigation(m.channelRow, RemoteKeys.Down, m.videoGrid)
     SetNavigation(m.emptyState, RemoteKeys.Up, m.topBar)
     SetNavigation(m.topBar, RemoteKeys.Down, m.channelRow)
+    SetNavigation(m.topBar, RemoteKeys.Down, m.filterBar)
     SetNavigation(m.topBar, RemoteKeys.Down, m.videoGrid)
     SetNavigation(m.topBar, RemoteKeys.Down, m.emptyState)
+
+    m.filterBar.chips = YourTubeFeedFilters.Titles()
+    m.filterBar.ObserveField("selected", FuncName(OnFilterSelected))
+    m.filterBar.ObserveField("focusedChild", FuncName(OnSectionFocus))
 
     m.topBar.ObserveField("selected", FuncName(OnTopBarSelected))
     m.emptyState.ObserveField("selected", FuncName(OnEmptyStateSelected))
@@ -98,6 +115,9 @@ function OnSectionFocus() as void
     else if m.channelRow.hasFocus()
         m.lastSection = m.channelRow
         SetCollapsed(false)
+    else if m.filterBar.hasFocus()
+        ' The chips follow the grid (collapsed or not); Up again brings the channels back
+        m.lastSection = m.filterBar
     else if m.topBar.isInFocusChain()
         SetCollapsed(false)
     end if
@@ -110,29 +130,35 @@ end function
 
 function ApplyLayout(animate as boolean) as void
     channelsShown = m.channelRow.visible
-    gridY = GRID_Y_TOP
+    filtersY = FILTERS_Y_TOP
     channelOpacity = 1.0
     if channelsShown
         if m.collapsed
             channelOpacity = 0.0
         else
-            gridY = GRID_Y_BELOW_CHANNELS
+            filtersY = FILTERS_Y_BELOW_CHANNELS
         end if
+    end if
+    gridY = filtersY
+    if m.filterBar.visible
+        gridY = filtersY + FILTERS_HEIGHT
     end if
     m.gridMessage.translation = [90, gridY + 20]
 
     current = m.videoGrid.translation
-    if current[1] = gridY and m.channelRow.opacity = channelOpacity
+    if current[1] = gridY and m.channelRow.opacity = channelOpacity and m.filterBar.translation[1] = filtersY
         return
     end if
     if not animate
         m.layoutAnimation.control = "stop"
         m.videoGrid.translation = [0, gridY]
+        m.filterBar.translation = [90, filtersY]
         m.channelRow.opacity = channelOpacity
         return
     end if
     m.layoutAnimation.control = "stop"
     m.gridMove.keyValue = [current, [0, gridY]]
+    m.filterMove.keyValue = [m.filterBar.translation, [90, filtersY]]
     m.channelFade.keyValue = [m.channelRow.opacity, channelOpacity]
     m.layoutAnimation.control = "start"
 end function
@@ -152,7 +178,7 @@ function UpdateView() as void
         m.emptyState.message = "New videos from the channels you subscribe to show up here."
         m.emptyState.actionText = "Go to Profile"
         channelsShown = false
-    else if feedState = "empty" and not channelsShown
+    else if feedState = "empty" and not channelsShown and ValidString(m.videoGrid.filter) = ""
         showEmpty = true
         m.emptyState.title = "Nothing here yet"
         m.emptyState.message = "Check back later."
@@ -166,11 +192,19 @@ function UpdateView() as void
     m.channelRow.visible = channelsShown
     m.channelRow.focusable = channelsShown and hasChannels
 
+    ' Filter chips whenever there is a feed to filter
+    m.filterBar.visible = not showEmpty
+    m.filterBar.focusable = not showEmpty
+
     gridHasVideos = m.videoGrid.videoCount > 0
     m.videoGrid.visible = not showEmpty and feedState <> "empty"
     m.videoGrid.focusable = m.videoGrid.visible and (gridHasVideos or feedState = "loading")
     m.gridMessage.visible = not showEmpty and feedState = "empty"
-    m.gridMessage.text = "No new videos from your subscriptions."
+    if ValidString(m.videoGrid.filter) = ""
+        m.gridMessage.text = "No new videos from your subscriptions."
+    else
+        m.gridMessage.text = "No videos match this filter yet."
+    end if
 
     ' Nothing above the grid any more: drop the collapsed state so the layout is simple.
     if not m.channelRow.visible
@@ -191,7 +225,7 @@ function HasUsableFocus() as boolean
     if m.topBar.isInFocusChain()
         return true
     end if
-    for each section in [m.channelRow, m.videoGrid, m.emptyState]
+    for each section in [m.channelRow, m.filterBar, m.videoGrid, m.emptyState]
         if section.isInFocusChain() and section.visible and section.focusable
             return true
         end if
@@ -200,7 +234,8 @@ function HasUsableFocus() as boolean
 end function
 
 function OnProfileChanged() as void
-    ' The grid reloads itself (VideoRowList watches the profile too)
+    ' The grid reloads itself (VideoRowList watches the profile too); filters start over
+    SetFilter(0)
     LoadChannels()
 end function
 
@@ -319,6 +354,20 @@ end function
 ' Empty state's "Go to Profile"
 function OnEmptyStateSelected() as void
     m.navBar@.SelectRootScreen("ProfileScreen")
+end function
+
+' YourTube: filter chips over the loaded videos (client-side, see YourTubeFeedFilters)
+function OnFilterSelected() as void
+    SetFilter(m.filterBar.selected)
+end function
+
+function SetFilter(index as integer) as void
+    if index < 0 or index >= m.filterIds.Count()
+        return
+    end if
+    m.filterBar.activeIndex = index
+    m.videoGrid.filter = m.filterIds[index]
+    UpdateView()
 end function
 
 function GetContextMenuOptionsForItem(_rowItem as object) as object

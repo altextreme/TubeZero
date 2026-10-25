@@ -14,5 +14,7 @@
         <field id="requireSignIn" type="boolean" value="true" />
         <!-- The feed being paged (read-only), e.g. for the channel page's sort options -->
         <field id="feedNode" type="node" />
+        <!-- Client-side filter of the loaded cards (YourTubeFeedFilters ids: "", today, unwatched, live, videos, shorts) -->
+        <field id="filter" type="string" onChange="OnFilterChange" />
     </interface>
 </component>
