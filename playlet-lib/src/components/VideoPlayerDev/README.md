@@ -110,3 +110,19 @@ field: `OnSetSeek` routes it through the transport (`ForceIdleSeek`). It keeps t
 YouTube receiver does (the device resumes on any seek, so a paused video is re-paused on landing); a seek under a
 transport takes over like the resume above, cancelling it and resuming from the target. One that arrives while
 the content loads becomes the content-load seek.
+
+## YourTube additions (keys and overlays)
+
+- **Quick skip** (`playback.quick_skip`, default on): with the chrome hidden on a VOD, a Left/Right press waits on
+  the `quickSkipHold` timer (0.35s). Released sooner, it is a ±10s `ForceIdleSeek` that keeps the play state; still
+  held when the timer fires, it enters the scrub exactly as the press used to. With the chrome up, on live, in
+  Shorts or with the preference off, Left/Right go straight to the transport. The seam mock's stub preferences
+  node has no such field, so seam tests see the old behaviour unless they turn it on (`EnableQuickSkip`).
+  **The on-device integration suite presses Left/Right from a hidden chrome: turn Quick 10-second skip off in
+  Settings before running it.**
+- **Heatmap peaks**: while a VOD scrub is active, Up/Down move the cursor to the next/previous most-replayed peak
+  (`TransportController.JumpCursor`); both keys did nothing during a scrub before.
+- **Up next card**: over the last 10s (idle, chrome hidden, no panel open) OK plays the next video now and Back
+  cancels autoplay for this video. The SponsorBlock OK-to-skip / Back-dismiss still come first.
+- Buttons 7-9 (CC, Description, Settings) open YourTubeDialog sheets or the description side panel; see
+  `components/YourTube/PlayerSettings` and `components/YourTube/Description`.

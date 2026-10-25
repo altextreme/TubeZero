@@ -116,6 +116,10 @@ function Initialize()
     ' YourTube: the "Up next" card over the last seconds ({ looked, video, cancelled }, reset per video)
     m.upNextCard = m.top.findNode("upNextCard")
     m.upNext = { looked: false, video: invalid, cancelled: false }
+    ' YourTube: quick skip. quickSkipKey is the Left/Right press waiting on the hold timer ("" = none).
+    m.quickSkipHold = m.top.findNode("quickSkipHold")
+    m.quickSkipHold.ObserveField("fire", FuncName(OnQuickSkipHold))
+    m.quickSkipKey = ""
     m.fullScreenHint = m.top.findNode("fullScreenHint")
 
     m.autoHide = m.top.findNode("autoHide")
@@ -368,6 +372,12 @@ function OnKeyEvent(key as string, press as boolean) as boolean
     ' YourTube: while the Up next card shows (chrome hidden), OK plays the next video now and Back cancels it.
     if press and m.upNextCard.visible and (key = RemoteKeys.Ok or key = RemoteKeys.Back)
         UpNextKey(key)
+        return true
+    end if
+
+    ' YourTube: quick skip. With the chrome hidden on a VOD, a Left/Right press waits for the hold timer: a
+    ' release before it fires skips 10s; a key still down when it fires opens the scrub as before.
+    if QuickSkipKey(key, press)
         return true
     end if
 
@@ -1904,6 +1914,8 @@ function OnClose() as void
     m.transportTimer.unobserveField("fire")
     m.liveBadgeHold.unobserveField("fire")
     m.liveEdgeClock.unobserveField("fire")
+    m.quickSkipHold.unobserveField("fire") ' YourTube
+    m.quickSkipHold.control = "stop" ' YourTube
     m.fullScreenHintTimer.unobserveField("fire")
     m.chromeFadeIn.unobserveField("state")
     m.chromeFadeOut.unobserveField("state")
@@ -1948,6 +1960,71 @@ function OnClose() as void
     end try
 
     m.top.content = invalid
+end function
+
+' YourTube: quick skip (playback.quick_skip). True when the key was taken.
+const QUICK_SKIP_MS = 10000
+function QuickSkipKey(key as string, press as boolean) as boolean
+    if m.quickSkipKey <> ""
+        if not press and key = m.quickSkipKey
+            ' released before the hold timer: a tap
+            m.quickSkipHold.control = "stop"
+            m.quickSkipKey = ""
+            QuickSkip(key)
+            return true
+        end if
+        if press
+            ' another key while one waits: drop the waiting tap and handle this key normally
+            m.quickSkipHold.control = "stop"
+            m.quickSkipKey = ""
+        end if
+        return false
+    end if
+    if press and (key = RemoteKeys.Left or key = RemoteKeys.Right) and CanQuickSkip()
+        m.quickSkipKey = key
+        m.quickSkipHold.control = "stop"
+        m.quickSkipHold.control = "start"
+        return true
+    end if
+    return false
+end function
+
+function CanQuickSkip() as boolean
+    if m.transport.isLive or m.transport.transportMode <> TransportController.Mode.Idle or not m.firstFrameSeen
+        return false
+    end if
+    if not (m.chromeMode = ChromeMode.Hidden or m.chromeMode = ChromeMode.FadingOut)
+        return false
+    end if
+    return m.container.fullscreen and m.top.yourtubeShorts <> true and m.transport.durationMs > 0 and YtPref("playback.quick_skip") = true
+end function
+
+' The key is still down when the hold timer fires: open the scrub exactly as the press would have.
+function OnQuickSkipHold() as void
+    key = m.quickSkipKey
+    m.quickSkipKey = ""
+    if key = "" or m.onCloseCalled = true or m.transport.transportMode <> TransportController.Mode.Idle
+        return
+    end if
+    m.focusTarget = PlayerCoordinatorLogic.FocusTarget.Bar
+    m.transport.HandleKey(PlayerCoordinatorLogic.KeyToCommand(key), true)
+    ApplyTransport()
+    if m.transport.transportMode <> TransportController.Mode.Idle
+        ShowChrome(true)
+    end if
+end function
+
+' Seek 10s back or ahead from the playhead (consecutive taps add up), keeping the play state.
+function QuickSkip(key as string) as void
+    if key = RemoteKeys.Left
+        targetMs = m.transport.positionMs - QUICK_SKIP_MS
+        m.toast.text = "-10 seconds"
+    else
+        targetMs = m.transport.positionMs + QUICK_SKIP_MS
+        m.toast.text = "+10 seconds"
+    end if
+    m.transport.ForceIdleSeek(targetMs, true)
+    ApplyTransport()
 end function
 
 ' YourTube: the scrub cursor to the next (Up) or previous (Down) most-replayed peak. False when there is none

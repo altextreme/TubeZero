@@ -43,6 +43,14 @@
         defaultValue: false,
       },
       {
+        // YourTube: a short Left/Right press with the player controls hidden skips 10 seconds
+        displayText: "Quick 10-second skip",
+        key: "playback.quick_skip",
+        description: "With the player controls hidden, a short Left or Right press skips 10 seconds. Hold to scrub.",
+        type: "boolean",
+        defaultValue: true,
+      },
+      {
         // YourTube: the caption language picked with the player's CC button ("" follows Roku's setting,
         // "off" keeps captions off, else a 3-letter code like "eng"). Set from the player, not Settings.
         displayText: "Captions language",

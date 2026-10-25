@@ -90,6 +90,10 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
 - Most replayed: faint bars above the scrubber from the `/next` heatmap (VOD, when the video has one). While
   scrubbing, Up jumps the cursor to the next most-replayed peak and Down to the previous one (OK commits there as
   usual). `TransportController.JumpCursor` moves the scrub cursor.
+- Quick 10-second skip: with the player controls hidden on a VOD, a short Left or Right press skips 10 seconds
+  back or ahead (a "-10 seconds" / "+10 seconds" toast; taps add up). Holding the key for 0.35 s opens the scrub
+  exactly as before, and with the controls up Left/Right scrub as before. Settings > Playback > Quick 10-second
+  skip (`playback.quick_skip`, on by default).
 - The title and channel now sit above the action row (it grew to the left under them).
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)

@@ -54,6 +54,9 @@
         <!-- Live edge heartbeat: 1/s while live content plays; feeds the brain's clock-anchored edge so the
              time-behind offset stays current even while the device is paused and emits no events. -->
         <Timer id="liveEdgeClock" duration="1" repeat="true" />
+        <!-- YourTube: quick skip. A Left/Right press with the chrome hidden (VOD) waits this long: released
+             sooner it skips 10s, still held it opens the scrub as before. -->
+        <Timer id="quickSkipHold" duration="0.35" repeat="false" />
 
         <!-- ===================== coordinator-owned animations ===================== -->
         <Animation id="chromeFadeIn" duration="0.5" easeFunction="linear">

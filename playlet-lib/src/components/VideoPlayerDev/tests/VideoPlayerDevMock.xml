@@ -75,6 +75,7 @@
         <function name="TestContentJobFailed" />
         <function name="TestCaptionsOff" /> <!-- YourTube -->
         <function name="TestSetWatchInfo" /> <!-- YourTube -->
+        <function name="TestFireQuickSkipHold" /> <!-- YourTube -->
     </interface>
     <children>
         <Timer id="autoHide" duration="5" repeat="false" />
@@ -82,6 +83,7 @@
         <Timer id="liveBadgeHold" duration="1.6" repeat="false" />
         <Timer id="fullScreenHintTimer" duration="1" repeat="false" />
         <Timer id="liveEdgeClock" duration="1" repeat="true" />
+        <Timer id="quickSkipHold" duration="0.35" repeat="false" /> <!-- YourTube -->
         <Animation id="chromeFadeIn" duration="0.5" easeFunction="linear">
             <FloatFieldInterpolator id="chromeFadeInInterp" key="[0.0, 1.0]" keyValue="[0.0, 1.0]" fieldToInterp="Chrome.opacity" />
         </Animation>

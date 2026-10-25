@@ -262,6 +262,12 @@ function TestSetWatchInfo(info as object) as void
     m.trickPlayBar.chapterStartsMs = YourTubeWatchInfo.ChapterStartsMs(info.chapters)
 end function
 
+' YourTube: TestFireQuickSkipHold — the quick-skip hold timer firing while the key is still down.
+function TestFireQuickSkipHold() as void
+    m.quickSkipHold.control = "stop"
+    OnQuickSkipHold()
+end function
+
 ' TestCoordinatorFields — every non-function key on the coordinator's m, for the unmodeled-axis meta-test
 ' (the coordinator twin of the brain's reflection test). Call AFTER TestSetup so Initialize/OnNodeReady have
 ' populated m. The ONLY filtering here is the two DYNAMICALLY-named runtime families ("__delay_<uuid>" and
@@ -306,6 +312,8 @@ function TestSnapshot() as object
         chapterText: m.trickPlayBar.chapterText ' YourTube
         upNextVisible: m.upNextCard.visible ' YourTube
         upNextSeconds: m.upNextCard.secondsLeft ' YourTube
+        toastText: m.toast.text ' YourTube
+        quickSkipKey: m.quickSkipKey ' YourTube
         spinnerMode: m.spinner.mode
         brain: TestBrainSnapshot()
     }

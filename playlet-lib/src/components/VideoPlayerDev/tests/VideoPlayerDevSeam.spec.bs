@@ -1087,7 +1087,7 @@ namespace Tests
                 classified[name] = "controller"
             end for
             ' cached child nodes / timers / animations / reusable helpers (structure, not state).
-            for each name in ["chrome", "titleLabel", "secondaryTitleLabel", "clock", "bifDisplay", "trickPlayBar", "spinner", "largePause", "buttonRow", "fullScreenHint", "autoHide", "transportTimer", "liveBadgeHold", "liveEdgeClock", "fullScreenHintTimer", "chromeFadeIn", "chromeFadeOut", "minimize", "nowDateTime", "commentsPanel", "liveChatPanel", "toast", "relatedShelf", "descriptionPanel", "upNextCard"]
+            for each name in ["chrome", "titleLabel", "secondaryTitleLabel", "clock", "bifDisplay", "trickPlayBar", "spinner", "largePause", "buttonRow", "fullScreenHint", "autoHide", "transportTimer", "liveBadgeHold", "liveEdgeClock", "fullScreenHintTimer", "chromeFadeIn", "chromeFadeOut", "minimize", "nowDateTime", "commentsPanel", "liveChatPanel", "toast", "relatedShelf", "descriptionPanel", "upNextCard", "quickSkipHold"]
                 classified[name] = "node"
             end for
             ' in-flight job handles.
@@ -1095,7 +1095,9 @@ namespace Tests
                 classified[name] = "job"
             end for
             ' STATE AXES — discrete coordinator state; each needs its transitions covered by a seam test.
-            for each name in ["chromeMode", "focusTarget", "focusedButton", "armedTimerId"]
+            ' YourTube: quickSkipKey (a Left/Right press waiting on the quick-skip hold timer), covered by the
+            ' "quick skip" seam tests.
+            for each name in ["chromeMode", "focusTarget", "focusedButton", "armedTimerId", "quickSkipKey"]
                 classified[name] = "axis"
             end for
             ' flags / scratch — one-shot latches and counters with a single consuming path.
@@ -1172,6 +1174,77 @@ namespace Tests
             m.top.callFunc("TestKey", RemoteKeys.Left, true) ' scrub: the cursor stays inside the segment
             m.top.callFunc("TestKey", RemoteKeys.Left, false)
             m.assertEqual(m.Snap().chapterText, "Sponsor")
+        end function
+
+        ' YourTube: quick skip is on in the app (preferences default) but off on the stub preferences node, which
+        ' keeps every older test's Left/Right going straight into the scrub. These turn it on.
+        function EnableQuickSkip() as void
+            prefs = m.top.preferences
+            if not prefs.hasField("playback.quick_skip")
+                prefs.addField("playback.quick_skip", "boolean", false)
+            end if
+            prefs["playback.quick_skip"] = true
+        end function
+
+        @it("quick skip: a tap of Right with the chrome hidden seeks 10s ahead, no scrub, no chrome")
+        function _()
+            m.EnableQuickSkip()
+            m.top.duration = 100
+            m.top.position = 50.0
+            m.top.callFunc("TestKey", RemoteKeys.Right, true)
+            m.assertEqual(m.Snap().transportMode, TransportController.Mode.Idle, "waiting for the release")
+            m.top.callFunc("TestKey", RemoteKeys.Right, false)
+            snap = m.Snap()
+            m.assertEqual(Int(m.top.seek * 1000), 60000)
+            m.assertEqual(snap.transportMode, TransportController.Mode.Idle)
+            m.assertFalse(snap.chromeShown)
+            m.assertEqual(snap.toastText, "+10 seconds")
+            ' a second tap adds up (from the new playhead, before the device reports it)
+            m.top.callFunc("TestKey", RemoteKeys.Left, true)
+            m.top.callFunc("TestKey", RemoteKeys.Left, false)
+            m.top.callFunc("TestKey", RemoteKeys.Left, true)
+            m.top.callFunc("TestKey", RemoteKeys.Left, false)
+            m.assertEqual(Int(m.top.seek * 1000), 40000)
+            m.assertEqual(m.Snap().quickSkipKey, "")
+        end function
+
+        @it("quick skip: holding Left past the hold timer opens the scrub as before")
+        function _()
+            m.EnableQuickSkip()
+            m.top.duration = 100
+            m.top.position = 50.0
+            m.top.callFunc("TestKey", RemoteKeys.Left, true)
+            m.assertEqual(m.Snap().quickSkipKey, RemoteKeys.Left)
+            m.top.callFunc("TestFireQuickSkipHold")
+            snap = m.Snap()
+            m.assertEqual(snap.transportMode, TransportController.Mode.Scrub)
+            m.assertTrue(snap.chromeShown, "the scrub reveals the bar")
+            m.assertEqual(snap.brain.cursorMs, 48000, "one grid step back, as a scrub press")
+            m.top.callFunc("TestKey", RemoteKeys.Left, false)
+            m.assertEqual(m.Snap().transportMode, TransportController.Mode.Scrub, "the release ends the hold, the scrub stays")
+        end function
+
+        @it("quick skip: with the chrome up, or on live, Left/Right scrub right away")
+        function _()
+            m.EnableQuickSkip()
+            m.top.duration = 100
+            m.top.position = 50.0
+            m.top.callFunc("TestKey", RemoteKeys.Up, true) ' chrome up, bar tier
+            m.top.callFunc("TestKey", RemoteKeys.Right, true)
+            m.assertEqual(m.Snap().transportMode, TransportController.Mode.Scrub)
+            m.assertEqual(m.Snap().quickSkipKey, "")
+        end function
+
+        @it("quick skip: a different key while a tap waits drops the tap")
+        function _()
+            m.EnableQuickSkip()
+            m.top.duration = 100
+            m.top.position = 50.0
+            m.top.callFunc("TestKey", RemoteKeys.Right, true)
+            m.top.callFunc("TestKey", RemoteKeys.Up, true) ' reveals the chrome
+            m.assertEqual(m.Snap().quickSkipKey, "")
+            m.top.callFunc("TestKey", RemoteKeys.Right, false) ' a stray release
+            m.assertEqual(m.top.seek, 0.0, "no skip")
         end function
 
         @it("while scrubbing, Up/Down jump the cursor to the next/previous most-replayed peak")
