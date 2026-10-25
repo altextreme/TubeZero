@@ -1,21 +1,615 @@
+import "pkg:/components/JobSystem/Jobs.bs"
+import "pkg:/components/JobSystem/JobSystem.bs"
 import "pkg:/components/Navigation/Navigation.bs"
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/Logging.bs"
 import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
 
-' YourTube: placeholder Shorts screen (see the XML). Back/Left return to the nav rail like the other screens.
+' YourTube: Shorts tab. Playback reuses the shared VideoQueue/VideoPlayerDev: the container stays
+' non-fullscreen (the player's PiP mode, so this screen keeps focus) and the player is moved onto the 9:16
+' frame and flagged yourtubeShorts (loops, no PiP hint, no error dialog). Playback runs only while the screen
+' holds focus: in the nav, Back would otherwise blow the Short up into the full player. On stop the player is
+' closed, the Shorts are taken back out of the queue and the container's fullscreen flag is restored.
+
+' The frame, in screen coordinates at rest (AppScreens slides right while the nav is open).
+const FRAME_X = 456
+const FRAME_Y = 40
+const FRAME_W = 360
+const FRAME_H = 640
+' load more when this close to the end of the list
+const PREFETCH_DISTANCE = 3
+' consecutive Shorts that failed to play before giving up on auto-skipping
+const MAX_FAILURES = 3
+
 function Init()
+    m.keySink = m.top.findNode("KeySink")
+    m.stage = m.top.findNode("ShortsStage")
+    m.messageState = m.top.findNode("MessageState")
+    m.thumb = m.top.findNode("ShortThumb")
+    m.preloadThumb = m.top.findNode("PreloadThumb")
+    m.frameStatus = m.top.findNode("FrameStatus")
+    m.channelLabel = m.top.findNode("ChannelLabel")
+    m.titleLabel = m.top.findNode("TitleLabel")
+    m.statsLabel = m.top.findNode("StatsLabel")
+    m.playStateLabel = m.top.findNode("PlayStateLabel")
+    m.keyHint = m.top.findNode("KeyHint")
+    m.revealTimer = m.top.findNode("RevealTimer")
+    m.skipTimer = m.top.findNode("SkipTimer")
+    m.blurTimer = m.top.findNode("BlurTimer")
+
+    m.shorts = []
+    m.seenIds = {}
+    m.index = -1
+    m.continuation = ""
+    m.loadJob = invalid
+    m.loadError = ""
+    m.infoJob = invalid
+    m.infoJobVideoId = ""
+    m.pendingAdvance = false
+
+    m.hasFocus = false
+    m.active = false
+    m.player = invalid
+    m.switching = false
+    m.ownsContainer = false
+    m.savedFullscreen = true
+    m.savedQueueIndex = -1
+    m.queuedIds = {}
+    m.failures = 0
     m.top.focusable = true
 end function
 
 function OnNodeReady()
     SetNavigation(invalid, RemoteKeys.Back, m.navBar)
     SetNavigation(invalid, RemoteKeys.Left, m.navBar)
+
+    m.top.ObserveField("visible", FuncName(OnVisibleChange))
+    m.top.ObserveField("focusedChild", FuncName(OnFocusedChildChange))
+    m.revealTimer.ObserveField("fire", FuncName(RevealPlayer))
+    m.skipTimer.ObserveField("fire", FuncName(OnSkipTimer))
+    m.blurTimer.ObserveField("fire", FuncName(OnBlurTimer))
+    m.messageState.ObserveField("selected", FuncName(OnRetrySelected))
+    m.videoQueue.ObserveField("player", FuncName(OnQueuePlayerChange))
+    ' AppScreens slides right while the nav is open; the player (in the video container) has to follow
+    m.screensContainer = m.top.getParent()
+    if m.screensContainer <> invalid
+        m.screensContainer.ObserveField("translation", FuncName(ApplyPlayerRect))
+    end if
+
+    OnVisibleChange()
+end function
+
+'-------------------------------------------------------------------------------
+' Lifecycle: visible -> load + show the thumbnail; focused -> play; blurred or hidden -> stop.
+'-------------------------------------------------------------------------------
+function OnVisibleChange() as void
+    if not m.top.visible
+        StopPlayback()
+        return
+    end if
+    if ShortsDisabled()
+        ShowMessage("Shorts are turned off", "Turn off Disable Shorts in Settings to watch Shorts here.", "")
+        return
+    end if
+    HideMessage()
+    if m.shorts.Count() = 0
+        LoadShorts()
+    else
+        ShowCurrent()
+    end if
 end function
 
 function OnFocusChange() as void
+    if not m.top.focus
+        return
+    end if
+    if m.messageState.visible and m.messageState.focusable
+        NodeSetFocus(m.messageState, true)
+    else
+        NodeSetFocus(m.keySink, true)
+    end if
 end function
 
+function OnFocusedChildChange() as void
+    inChain = m.top.isInFocusChain()
+    if inChain = m.hasFocus
+        return
+    end if
+    m.hasFocus = inChain
+    if inChain
+        m.blurTimer.control = "stop"
+        StartPlayback()
+    else
+        ' closing the player refocuses the top screen; deferred so that lands on the nav, not back here
+        m.blurTimer.control = "start"
+    end if
+end function
+
+function OnBlurTimer() as void
+    if not m.top.isInFocusChain()
+        StopPlayback()
+    end if
+end function
+
+function ShortsDisabled() as boolean
+    return m.preferences <> invalid and m.preferences["content_feed.disable_shorts"] = true
+end function
+
+function StartPlayback() as void
+    if not m.top.visible or ShortsDisabled() or m.messageState.visible
+        return
+    end if
+    if m.index < 0 or m.index >= m.shorts.Count()
+        ' PlayIndex runs when the first batch arrives
+        return
+    end if
+    if not m.active
+        PlayIndex(m.index)
+    end if
+end function
+
+function StopPlayback() as void
+    m.skipTimer.control = "stop"
+    m.revealTimer.control = "stop"
+    m.pendingAdvance = false
+    wasActive = m.active
+    m.active = false
+    player = m.player
+    m.player = invalid
+    if player <> invalid
+        player.UnobserveField("state")
+    end if
+    if not wasActive and not m.ownsContainer
+        return
+    end if
+
+    queuePlayer = m.videoQueue.player
+    if queuePlayer <> invalid and player <> invalid and queuePlayer.isSameNode(player)
+        m.switching = true
+        m.videoQueue.closePlayer = true
+        m.switching = false
+    end if
+    RemoveShortsFromQueue()
+    ReleaseContainer()
+    m.playStateLabel.text = ""
+end function
+
+function TakeContainer() as void
+    if m.ownsContainer
+        return
+    end if
+    container = m.videoQueue.videoContainer
+    m.savedFullscreen = container.fullscreen
+    m.savedQueueIndex = m.videoQueue.index
+    m.ownsContainer = true
+    container.fullscreen = false
+end function
+
+function ReleaseContainer() as void
+    if not m.ownsContainer
+        return
+    end if
+    m.ownsContainer = false
+    m.videoQueue.videoContainer.fullscreen = m.savedFullscreen
+end function
+
+' Every Short played was inserted into the shared queue (playVideo); take them back out.
+function RemoveShortsFromQueue() as void
+    if m.queuedIds.Count() = 0
+        return
+    end if
+    content = m.videoQueue.content
+    for i = content.getChildCount() - 1 to 0 step -1
+        child = content.getChild(i)
+        if child <> invalid and m.queuedIds.DoesExist(ValidString(child.videoId))
+            content.removeChildIndex(i)
+        end if
+    end for
+    m.queuedIds = {}
+    count = content.getChildCount()
+    index = m.savedQueueIndex
+    if index >= count
+        index = count - 1
+    end if
+    m.videoQueue.index = index
+end function
+
+'-------------------------------------------------------------------------------
+' Playback of one Short.
+'-------------------------------------------------------------------------------
+function PlayIndex(index as integer) as void
+    if index < 0 or index >= m.shorts.Count()
+        return
+    end if
+    m.index = index
+    ShowCurrent()
+    if not m.hasFocus or not m.top.visible
+        return
+    end if
+
+    item = m.shorts[index]
+    TakeContainer()
+    m.active = true
+    m.skipTimer.control = "stop"
+    if m.player <> invalid
+        m.player.UnobserveField("state")
+        m.player = invalid
+    end if
+
+    node = CreateObject("roSGNode", "VideoContentNode")
+    node.type = "video"
+    node.id = item.videoId
+    node.videoId = item.videoId
+    node.title = item.title
+    node._author = item.channel
+    node.thumbnail = item.thumbnail
+    m.queuedIds[item.videoId] = true
+
+    m.switching = true
+    m.videoQueue.playVideo = node
+    m.switching = false
+    AdoptPlayer()
+end function
+
+function AdoptPlayer() as void
+    player = m.videoQueue.player
+    if player = invalid or not m.active
+        return
+    end if
+    if m.player <> invalid and m.player.isSameNode(player)
+        return
+    end if
+    m.player = player
+    player.yourtubeShorts = true
+    player.loop = true
+    ' hidden until the first frame so the thumbnail shows while it loads (RevealTimer is the safety net)
+    player.visible = false
+    ApplyPlayerRect()
+    player.ObserveField("state", FuncName(OnPlayerState))
+    m.revealTimer.control = "stop"
+    m.revealTimer.control = "start"
+    m.playStateLabel.text = ""
+end function
+
+function ApplyPlayerRect() as void
+    player = m.player
+    if player = invalid
+        return
+    end if
+    offsetX = 0
+    if m.screensContainer <> invalid
+        offsetX = m.screensContainer.translation[0]
+    end if
+    x = FRAME_X + offsetX
+    ' minRect too: the player sizes itself from it in OnNodeReady, which may still be ahead of it
+    player.minRect = [x, FRAME_Y, FRAME_W, FRAME_H]
+    player.width = FRAME_W
+    player.height = FRAME_H
+    player.translation = [x, FRAME_Y]
+end function
+
+function RevealPlayer() as void
+    if m.player <> invalid
+        m.player.visible = true
+    end if
+end function
+
+function OnPlayerState(event as object) as void
+    state = event.getData()
+    if state = "playing"
+        m.revealTimer.control = "stop"
+        RevealPlayer()
+        m.failures = 0
+        m.playStateLabel.text = ""
+        m.keyHint.text = "OK  Pause"
+    else if state = "paused"
+        m.playStateLabel.text = "Paused"
+        m.keyHint.text = "OK  Play"
+    end if
+end function
+
+' The queue's player changed outside PlayIndex/StopPlayback: either our Short failed (the player closes
+' itself in Shorts mode instead of showing a dialog) or something else (cast, web remote) started a video.
+function OnQueuePlayerChange() as void
+    if m.switching or not m.active
+        return
+    end if
+    player = m.videoQueue.player
+    if player = invalid
+        if m.player <> invalid
+            m.player.UnobserveField("state")
+            m.player = invalid
+            m.active = false
+            OnShortFailed()
+        end if
+        return
+    end if
+    if m.player <> invalid and m.player.isSameNode(player)
+        return
+    end if
+    ' someone else's video: hand the container back full screen and let it have the focus
+    LogInfo("Shorts: another video took over the player")
+    if m.player <> invalid
+        m.player.UnobserveField("state")
+        m.player = invalid
+    end if
+    m.active = false
+    m.ownsContainer = false
+    m.queuedIds = {}
+    m.videoQueue.videoContainer.fullscreen = true
+    NodeSetFocus(player, true)
+end function
+
+function OnShortFailed() as void
+    m.failures += 1
+    m.thumb.uri = ""
+    if m.failures >= MAX_FAILURES
+        m.frameStatus.text = "Couldn't play this Short"
+        m.playStateLabel.text = "Press Down to try the next one"
+        return
+    end if
+    m.frameStatus.text = "Couldn't play this Short"
+    m.skipTimer.control = "start"
+end function
+
+function OnSkipTimer() as void
+    if m.hasFocus and m.top.visible
+        MoveBy(1)
+    end if
+end function
+
+function TogglePause() as void
+    player = m.player
+    if player = invalid
+        return
+    end if
+    if player.state = "playing"
+        player.control = "pause"
+    else if player.state = "paused"
+        player.control = "resume"
+    end if
+end function
+
+function MoveBy(delta as integer) as void
+    target = m.index + delta
+    if target < 0
+        return
+    end if
+    if target >= m.shorts.Count()
+        ' at the end: play it as soon as the next batch lands
+        m.pendingAdvance = true
+        LoadMore()
+        return
+    end if
+    if delta < 0
+        m.failures = 0
+    end if
+    PlayIndex(target)
+end function
+
+'-------------------------------------------------------------------------------
+' Info panel / thumbnail.
+'-------------------------------------------------------------------------------
+function ShowCurrent() as void
+    if m.index < 0 or m.index >= m.shorts.Count()
+        return
+    end if
+    item = m.shorts[m.index]
+    m.frameStatus.text = ""
+    m.thumb.uri = item.thumbnail
+    m.titleLabel.text = item.title
+    m.channelLabel.text = item.channel
+    m.statsLabel.text = item.statsText
+    m.playStateLabel.text = ""
+    m.keyHint.text = "OK  Pause / play"
+    if m.index + 1 < m.shorts.Count()
+        m.preloadThumb.uri = m.shorts[m.index + 1].thumbnail
+    end if
+    if not item.infoLoaded
+        LoadInfo(item.videoId)
+    end if
+    if m.shorts.Count() - m.index <= PREFETCH_DISTANCE
+        LoadMore()
+    end if
+end function
+
+function LoadInfo(videoId as string) as void
+    if m.infoJob <> invalid
+        if m.infoJobVideoId = videoId
+            return
+        end if
+        JobSystem.UnobserveCallback(m.infoJob)
+        m.infoJob.cancel = true
+    end if
+    m.infoJobVideoId = videoId
+    m.infoJob = JobSystem.CreateCallback(OnInfoDone)
+    JobSystem.QueueJob(m.jobQueue, Jobs.YourTubeShortsJob, { op: "info", videoId: videoId }, m.infoJob)
+end function
+
+function OnInfoDone(event as object) as void
+    JobSystem.UnobserveCallback(event.getRoSGNode())
+    m.infoJob = invalid
+    m.infoJobVideoId = ""
+    info = event.getInfo()
+    if not info.success
+        return
+    end if
+    data = info.data
+    for i = 0 to m.shorts.Count() - 1
+        item = m.shorts[i]
+        if item.videoId = data.videoId
+            if ValidString(data.title) <> ""
+                item.title = data.title
+            end if
+            if ValidString(data.channel) <> ""
+                item.channel = data.channel
+            end if
+            if ValidString(data.statsText) <> ""
+                item.statsText = data.statsText
+            end if
+            item.infoLoaded = true
+            if i = m.index
+                m.titleLabel.text = item.title
+                m.channelLabel.text = item.channel
+                m.statsLabel.text = item.statsText
+            end if
+            exit for
+        end if
+    end for
+end function
+
+'-------------------------------------------------------------------------------
+' Sequence loading.
+'-------------------------------------------------------------------------------
+function LoadShorts() as void
+    if m.loadJob <> invalid
+        return
+    end if
+    m.frameStatus.text = "Loading Shorts..."
+    m.thumb.uri = ""
+    m.loadJob = JobSystem.CreateCallback(OnLoadDone)
+    JobSystem.QueueJob(m.jobQueue, Jobs.YourTubeShortsJob, { op: "start" }, m.loadJob)
+end function
+
+function LoadMore() as void
+    if m.loadJob <> invalid or m.shorts.Count() = 0
+        return
+    end if
+    lastVideoId = m.shorts[m.shorts.Count() - 1].videoId
+    m.loadJob = JobSystem.CreateCallback(OnLoadDone)
+    JobSystem.QueueJob(m.jobQueue, Jobs.YourTubeShortsJob, { op: "more", continuation: m.continuation, lastVideoId: lastVideoId }, m.loadJob)
+end function
+
+function OnLoadDone(event as object) as void
+    JobSystem.UnobserveCallback(event.getRoSGNode())
+    m.loadJob = invalid
+    info = event.getInfo()
+    wasEmpty = m.shorts.Count() = 0
+
+    if not info.success
+        LogWarn("Shorts: load failed", info.error)
+        m.pendingAdvance = false
+        if wasEmpty
+            m.frameStatus.text = ""
+            ShowMessage("Couldn't load Shorts", ValidString(info.error).Split(Chr(10))[0], "Try again")
+        end if
+        return
+    end if
+
+    data = info.data
+    m.continuation = ValidString(data.continuation)
+    added = 0
+    for each entry in ValidArray(data.shorts)
+        videoId = ValidString(entry.videoId)
+        if videoId <> "" and not m.seenIds.DoesExist(videoId)
+            m.seenIds[videoId] = true
+            m.shorts.Push({
+                videoId: videoId
+                thumbnail: ValidString(entry.thumbnail)
+                title: ValidString(entry.title)
+                channel: ValidString(entry.channel)
+                statsText: ValidString(entry.viewsText)
+                infoLoaded: false
+            })
+            added += 1
+        end if
+    end for
+
+    if m.shorts.Count() = 0
+        ShowMessage("No Shorts right now", "Try again in a moment.", "Try again")
+        return
+    end if
+
+    if wasEmpty
+        m.index = 0
+        if m.hasFocus
+            PlayIndex(0)
+        else
+            ShowCurrent()
+        end if
+        return
+    end if
+
+    if m.index + 1 < m.shorts.Count()
+        m.preloadThumb.uri = m.shorts[m.index + 1].thumbnail
+    end if
+    if m.pendingAdvance
+        m.pendingAdvance = false
+        if added > 0
+            MoveBy(1)
+        end if
+    end if
+end function
+
+'-------------------------------------------------------------------------------
+' Message state (Shorts disabled / load error).
+'-------------------------------------------------------------------------------
+function ShowMessage(title as string, message as string, actionText as string) as void
+    StopPlayback()
+    m.stage.visible = false
+    m.messageState.title = title
+    m.messageState.message = message
+    m.messageState.actionText = actionText
+    m.messageState.visible = true
+    if m.top.isInFocusChain()
+        if actionText <> ""
+            NodeSetFocus(m.messageState, true)
+        else
+            NodeSetFocus(m.keySink, true)
+        end if
+    end if
+end function
+
+function HideMessage() as void
+    if not m.messageState.visible
+        return
+    end if
+    focusWasHere = m.messageState.isInFocusChain()
+    m.messageState.visible = false
+    m.messageState.actionText = ""
+    m.stage.visible = true
+    if focusWasHere
+        NodeSetFocus(m.keySink, true)
+    end if
+end function
+
+function OnRetrySelected() as void
+    HideMessage()
+    m.shorts = []
+    m.seenIds = {}
+    m.index = -1
+    m.continuation = ""
+    LoadShorts()
+end function
+
+'-------------------------------------------------------------------------------
+' Keys.
+'-------------------------------------------------------------------------------
 function OnKeyEvent(key as string, press as boolean) as boolean
+    ' Options (press and release) would toggle the player to full screen in AppController: keep it here
+    if key = RemoteKeys.Options
+        return true
+    end if
     if NavigationKeyHandler(key, press).handled
+        return true
+    end if
+    if not press
+        return false
+    end if
+    if m.messageState.visible
+        return key = RemoteKeys.Up or key = RemoteKeys.Down or key = RemoteKeys.Right
+    end if
+    if key = RemoteKeys.Up
+        MoveBy(-1)
+        return true
+    else if key = RemoteKeys.Down
+        MoveBy(1)
+        return true
+    else if key = RemoteKeys.Ok
+        TogglePause()
+        return true
+    else if key = RemoteKeys.Right
         return true
     end if
     return false

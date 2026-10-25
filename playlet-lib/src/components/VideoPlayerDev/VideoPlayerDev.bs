@@ -1247,7 +1247,7 @@ end function
 
 ' phase 1 (showFullScreenHint=true) reveals the strip then arms the 5s hide; phase 2 (false) hides it.
 function OnFullScreenHintTimer() as void
-    m.fullScreenHint.visible = m.showFullScreenHint
+    m.fullScreenHint.visible = m.showFullScreenHint and m.top.yourtubeShorts <> true ' YourTube: never in Shorts
     if m.showFullScreenHint
         m.showFullScreenHint = false
         RefreshFullScreenHint()
@@ -1631,6 +1631,11 @@ end function
 function OnPlaybackFinished() as void
     ' before PlayNext/ClosePlayer: either can close this player, and send its summary, synchronously.
     m.playbackTelemetry.OnFinished()
+    ' YourTube: a Short replays in place (the Shorts tab, not autoplay, picks what plays next)
+    if m.top.yourtubeShorts = true
+        m.top.control = VideoControl.Play
+        return
+    end if
     LogDebug("playback finished -> PlayNext or close")
     if not VideoQueueUtils.PlayNext(m.videoQueue, m.invidious, m.preferences)
         ClosePlayer()
@@ -1658,6 +1663,11 @@ end function
 function ShowErrorDialog(decision as object) as void
     ' first: a blocked dialog closes this player, and sends its summary, synchronously (below).
     m.playbackTelemetry.OnErrorDialog()
+    ' YourTube: no dialog over the Shorts tab; closing lets it move on to the next Short
+    if m.top.yourtubeShorts = true
+        ClosePlayer()
+        return
+    end if
     buttons = [Tr(Locale.Buttons.PlayNextVideo), Tr(Locale.Buttons.Cancel)]
     dialog = DialogUtils.ShowTimedDialogButtons(decision.message, decision.title, buttons, 0, 10, true)
     if dialog <> invalid

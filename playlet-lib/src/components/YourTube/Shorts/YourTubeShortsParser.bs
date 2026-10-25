@@ -1,0 +1,192 @@
+import "pkg:/components/YourTube/YourTubeJson.bs"
+
+' YourTube: pure helpers for the Shorts tab. InnerTube WEB responses:
+'   /search (shorts filter)        -> seed Shorts           (ParseSearchSeeds)
+'   /reel/reel_watch_sequence      -> the Shorts to swipe   (ParseSequence)
+'   /reel/reel_item_watch          -> title/channel/likes   (ParseReelItem)
+' Parsed JSON AAs are case-sensitive, so every lookup goes through bracket keys / YourTubeJson.Dig.
+namespace YourTubeShorts
+
+    ' sequenceParams for reel_watch_sequence: the ReelSequence protobuf youtubei.js sends
+    ' ({ shortId: 1 (string), params: 5 { number: 3 = 5 }, feature2: 10 = 25, feature3: 13 = 0 }),
+    ' base64'd then URL-encoded (YouTube expects the escaped form inside the JSON body).
+    function EncodeSequenceParams(videoId as string) as string
+        idBytes = CreateObject("roByteArray")
+        idBytes.FromAsciiString(videoId)
+        bytes = CreateObject("roByteArray")
+        bytes.Push(&h0A)
+        bytes.Push(idBytes.Count())
+        bytes.Append(idBytes)
+        for each b in [&h2A, &h02, &h18, &h05, &h50, &h19, &h68, &h00]
+            bytes.Push(b)
+        end for
+        return UrlEscapeBase64(bytes.ToBase64String())
+    end function
+
+    function UrlEscapeBase64(text as string) as string
+        return text.Replace("+", "%2B").Replace("/", "%2F").Replace("=", "%3D")
+    end function
+
+    ' A Short's vertical thumbnail. frame0 is 1080x1920 and exists for every Short.
+    function ThumbnailUrl(videoId as string) as string
+        return `https://i.ytimg.com/vi/${videoId}/frame0.jpg`
+    end function
+
+    ' -> [{ videoId, thumbnail, title, viewsText }] from the shortsLockupViewModels of a shorts search
+    function ParseSearchSeeds(json as dynamic) as object
+        seeds = []
+        seen = {}
+        sections = YourTubeJson.Dig(json, ["contents", "twoColumnSearchResultsRenderer", "primaryContents", "sectionListRenderer", "contents"])
+        if not YourTubeJson.IsArr(sections)
+            return seeds
+        end if
+        for each section in sections
+            items = YourTubeJson.Dig(section, ["itemSectionRenderer", "contents"])
+            if YourTubeJson.IsArr(items)
+                for each item in items
+                    lockups = YourTubeJson.Dig(item, ["gridShelfViewModel", "contents"])
+                    if YourTubeJson.IsArr(lockups)
+                        for each lockup in lockups
+                            AddSeed(seeds, seen, YourTubeJson.Dig(lockup, ["shortsLockupViewModel"]))
+                        end for
+                    else
+                        AddSeed(seeds, seen, YourTubeJson.Dig(item, ["shortsLockupViewModel"]))
+                    end if
+                end for
+            end if
+        end for
+        return seeds
+    end function
+
+    function AddSeed(seeds as object, seen as object, lockup as dynamic) as void
+        endpoint = YourTubeJson.Dig(lockup, ["onTap", "innertubeCommand", "reelWatchEndpoint"])
+        videoId = YourTubeJson.AsString(YourTubeJson.Dig(endpoint, ["videoId"]))
+        if videoId = "" or seen.DoesExist(videoId)
+            return
+        end if
+        seen[videoId] = true
+        seeds.Push({
+            videoId: videoId
+            thumbnail: EndpointThumbnail(endpoint, videoId)
+            title: YourTubeJson.AsString(YourTubeJson.Dig(lockup, ["overlayMetadata", "primaryText", "content"]))
+            channel: ""
+            viewsText: YourTubeJson.AsString(YourTubeJson.Dig(lockup, ["overlayMetadata", "secondaryText", "content"]))
+        })
+    end function
+
+    ' -> { shorts: [{ videoId, thumbnail, title, channel, viewsText }], continuation }
+    ' The sequence never repeats its seed; title/channel are only present for prefetched entries.
+    function ParseSequence(json as dynamic) as object
+        shorts = []
+        entries = YourTubeJson.Dig(json, ["entries"])
+        if YourTubeJson.IsArr(entries)
+            for each entry in entries
+                endpoint = YourTubeJson.Dig(entry, ["command", "reelWatchEndpoint"])
+                videoId = YourTubeJson.AsString(YourTubeJson.Dig(endpoint, ["videoId"]))
+                if videoId <> ""
+                    details = YourTubeJson.Dig(endpoint, ["unserializedPrefetchData", "playerResponse", "videoDetails"])
+                    shorts.Push({
+                        videoId: videoId
+                        thumbnail: EndpointThumbnail(endpoint, videoId)
+                        title: YourTubeJson.AsString(YourTubeJson.Dig(details, ["title"]))
+                        channel: YourTubeJson.AsString(YourTubeJson.Dig(details, ["author"]))
+                        viewsText: ""
+                    })
+                end if
+            end for
+        end if
+        continuation = YourTubeJson.AsString(YourTubeJson.Dig(json, ["continuationEndpoint", "continuationCommand", "token"]))
+        return { shorts: shorts, continuation: continuation }
+    end function
+
+    function EndpointThumbnail(endpoint as dynamic, videoId as string) as string
+        url = YourTubeJson.AsString(YourTubeJson.Dig(endpoint, ["thumbnail", "thumbnails", 0, "url"]))
+        if url = ""
+            url = ThumbnailUrl(videoId)
+        end if
+        return url
+    end function
+
+    ' -> { title, channel, viewsText, likesText } from reel_item_watch: the structured description panel first
+    ' (full title, channel name, "2,798,149 views", Likes factoid), then the player overlay as a fallback.
+    function ParseReelItem(json as dynamic) as object
+        info = { title: "", channel: "", viewsText: "", likesText: "" }
+        panels = YourTubeJson.Dig(json, ["engagementPanels"])
+        if YourTubeJson.IsArr(panels)
+            for each panel in panels
+                items = YourTubeJson.Dig(panel, ["engagementPanelSectionListRenderer", "content", "structuredDescriptionContentRenderer", "items"])
+                if YourTubeJson.IsArr(items)
+                    for each item in items
+                        title = YourTubeJson.AsString(YourTubeJson.Dig(item, ["videoTitleHeaderViewModel", "videoTitle", "content"]))
+                        if title <> "" and info.title = ""
+                            info.title = title
+                        end if
+                        header = YourTubeJson.Dig(item, ["videoDescriptionHeaderRenderer"])
+                        if YourTubeJson.IsAA(header)
+                            ReadDescriptionHeader(info, header)
+                        end if
+                    end for
+                end if
+            end for
+        end if
+
+        overlay = YourTubeJson.Dig(json, ["overlay", "reelPlayerOverlayRenderer", "playerOverlay", "reelPlayerOverlayViewModel"])
+        metadataItems = YourTubeJson.Dig(overlay, ["metapanel", "reelMetapanelViewModel", "metadataItems"])
+        if YourTubeJson.IsArr(metadataItems)
+            for each item in metadataItems
+                if info.title = ""
+                    info.title = YourTubeJson.AsString(YourTubeJson.Dig(item, ["shortsVideoTitleViewModel", "text", "content"]))
+                end if
+                if info.channel = ""
+                    info.channel = YourTubeJson.AsString(YourTubeJson.Dig(item, ["reelChannelBarViewModel", "channelName", "content"]))
+                end if
+            end for
+        end if
+        if info.likesText = ""
+            buttons = YourTubeJson.Dig(overlay, ["actionBar", "reelActionBarViewModel", "buttonViewModels"])
+            if YourTubeJson.IsArr(buttons)
+                for each button in buttons
+                    likes = YourTubeJson.AsString(YourTubeJson.Dig(button, ["likeButtonViewModel", "toggleButtonViewModel", "toggleButtonViewModel", "defaultButtonViewModel", "buttonViewModel", "title"]))
+                    if likes <> ""
+                        info.likesText = likes
+                        exit for
+                    end if
+                end for
+            end if
+        end if
+        return info
+    end function
+
+    function ReadDescriptionHeader(info as object, header as object) as void
+        if info.channel = ""
+            info.channel = YourTubeJson.RunsText(header["channel"])
+        end if
+        if info.viewsText = ""
+            info.viewsText = YourTubeJson.RunsText(header["views"])
+        end if
+        factoids = header["factoid"]
+        if not YourTubeJson.IsArr(factoids)
+            return
+        end if
+        for each factoid in factoids
+            renderer = YourTubeJson.Dig(factoid, ["factoidRenderer"])
+            label = YourTubeJson.RunsText(YourTubeJson.Dig(renderer, ["label"]))
+            if LCase(label) = "likes" and info.likesText = ""
+                info.likesText = YourTubeJson.RunsText(YourTubeJson.Dig(renderer, ["value"]))
+            end if
+        end for
+    end function
+
+    ' "2,798,149 views" + "17K" -> "2,798,149 views  ·  17K likes"; either part may be empty.
+    function StatsLine(viewsText as string, likesText as string) as string
+        parts = []
+        if viewsText <> ""
+            parts.Push(viewsText)
+        end if
+        if likesText <> ""
+            parts.Push(likesText + " likes")
+        end if
+        return parts.Join("  ·  ")
+    end function
+
+end namespace

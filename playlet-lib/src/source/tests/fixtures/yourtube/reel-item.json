@@ -1,0 +1,135 @@
+{
+ "overlay": {
+  "reelPlayerOverlayRenderer": {
+   "playerOverlay": {
+    "reelPlayerOverlayViewModel": {
+     "metapanel": {
+      "reelMetapanelViewModel": {
+       "metadataItems": [
+        {
+         "reelChannelBarViewModel": {
+          "channelName": {
+           "content": "@ItsRankVault"
+          }
+         }
+        },
+        {
+         "shortsVideoTitleViewModel": {
+          "text": {
+           "content": "Ranking Top 5 Funniest Moments On The Internet 🤣 | #shorts"
+          }
+         }
+        }
+       ]
+      }
+     },
+     "actionBar": {
+      "reelActionBarViewModel": {
+       "buttonViewModels": [
+        {
+         "likeButtonViewModel": {
+          "toggleButtonViewModel": {
+           "toggleButtonViewModel": {
+            "defaultButtonViewModel": {
+             "buttonViewModel": {
+              "title": "17K",
+              "accessibilityText": "like this video along with 17 thousand other people"
+             }
+            }
+           }
+          }
+         }
+        }
+       ]
+      }
+     }
+    }
+   }
+  }
+ },
+ "engagementPanels": [
+  {
+   "engagementPanelSectionListRenderer": {
+    "targetId": "engagement-panel-structured-description",
+    "content": {
+     "structuredDescriptionContentRenderer": {
+      "items": [
+       {
+        "videoTitleHeaderViewModel": {
+         "videoTitle": {
+          "content": "Ranking Top 5 Funniest Moments On The Internet 🤣 | #shorts"
+         }
+        }
+       },
+       {
+        "videoDescriptionHeaderRenderer": {
+         "channel": {
+          "simpleText": "RankVault"
+         },
+         "views": {
+          "simpleText": "2,798,149 views"
+         },
+         "publishDate": {
+          "simpleText": "Aug 23, 2026"
+         },
+         "factoid": [
+          {
+           "factoidRenderer": {
+            "value": {
+             "simpleText": "17K"
+            },
+            "label": {
+             "simpleText": "Likes"
+            },
+            "accessibilityText": "17 thousand likes",
+            "backgroundColorStyle": "BACKGROUND_COLOR_STYLE_COLOR_SAMPLED"
+           }
+          },
+          {
+           "viewCountFactoidRenderer": {
+            "viewCountEntityKey": "EgthbWplQ2x2Nnp5ZyDCASgB",
+            "factoid": {
+             "factoidRenderer": {
+              "value": {
+               "simpleText": "2.7M"
+              },
+              "label": {
+               "simpleText": "Views"
+              },
+              "accessibilityText": "2,798,149 views",
+              "backgroundColorStyle": "BACKGROUND_COLOR_STYLE_COLOR_SAMPLED"
+             }
+            },
+            "viewCountType": "VIEW_COUNT_FACTOID_TYPE_TOTAL_VIEWS"
+           }
+          },
+          {
+           "factoidRenderer": {
+            "value": {
+             "simpleText": "Aug 23"
+            },
+            "label": {
+             "simpleText": "2026"
+            },
+            "accessibilityText": "Aug 23, 2026",
+            "backgroundColorStyle": "BACKGROUND_COLOR_STYLE_COLOR_SAMPLED",
+            "position": "FACTOID_POSITION_LAST"
+           }
+          }
+         ],
+         "channelThumbnail": {
+          "thumbnails": [
+           {
+            "url": "https://yt3.ggpht.com/Rdellsh3Oe-njGGRmVD8nlKJhofISUe8uFhZN6qHI1qmMPBalVvnN6M6mdtpqV8Pcv2BZWTP4A=s88-c-k-c0x00ffffff-no-rj"
+           }
+          ]
+         }
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ ]
+}

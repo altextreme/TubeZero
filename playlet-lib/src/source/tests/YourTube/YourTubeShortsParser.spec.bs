@@ -1,0 +1,123 @@
+' YourTube: Shorts tab parsers against real InnerTube WEB fixtures (search with the shorts filter,
+' reel/reel_watch_sequence and reel/reel_item_watch, trimmed) in source/tests/fixtures/yourtube/.
+import "pkg:/components/YourTube/Shorts/YourTubeShortsParser.bs"
+import "pkg:/source/utils/StringUtils.bs"
+
+namespace Tests
+
+    @suite
+    class YourTubeShortsParserTests extends Rooibos.BaseTestSuite
+
+        function Fixture(name as string) as dynamic
+            return StringUtils.ParseJsonSafe(ReadAsciiFile("pkg:/source/tests/fixtures/yourtube/" + name))
+        end function
+
+        @describe("YourTubeShorts.EncodeSequenceParams")
+
+        @it("encodes the ReelSequence protobuf exactly like youtubei.js")
+        function _()
+            ' the value that fetched reel-sequence.json
+            m.assertEqual(YourTubeShorts.EncodeSequenceParams("amjeClv6zyg"), "CgthbWplQ2x2Nnp5ZyoCGAVQGWgA")
+        end function
+
+        @it("URL-escapes base64 padding and symbols")
+        function _()
+            m.assertEqual(YourTubeShorts.UrlEscapeBase64("a+b/c=="), "a%2Bb%2Fc%3D%3D")
+        end function
+
+        @describe("YourTubeShorts.ParseSequence")
+
+        @it("parses the entries and the continuation")
+        function _()
+            sequence = YourTubeShorts.ParseSequence(m.Fixture("reel-sequence.json"))
+            m.assertEqual(sequence.shorts.Count(), 10)
+            first = sequence.shorts[0]
+            m.assertEqual(first.videoId, "cVNJH0wzv4g")
+            m.assertEqual(first.thumbnail, "https://i.ytimg.com/vi/cVNJH0wzv4g/frame0.jpg")
+            m.assertEqual(first.channel, "Rufus Goodboy")
+            m.assertTrue(first.title.StartsWith("Ranking My Funniest Dog Voiceovers"))
+            m.assertEqual(sequence.shorts[9].videoId, "tFAPsS9Hzog")
+            m.assertTrue(sequence.continuation.Len() > 20)
+        end function
+
+        @it("leaves title and channel empty for entries without prefetched details")
+        function _()
+            second = YourTubeShorts.ParseSequence(m.Fixture("reel-sequence.json")).shorts[1]
+            m.assertEqual(second.videoId, "UWOLSHz6ufg")
+            m.assertEqual(second.title, "")
+            m.assertEqual(second.channel, "")
+        end function
+
+        @it("returns empty values for bad input")
+        function _()
+            m.assertEqual(YourTubeShorts.ParseSequence(invalid).shorts.Count(), 0)
+            m.assertEqual(YourTubeShorts.ParseSequence({ "entries": [1, "x", {}] }).shorts.Count(), 0)
+            m.assertEqual(YourTubeShorts.ParseSequence({}).continuation, "")
+        end function
+
+        @it("falls back to the frame0 thumbnail")
+        function _()
+            json = { "entries": [{ "command": { "reelWatchEndpoint": { "videoId": "abcdefghijk" } } }] }
+            m.assertEqual(YourTubeShorts.ParseSequence(json).shorts[0].thumbnail, "https://i.ytimg.com/vi/abcdefghijk/frame0.jpg")
+        end function
+
+        @describe("YourTubeShorts.ParseSearchSeeds")
+
+        @it("collects the Shorts of every shelf, without duplicates")
+        function _()
+            seeds = YourTubeShorts.ParseSearchSeeds(m.Fixture("shorts-search.json"))
+            m.assertEqual(seeds.Count(), 6)
+            m.assertEqual(seeds[0].videoId, "amjeClv6zyg")
+            m.assertEqual(seeds[0].viewsText, "2.7M views")
+            m.assertTrue(seeds[0].title.StartsWith("Ranking Top 5 Funniest Moments"))
+            m.assertEqual(seeds[0].thumbnail, "https://i.ytimg.com/vi/amjeClv6zyg/frame0.jpg")
+            m.assertEqual(seeds[3].videoId, "O79Alu1k3OU")
+        end function
+
+        @it("returns no seeds for bad input")
+        function _()
+            m.assertEqual(YourTubeShorts.ParseSearchSeeds(invalid).Count(), 0)
+            m.assertEqual(YourTubeShorts.ParseSearchSeeds({ "contents": "x" }).Count(), 0)
+        end function
+
+        @describe("YourTubeShorts.ParseReelItem")
+
+        @it("reads title, channel, views and likes from the description panel")
+        function _()
+            info = YourTubeShorts.ParseReelItem(m.Fixture("reel-item.json"))
+            m.assertTrue(info.title.StartsWith("Ranking Top 5 Funniest Moments On The Internet"))
+            m.assertEqual(info.channel, "RankVault")
+            m.assertEqual(info.viewsText, "2,798,149 views")
+            m.assertEqual(info.likesText, "17K")
+        end function
+
+        @it("falls back to the player overlay")
+        function _()
+            data = m.Fixture("reel-item.json")
+            data["engagementPanels"] = []
+            info = YourTubeShorts.ParseReelItem(data)
+            m.assertTrue(info.title.StartsWith("Ranking Top 5 Funniest Moments On The Internet"))
+            m.assertEqual(info.channel, "@ItsRankVault")
+            m.assertEqual(info.viewsText, "")
+            m.assertEqual(info.likesText, "17K")
+        end function
+
+        @it("returns empty values for bad input")
+        function _()
+            info = YourTubeShorts.ParseReelItem(invalid)
+            m.assertEqual(info.title, "")
+            m.assertEqual(info.likesText, "")
+        end function
+
+        @describe("YourTubeShorts.StatsLine")
+
+        @it("joins the parts that exist")
+        function _()
+            m.assertEqual(YourTubeShorts.StatsLine("2.7M views", "17K"), "2.7M views  ·  17K likes")
+            m.assertEqual(YourTubeShorts.StatsLine("", "17K"), "17K likes")
+            m.assertEqual(YourTubeShorts.StatsLine("", ""), "")
+        end function
+
+    end class
+
+end namespace

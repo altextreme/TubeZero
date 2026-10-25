@@ -1,0 +1,140 @@
+import "pkg:/components/Services/Innertube/Context.bs"
+import "pkg:/components/YourTube/Shorts/YourTubeShortsParser.bs"
+import "pkg:/components/YourTube/YourTubeText.bs"
+import "pkg:/source/services/HttpClient.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: InnerTube (WEB client, signed out) calls for the Shorts tab.
+' Input { op: "start", seedId? }   -> { shorts, continuation }  (seed: given id, else a random shorts search hit)
+'       { op: "more", continuation, lastVideoId } -> { shorts, continuation }
+'       { op: "info", videoId }    -> { videoId, title, channel, statsText, needsSystemFont }
+@job("YourTubeShortsJob")
+function ExecuteJob() as void
+    input = JobGetInput()
+    cancellation = JobGetCancellation()
+    op = ValidString(input.op)
+
+    if op = "info"
+        videoId = ValidString(input.videoId)
+        response = ShortsPost("reel/reel_item_watch", {
+            "playerRequest": { "videoId": videoId }
+            "params": "CAUwAg%3D%3D"
+            "disablePlayerResponse": true
+        }, cancellation)
+        if response.error <> invalid
+            JobError(response.error)
+            return
+        end if
+        parsed = YourTubeShorts.ParseReelItem(response.json)
+        title = YourTubeText.Clean(parsed.title)
+        channel = YourTubeText.Clean(parsed.channel)
+        JobSuccessData({
+            videoId: videoId
+            title: title.text
+            channel: channel.text
+            statsText: YourTubeShorts.StatsLine(parsed.viewsText, parsed.likesText)
+            needsSystemFont: title.needsSystemFont or channel.needsSystemFont
+        })
+        return
+    end if
+
+    shorts = []
+    sequenceParams = ""
+    if op = "more"
+        sequenceParams = ValidString(input.continuation)
+        if sequenceParams = ""
+            sequenceParams = YourTubeShorts.EncodeSequenceParams(ValidString(input.lastVideoId))
+        end if
+    else
+        seed = invalid
+        seedId = ValidString(input.seedId)
+        if seedId <> ""
+            seed = { videoId: seedId, thumbnail: YourTubeShorts.ThumbnailUrl(seedId), title: "", channel: "", viewsText: "" }
+        else
+            seed = SearchSeed(cancellation)
+        end if
+        if seed = invalid
+            JobError("No Shorts found")
+            return
+        end if
+        shorts.Push(seed)
+        sequenceParams = YourTubeShorts.EncodeSequenceParams(seed.videoId)
+    end if
+
+    sequence = FetchSequence(sequenceParams, cancellation)
+    if sequence.error <> invalid and shorts.Count() = 0
+        JobError(sequence.error)
+        return
+    end if
+    ' a continuation page can come back nearly empty: re-seed from the last Short for a fresh batch
+    if op = "more" and sequence.shorts.Count() < 2 and ValidString(input.lastVideoId) <> ""
+        reseeded = FetchSequence(YourTubeShorts.EncodeSequenceParams(input.lastVideoId), cancellation)
+        if reseeded.error = invalid
+            sequence.shorts.Append(reseeded.shorts)
+            if sequence.continuation = ""
+                sequence.continuation = reseeded.continuation
+            end if
+        end if
+    end if
+    if JobIsCancelled()
+        JobCancel()
+        return
+    end if
+
+    shorts.Append(sequence.shorts)
+    for each item in shorts
+        item.title = YourTubeText.Clean(item.title).text
+        item.channel = YourTubeText.Clean(item.channel).text
+    end for
+    JobSuccessData({ shorts: shorts, continuation: ValidString(sequence.continuation) })
+end function
+
+' A random hit among the first Shorts of a shorts-filtered search for a random everyday topic.
+function SearchSeed(cancellation as dynamic) as dynamic
+    queries = ["shorts", "funny", "satisfying", "animals", "cooking", "sports", "music", "life hacks"]
+    query = queries[Rnd(queries.Count()) - 1]
+    response = ShortsPost("search", { "query": query, "params": "EgIQCQ%3D%3D" }, cancellation)
+    if response.error <> invalid
+        return invalid
+    end if
+    seeds = YourTubeShorts.ParseSearchSeeds(response.json)
+    if seeds.Count() = 0
+        return invalid
+    end if
+    pick = Rnd(MinInt(seeds.Count(), 6)) - 1
+    return seeds[pick]
+end function
+
+function MinInt(a as integer, b as integer) as integer
+    if a < b
+        return a
+    end if
+    return b
+end function
+
+function FetchSequence(sequenceParams as string, cancellation as dynamic) as object
+    response = ShortsPost("reel/reel_watch_sequence", { "sequenceParams": sequenceParams }, cancellation)
+    if response.error <> invalid
+        return { error: response.error, shorts: [], continuation: "" }
+    end if
+    parsed = YourTubeShorts.ParseSequence(response.json)
+    return { error: invalid, shorts: parsed.shorts, continuation: parsed.continuation }
+end function
+
+function ShortsPost(endpoint as string, args as object, cancellation as dynamic) as object
+    deviceInfo = CreateObject("roDeviceInfo")
+    payload = { "context": Innertube.CreateContext(Innertube.ClientType.Web, deviceInfo) }
+    payload.Append(args)
+    request = HttpClient.Post(`https://www.youtube.com/youtubei/v1/${endpoint}?prettyPrint=false`).JsonBody(payload)
+    request.Headers(Innertube.CreateHeaders(Innertube.ClientType.Web))
+    request.Cancellation(cancellation)
+    response = request.Await()
+    if not response.IsSuccess()
+        return { error: response.ErrorMessage() }
+    end if
+    json = response.Json()
+    if json = invalid
+        return { error: "Invalid response" }
+    end if
+    return { error: invalid, json: json }
+end function

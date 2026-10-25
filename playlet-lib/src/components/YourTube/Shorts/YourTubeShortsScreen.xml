@@ -1,20 +1,124 @@
 <!--
-    YourTube: Shorts nav screen. PLACEHOLDER so the rail item has a screen to show; the real Shorts screen
-    replaces this component (same name, same navBar binding).
+    YourTube: Shorts nav screen, like the YouTube TV Shorts tab. The current Short plays in a centered 9:16
+    frame (the shared player, kept non-fullscreen and moved onto the frame), info on the left, Up/Down step
+    through the reel_watch_sequence feed, OK pauses. The screen keeps focus; playback stops when it loses it.
 -->
 <component name="YourTubeShortsScreen" extends="Group" includes="AutoBind,Focus">
     <interface>
         <field id="navBar" type="node" bind="/NavBar" />
+        <field id="videoQueue" type="node" bind="/VideoQueue" />
+        <field id="preferences" type="node" bind="/Preferences" />
+        <field id="jobQueue" type="node" bind="/JobQueue" />
     </interface>
     <children>
+        <!-- holds key focus; keys bubble up to the screen's OnKeyEvent -->
+        <Group id="KeySink" focusable="true" />
+
+        <Timer id="RevealTimer" duration="3" repeat="false" />
+        <Timer id="SkipTimer" duration="1.5" repeat="false" />
+        <!-- stop a beat after focus leaves, once the app's own focus bookkeeping has settled -->
+        <Timer id="BlurTimer" duration="0.1" repeat="false" />
+
         <Label
             text="Shorts"
-            width="1280"
-            height="720"
-            horizAlign="center"
-            vertAlign="center"
-            color="0xF1F1F1FF">
+            color="0xF1F1F1FF"
+            translation="[104,48]">
             <Font role="font" uri="font:BoldSystemFontFile" size="30" />
         </Label>
+
+        <Group id="ShortsStage">
+            <!-- the player is moved onto this rect (see FRAME_* in the .bs); the thumbnail shows until it plays -->
+            <Group id="ShortFrame" translation="[456,40]">
+                <RoundedRect width="360" height="640" color="0x1F1F1FFF" />
+                <Label
+                    id="FrameStatus"
+                    width="360"
+                    height="640"
+                    horizAlign="center"
+                    vertAlign="center"
+                    color="0x717171FF">
+                    <Font role="font" uri="font:SystemFontFile" size="18" />
+                </Label>
+                <Poster
+                    id="ShortThumb"
+                    width="360"
+                    height="640"
+                    loadWidth="360"
+                    loadHeight="640"
+                    loadDisplayMode="scaleToFit" />
+            </Group>
+            <!-- warms the cache with the next Short's thumbnail (opacity 0 so it still loads) -->
+            <Poster
+                id="PreloadThumb"
+                opacity="0"
+                width="36"
+                height="64"
+                loadWidth="360"
+                loadHeight="640"
+                loadDisplayMode="scaleToFit" />
+
+            <!-- info, bottom-aligned with the frame -->
+            <LayoutGroup
+                translation="[104,680]"
+                layoutDirection="vert"
+                vertAlignment="bottom"
+                itemSpacings="[8]">
+                <Label id="ChannelLabel" width="320" color="0xF1F1F1FF">
+                    <Font role="font" uri="font:MediumSystemFontFile" size="18" />
+                </Label>
+                <Label id="TitleLabel" width="320" wrap="true" maxLines="5" color="0xF1F1F1FF">
+                    <Font role="font" uri="font:BoldSystemFontFile" size="22" />
+                </Label>
+                <Label id="StatsLabel" width="320" color="0xAAAAAAFF">
+                    <Font role="font" uri="font:SystemFontFile" size="16" />
+                </Label>
+                <Label id="PlayStateLabel" width="320" color="0x717171FF">
+                    <Font role="font" uri="font:SystemFontFile" size="16" />
+                </Label>
+            </LayoutGroup>
+
+            <!-- previous / next affordances right of the frame -->
+            <Group id="UpAffordance" translation="[850,276]">
+                <RoundedRect width="56" height="56" color="0x272727FF" />
+                <Poster
+                    uri="pkg:/images/icons/ms/play_arrow.png"
+                    width="32"
+                    height="32"
+                    translation="[12,12]"
+                    rotation="1.5708"
+                    scaleRotateCenter="[16,16]"
+                    blendColor="0xF1F1F1FF" />
+            </Group>
+            <Group id="DownAffordance" translation="[850,348]">
+                <RoundedRect width="56" height="56" color="0x272727FF" />
+                <Poster
+                    uri="pkg:/images/icons/ms/play_arrow.png"
+                    width="32"
+                    height="32"
+                    translation="[12,12]"
+                    rotation="-1.5708"
+                    scaleRotateCenter="[16,16]"
+                    blendColor="0xF1F1F1FF" />
+            </Group>
+            <Label
+                text="More Shorts"
+                color="0xAAAAAAFF"
+                translation="[920,362]">
+                <Font role="font" uri="font:SystemFontFile" size="16" />
+            </Label>
+
+            <Label
+                id="KeyHint"
+                text="OK  Pause / play"
+                color="0x717171FF"
+                translation="[850,650]">
+                <Font role="font" uri="font:SystemFontFile" size="16" />
+            </Label>
+        </Group>
+
+        <YourTubeEmptyState
+            id="MessageState"
+            iconUri="pkg:/images/icons/ms/video_library.png"
+            visible="false" />
     </children>
 </component>
