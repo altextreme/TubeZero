@@ -198,6 +198,8 @@ namespace Tests
             m.assertEqual(YourTubeKids.FormatRemaining(-1), "")
             m.assertEqual(YourTubeKids.FormatRemaining(30), "Less than a minute left")
             m.assertEqual(YourTubeKids.FormatRemaining(61), "2 min left today")
+            m.assertEqual(YourTubeKids.FormatWatched(30), "Under 1 min")
+            m.assertEqual(YourTubeKids.FormatWatched(3900), "1 h 5 min")
         end function
 
         @describe("YourTubeKids storage")

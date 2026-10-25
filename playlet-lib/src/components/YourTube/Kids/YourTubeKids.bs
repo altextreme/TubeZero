@@ -412,6 +412,18 @@ namespace YourTubeKids
         return `${hours} h ${rest} min`
     end function
 
+    ' Watched time: 30 -> "Under 1 min", 600 -> "10 min", 3900 -> "1 h 5 min"
+    function FormatWatched(seconds as dynamic) as string
+        minutes = 0
+        if IsNumber(seconds) and seconds > 0
+            minutes = Int(seconds / 60)
+        end if
+        if minutes < 1
+            return "Under 1 min"
+        end if
+        return FormatMinutes(minutes)
+    end function
+
     ' "45 min left today", "Less than a minute left", "" when there is no limit
     function FormatRemaining(seconds as integer) as string
         if seconds < 0

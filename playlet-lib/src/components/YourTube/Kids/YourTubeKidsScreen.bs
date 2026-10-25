@@ -1,3 +1,4 @@
+import "pkg:/components/YourTube/Kids/YourTubeKids.bs"
 import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/RemoteKeys.bs"
 import "pkg:/source/utils/Types.bs"
@@ -53,25 +54,8 @@ function Refresh() as void
 end function
 
 function UpdateTime() as void
-    if m.service = invalid
-        return
-    end if
-    remaining = m.service.remainingSeconds
-    if remaining < 0
-        m.timeLabel.text = ""
-    else if remaining < 60
-        m.timeLabel.text = "Less than a minute left"
-    else
-        minutes = Int((remaining + 59) / 60)
-        hours = Int(minutes / 60)
-        rest = minutes - hours * 60
-        if hours = 0
-            m.timeLabel.text = `${rest} min left today`
-        else if rest = 0
-            m.timeLabel.text = `${hours} h left today`
-        else
-            m.timeLabel.text = `${hours} h ${rest} min left today`
-        end if
+    if m.service <> invalid
+        m.timeLabel.text = YourTubeKids.FormatRemaining(m.service.remainingSeconds)
     end if
 end function
 

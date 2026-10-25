@@ -67,7 +67,7 @@ function GetState(_unused as dynamic) as object
         limitText: YourTubeKids.FormatMinutes(m.store.lim)
         remainingSeconds: remaining
         remainingText: YourTubeKids.FormatRemaining(remaining)
-        usedText: YourTubeKids.FormatMinutes(Int(m.store.used / 60))
+        usedText: YourTubeKids.FormatWatched(m.store.used)
     }
 end function
 
