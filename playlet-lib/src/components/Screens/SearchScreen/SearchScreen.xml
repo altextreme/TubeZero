@@ -29,6 +29,17 @@
             <SearchKeyboard
                 id="keyboard"
                 translation="[480,40]" />
+            <!-- YourTube: voice hint while the keyboard has focus (the text box takes Roku voice input) -->
+            <Label
+                id="voiceHint"
+                text="Hold the mic button on your remote to search by voice"
+                color="0x909090FF"
+                translation="[480,338]"
+                visible="false">
+                <Font role="font" uri="font:SystemFontFile" size="15" />
+            </Label>
+            <!-- YourTube: searches once dictated text settles -->
+            <Timer id="voiceSearchTimer" duration="1.2" />
 
             <ButtonGroup
                 id="suggestions"

@@ -28,6 +28,12 @@ function Init()
     m.filterChips.focusable = false
     m.lastQuery = ""
     m.focusChipsAfterSearch = false
+    ' YourTube: voice search (see OnTextChange)
+    m.voiceHint = m.top.FindNode("voiceHint")
+    m.voiceSearchTimer = m.top.FindNode("voiceSearchTimer")
+    m.voiceSearchTimer.ObserveField("fire", FuncName(OnVoiceSearchTimer))
+    m.lastKeyboardText = ""
+    m.keyboard.ObserveField("focusedChild", FuncName(OnKeyboardFocusChange))
 
     m.rowList.screen = m.top
 
@@ -124,6 +130,14 @@ end function
 
 function OnTextChange() as void
     YourTubePadSearchField(m.keyboard) ' YourTube: the text box re-lays out its label on edits
+    ' YourTube: Roku voice input drops a whole phrase into the text box at once, while keys add one
+    ' character; when several arrive together on the keyboard, search once the text settles.
+    text = m.keyboard.text
+    m.voiceSearchTimer.control = "stop"
+    if m.keyboard.isInFocusChain() and text.Len() - m.lastKeyboardText.Len() >= 3
+        m.voiceSearchTimer.control = "start"
+    end if
+    m.lastKeyboardText = text
     if m.suggestions.isInFocusChain()
         return
     end if
@@ -196,6 +210,18 @@ function OnSearchSuggestions(event as object) as void
 end function
 
 ' YourTube: search for whatever is typed when the SEARCH key is pressed
+' YourTube: the voice hint shows while the keyboard has focus.
+function OnKeyboardFocusChange() as void
+    m.voiceHint.visible = m.keyboard.isInFocusChain()
+end function
+
+' YourTube: dictated text settled on the keyboard: search it.
+function OnVoiceSearchTimer() as void
+    if m.keyboard.isInFocusChain() and m.keyboard.text = m.lastKeyboardText
+        OnKeyboardSearchRequested()
+    end if
+end function
+
 function OnKeyboardSearchRequested() as void
     text = m.keyboard.text.Trim()
     if text = ""
