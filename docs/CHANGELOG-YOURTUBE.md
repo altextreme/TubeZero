@@ -29,6 +29,10 @@ Changes on top of [Playlet](https://github.com/iBicha/playlet) (AGPL-3.0). Newes
   Roman numerals, "I" and mixed-case words (iPhone) are kept; sentences and text after " - " / " | " start with
   a capital. `YourTubeText.CleanTitle` = Clean + `FixCaps`; the setting is mirrored to the global
   `ytFixCapsTitles` field for cards and jobs.
+- Back on Home (and You) below the first row jumps to the first row; the next Back goes to the nav as before.
+  Home, Subscriptions and You already keep their focused row and card when you leave and come back (root screens
+  stay alive and RowList keeps its focus); the one reset found, You rebuilding its rows after a bookmark change,
+  now returns to the row you were on.
 
 ### Shorts, Subscriptions, deeper Home, tidier nav (not yet checked on the TV)
 - Nav: Profile, Search, Home, Shorts, Subscriptions, You, Live, Settings. Bookmarks rows moved into You; Phone remote

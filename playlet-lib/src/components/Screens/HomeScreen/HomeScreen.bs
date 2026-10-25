@@ -5,6 +5,7 @@ import "pkg:/components/Services/BookmarksService/BookmarksServiceUtils.bs" ' Yo
 import "pkg:/source/utils/FocusManagement.bs"
 import "pkg:/source/utils/Locale.bs"
 import "pkg:/source/utils/RemoteKeys.bs"
+import "pkg:/source/utils/Types.bs"
 
 function Init()
     m.top.focusable = true
@@ -12,6 +13,7 @@ function Init()
     m.rowList.screen = m.top
     m.topBar = m.top.FindNode("topBar")
     m.emptyState = m.top.FindNode("emptyState")
+    m.restoreRowIndex = invalid ' YourTube
 end function
 
 function OnNodeReady()
@@ -57,6 +59,8 @@ function OnBookmarksChange() as void
         return
     end if
     m.bookmarksDirty = false
+    ' YourTube: rebuilding the rows would put focus back on the first row; keep the row you were on
+    m.restoreRowIndex = m.rowList.itemFocused
     OnHomeLayoutChange()
 end function
 
@@ -79,6 +83,11 @@ function OnFocusChange() as void
 end function
 
 function OnKeyEvent(key as string, press as boolean) as boolean
+    ' YourTube: Back below the first row scrolls back to the first row; the next Back goes to the nav as before
+    if press and key = RemoteKeys.Back and m.rowList.isInFocusChain() and m.rowList.itemFocused > 0
+        m.rowList.jumpToItem = 0
+        return true
+    end if
     if NavigationKeyHandler(key, press).handled
         return true
     end if
@@ -105,6 +114,11 @@ function OnRowListContent() as void
     content = m.rowList.content
     if content <> invalid
         content.ObserveFieldScoped("change", FuncName(UpdateEmptyState))
+        ' YourTube: see OnBookmarksChange
+        if IsInt(m.restoreRowIndex) and m.restoreRowIndex > 0 and m.restoreRowIndex < content.getChildCount()
+            m.rowList.jumpToItem = m.restoreRowIndex
+        end if
+        m.restoreRowIndex = invalid
     end if
     UpdateEmptyState()
 end function
