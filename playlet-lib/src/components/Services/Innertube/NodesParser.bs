@@ -261,6 +261,11 @@ namespace Innertube
 
         continuation = ObjectUtils.Dig(nodeData, ["continuations", 0, "nextContinuationData", "continuation"])
         if IsString(continuation)
+            ' YourTube: when splitting shelves into rows, this is the "more shelves" token, not a row's
+            if context.yourTubeSplitShelves = true
+                context.yourTubeSectionContinuation = continuation
+                return nodeData["contents"]
+            end if
             if not StringUtils.IsNullOrEmpty(context.currentFeed.continuation)
                 StartNewFeed("", context)
             end if
@@ -301,6 +306,11 @@ namespace Innertube
                 LogInfo("Skipping shelf with heroCarouselHeaderRenderer")
                 return invalid
             end if
+        end if
+
+        ' YourTube: every shelf becomes its own titled feed (Home rows like the YouTube TV app)
+        if context.yourTubeSplitShelves = true
+            YourTubeStartShelfFeed(nodeData, context)
         end if
 
         ' TODO: handle shelfRenderer.title
@@ -2188,6 +2198,31 @@ namespace Innertube
                 return
             end if
             context.feeds.Push(context.currentFeed)
+        end if
+        context.currentFeed = {
+            "title": title
+            "items": []
+        }
+    end function
+
+    ' YourTube: start a fresh feed for a shelf, titled from whichever header field the client used
+    ' (WEB: title; TV: headerRenderer.shelfHeaderRenderer.title or its avatarLockup title).
+    function YourTubeStartShelfFeed(nodeData as object, context as object) as void
+        title = ParseText(nodeData["title"])
+        if title = ""
+            header = ObjectUtils.Dig(nodeData, ["headerRenderer", "shelfHeaderRenderer"])
+            if IsAssociativeArray(header)
+                title = ParseText(header["title"])
+                if title = ""
+                    title = ParseText(ObjectUtils.Dig(header, ["avatarLockup", "avatarLockupRenderer", "title"]))
+                end if
+            end if
+        end if
+        title = title.Trim()
+
+        currentFeed = context.currentFeed
+        if currentFeed <> invalid and (currentFeed.items.Count() > 0 or currentFeed.title <> "")
+            context.feeds.Push(currentFeed)
         end if
         context.currentFeed = {
             "title": title

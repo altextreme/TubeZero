@@ -15,7 +15,14 @@ namespace HomeScreenUtils
 
         homeLayout = preferences["misc.home_screen_layout"]
         if not IsArray(homeLayout) or homeLayout.Count() = 0
-            return feed
+            ' YourTube: sections marked defaultEnabled: false stay off until the user enables them
+            defaultFeed = []
+            for each item in feed
+                if item.defaultEnabled <> false
+                    defaultFeed.push(item)
+                end if
+            end for
+            return defaultFeed
         end if
 
         feedItems = {}
@@ -37,7 +44,7 @@ namespace HomeScreenUtils
         end for
 
         for each item in feed
-            if not seenIds.DoesExist(item["id"])
+            if not seenIds.DoesExist(item["id"]) and item.defaultEnabled <> false ' YourTube: defaultEnabled
                 filteredFeed.push(item)
             end if
         end for

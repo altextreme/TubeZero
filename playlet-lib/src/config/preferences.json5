@@ -244,21 +244,14 @@
         key: "misc.home_screen_layout",
         description: "Enable/disable and reorder sections on the home screen",
         type: "array",
+        // YourTube: deep Home (order and ids match config/default_home_layout.yaml)
         defaultValue: [
-          {
-            id: "subscriptions",
-            enabled: true,
-          },
           {
             id: "recommended",
             enabled: true,
           },
           {
-            id: "popular",
-            enabled: true,
-          },
-          {
-            id: "playlists",
+            id: "subscriptions",
             enabled: true,
           },
           {
@@ -270,8 +263,48 @@
             enabled: true,
           },
           {
+            id: "music",
+            enabled: true,
+          },
+          {
             id: "trending_gaming",
             enabled: true,
+          },
+          {
+            id: "news",
+            enabled: true,
+          },
+          {
+            id: "sports",
+            enabled: true,
+          },
+          {
+            id: "movies_trailers",
+            enabled: true,
+          },
+          {
+            id: "learning",
+            enabled: true,
+          },
+          {
+            id: "podcasts",
+            enabled: true,
+          },
+          {
+            id: "fashion_beauty",
+            enabled: true,
+          },
+          {
+            id: "playlists",
+            enabled: true,
+          },
+          {
+            id: "vr360",
+            enabled: false,
+          },
+          {
+            id: "popular",
+            enabled: false,
           },
         ],
         visibility: "tv",

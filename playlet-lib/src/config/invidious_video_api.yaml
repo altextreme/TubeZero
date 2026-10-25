@@ -207,3 +207,21 @@ auth_recommended:
     recommended:
       type: boolean
       default: true
+
+# YourTube: deep Home. Both are served by the built-in backend (YourTubeHomeShelvesRouter).
+# Signed-in YouTube home with one row per shelf (first shelf here, the rest returned in "shelves").
+# Invidious-account profiles fall back to auth_recommended (a real Invidious server lacks this route).
+yt_home_shelves:
+  title: Recommended
+  url: /api/v1/yourtube/home
+  authenticated: true
+  builtInFallback: auth_recommended
+  paginationType: Continuation
+
+# YourTube: a category destination page (News, Sports, ...) with its shelves mixed into one row.
+# Always the built-in backend, even when an Invidious instance is selected.
+yt_browse_mix:
+  title: Browse
+  url: /api/v1/yourtube/browse
+  builtInOnly: true
+  cacheSeconds: 1800 # 30 minutes

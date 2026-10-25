@@ -1,0 +1,147 @@
+import "pkg:/components/Services/Innertube/InnertubeService.bs"
+import "pkg:/components/Web/WebServer/Http/HttpRouter.bs"
+import "pkg:/components/YourTube/HomeShelves/YourTubeHomeShelves.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+namespace Http
+
+    ' YourTube: built-in backend routes behind the deep Home screen.
+    '   GET .../yourtube/home    signed-in YouTube home (FEwhat_to_watch, TV client). The first page
+    '                            returns the first shelf as items plus every other shelf in "shelves";
+    '                            VideoRowListRowContentJob turns each into its own row. With
+    '                            ?continuation= it pages one shelf (same shape as auth_recommended).
+    '   GET .../yourtube/browse  a category page (e.g. the News or Sports destination channel) with all
+    '                            its shelves mixed into one row: ?browseId=&params=&client=tv|web&max=&skip=a,b
+    class YourTubeHomeShelvesRouter extends HttpRouter
+
+        function new(server as object)
+            super()
+            m.preferences = server.sceneNodes.preferences
+        end function
+
+        @get("/playlet-invidious-backend/api/v1/yourtube/home")
+        function GetHomeShelves(context as object) as boolean
+            request = context.request
+            response = context.response
+
+            accessToken = request.headers["authorization"]
+            if StringUtils.IsNullOrEmpty(accessToken) or not accessToken.StartsWith("Bearer ")
+                response.Json({
+                    "error": "Missing or invalid 'Authorization' header. Please login again."
+                })
+                response.http_code = 403
+                return true
+            end if
+            accessToken = accessToken.Mid("Bearer ".Len())
+
+            options = {
+                "accessToken": accessToken
+                "disableShorts": m.preferences["content_feed.disable_shorts"]
+            }
+            activeIdentifyToken = request.query.activeIdentifyToken
+            if not StringUtils.IsNullOrEmpty(activeIdentifyToken)
+                options.onBehalfOfUser = activeIdentifyToken
+            end if
+
+            continuation = request.query.continuation
+            if not StringUtils.IsNullOrEmpty(continuation)
+                ' Next page of one shelf
+                options.continuation = continuation
+                result = InnertubeService.GetHome(options)
+                if result.error <> invalid
+                    response.Json(result)
+                    response.http_code = 500
+                    return true
+                end if
+                if not IsArray(result.feeds) or result.feeds.Count() = 0
+                    response.Json({ "items": [] })
+                    return true
+                end if
+                response.Json(result.feeds[0])
+                return true
+            end if
+
+            options.minShelves = 14
+            options.maxPages = 3
+            result = YourTubeHomeShelves.Browse("FEwhat_to_watch", options)
+            if result.error <> invalid
+                response.Json(result)
+                response.http_code = 500
+                return true
+            end if
+
+            feeds = result.feeds
+            if feeds.Count() = 0
+                ' Not an error: no history yet, so no recommendations
+                response.Json({ "items": [] })
+                return true
+            end if
+
+            body = {
+                "items": feeds[0].items
+            }
+            if not StringUtils.IsNullOrEmpty(feeds[0].continuation)
+                body["continuation"] = feeds[0].continuation
+            end if
+            shelves = []
+            for i = 1 to feeds.Count() - 1
+                shelves.Push(feeds[i])
+            end for
+            body["shelves"] = shelves
+            response.Json(body)
+            return true
+        end function
+
+        @get("/playlet-invidious-backend/api/v1/yourtube/browse")
+        function GetBrowseMix(context as object) as boolean
+            request = context.request
+            response = context.response
+
+            browseId = request.query.browseId
+            if StringUtils.IsNullOrEmpty(browseId)
+                response.Json({
+                    "error": "Missing 'browseId' query parameter"
+                })
+                response.http_code = 400
+                return true
+            end if
+
+            options = {
+                "client": ValidString(request.query.client)
+                "disableShorts": m.preferences["content_feed.disable_shorts"]
+            }
+            params = request.query.params
+            if not StringUtils.IsNullOrEmpty(params)
+                options.params = params
+            end if
+
+            result = YourTubeHomeShelves.Browse(browseId, options)
+            if result.error <> invalid
+                response.Json(result)
+                response.http_code = 500
+                return true
+            end if
+
+            maxItems = ValidString(request.query.max).ToInt()
+            if maxItems <= 0
+                maxItems = 40
+            end if
+            skipTitles = invalid
+            skip = request.query.skip
+            if not StringUtils.IsNullOrEmpty(skip)
+                skipTitles = skip.Split(",")
+            end if
+
+            response.Json({
+                "items": YourTubeHomeShelves.MixFeeds(result.feeds, maxItems, skipTitles)
+            })
+            if result.DoesExist("cache-control")
+                response.headers["cache-control"] = result["cache-control"]
+            end if
+            return true
+        end function
+
+    end class
+
+end namespace

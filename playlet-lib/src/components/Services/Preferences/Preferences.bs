@@ -226,6 +226,54 @@ function MigrateExistingPreferences(userPrefs as object) as boolean
         isDirty = true
     end if
 
+    if userPrefs.__version = 9
+        ' YourTube: deep Home. An untouched old default layout is reset to the new default
+        ' (Recommended first, category rows); a customized one keeps its order and gets the new
+        ' sections appended (default-off ones stored as disabled so they stay off).
+        homeScreenLayout = userPrefs["misc.home_screen_layout"]
+        if IsArray(homeScreenLayout)
+            oldDefaultIds = ["subscriptions", "recommended", "popular", "playlists", "watch_history", "trending_livestreams", "trending_gaming"]
+            isOldDefault = homeScreenLayout.Count() = oldDefaultIds.Count()
+            if isOldDefault
+                for i = 0 to oldDefaultIds.Count() - 1
+                    item = homeScreenLayout[i]
+                    if not IsAssociativeArray(item) or item.id <> oldDefaultIds[i] or item.enabled <> true
+                        isOldDefault = false
+                        exit for
+                    end if
+                end for
+            end if
+
+            if isOldDefault
+                userPrefs.Delete("misc.home_screen_layout")
+            else
+                existingIds = {}
+                for each item in homeScreenLayout
+                    if IsAssociativeArray(item) and IsString(item.id)
+                        existingIds[item.id] = true
+                    end if
+                end for
+                newSections = [
+                    { id: "music", enabled: true }
+                    { id: "news", enabled: true }
+                    { id: "sports", enabled: true }
+                    { id: "movies_trailers", enabled: true }
+                    { id: "learning", enabled: true }
+                    { id: "podcasts", enabled: true }
+                    { id: "fashion_beauty", enabled: true }
+                    { id: "vr360", enabled: false }
+                ]
+                for each section in newSections
+                    if not existingIds.DoesExist(section.id)
+                        homeScreenLayout.Push(section)
+                    end if
+                end for
+            end if
+        end if
+        userPrefs.__version = 10
+        isDirty = true
+    end if
+
     ' TODO:P2 handle case where saved preferences version is higher than current version (e.g. user downgraded)
 
     #if DEBUG

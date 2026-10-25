@@ -1,3 +1,16 @@
+# YourTube: a deep Home like the YouTube TV app. Rows load lazily as they scroll into view
+# (VideoRowList loads the focused row +/- 3) and rows that come back empty are dropped.
+# "Recommended" expands into one row per shelf of the signed-in YouTube home.
+# optional: true  = the row disappears quietly if its source fails (no error dialog).
+# defaultEnabled: false = listed in Settings > Edit home screen but off until the user turns it on.
+- title: Recommended
+  id: recommended
+  feedSources:
+    - id: yt_home_shelves
+      title: Recommended
+      apiType: Invidious
+      endpoint: yt_home_shelves
+
 - title: Subscriptions
   id: subscriptions
   feedSources:
@@ -6,41 +19,122 @@
       apiType: Invidious
       endpoint: auth_feed
 
-- title: Recommended
-  id: recommended
+- title: Watch history
+  id: watch_history
   feedSources:
-    - id: inv_auth_recommended
-      title: Recommended
+    - id: inv_auth_history
+      title: Watch history
       apiType: Invidious
-      endpoint: auth_recommended
+      endpoint: watch_history
 
-- title: Trending - Live
+- title: Live now
   id: trending_livestreams
   feedSources:
     - id: inv_trending_livestreams
-      title: Trending - Live
+      title: Live now
       apiType: Invidious
       endpoint: trending
+      optional: true
       queryParams:
         type: Livestreams
 
-- title: Trending - Gaming
+- title: Music
+  id: music
+  feedSources:
+    # "Top 100 Music Videos Global" chart playlist
+    - id: yt_music_top_videos
+      title: Music
+      apiType: Invidious
+      endpoint: playlist
+      optional: true
+      pathParams:
+        plid: PL4fGSI1pDJn5kI81J1fYWK5eZRl1zJ5kM
+
+- title: Gaming
   id: trending_gaming
   feedSources:
     - id: inv_trending_gaming
-      title: Trending - Gaming
+      title: Gaming
       apiType: Invidious
       endpoint: trending
+      optional: true
       queryParams:
         type: Gaming
 
-- title: Popular
-  id: popular
+- title: News
+  id: news
   feedSources:
-    - id: inv_popular
-      title: Popular
+    - id: yt_news
+      title: News
       apiType: Invidious
-      endpoint: popular
+      endpoint: yt_browse_mix
+      optional: true
+      queryParams:
+        browseId: UCYfdidRxbB8Qhf0Nx7ioOYw
+        client: tv
+
+- title: Sports
+  id: sports
+  feedSources:
+    - id: yt_sports
+      title: Sports
+      apiType: Invidious
+      endpoint: yt_browse_mix
+      optional: true
+      queryParams:
+        browseId: UCEgdi0XIXXZ-qJOFPf4JSKw
+        client: tv
+
+- title: Movies & trailers
+  id: movies_trailers
+  feedSources:
+    - id: yt_movie_trailers
+      title: Movies & trailers
+      apiType: Invidious
+      endpoint: search
+      optional: true
+      queryParams:
+        q: official trailer
+        type: video
+        date: week
+
+- title: Learning & science
+  id: learning
+  feedSources:
+    - id: yt_learning
+      title: Learning & science
+      apiType: Invidious
+      endpoint: yt_browse_mix
+      optional: true
+      queryParams:
+        browseId: UCtFRv9O2AHqOZjjynzrv-xg
+        client: tv
+
+- title: Podcasts
+  id: podcasts
+  feedSources:
+    - id: yt_podcasts
+      title: Podcasts
+      apiType: Invidious
+      endpoint: search
+      optional: true
+      queryParams:
+        q: podcast full episode
+        type: video
+        date: week
+        duration: long
+
+- title: Fashion & beauty
+  id: fashion_beauty
+  feedSources:
+    - id: yt_fashion_beauty
+      title: Fashion & beauty
+      apiType: Invidious
+      endpoint: yt_browse_mix
+      optional: true
+      queryParams:
+        browseId: UCrpQ4p1Ql_hG8rKXIKM1MOQ
+        client: tv
 
 - title: Playlists
   id: playlists
@@ -50,10 +144,24 @@
       apiType: Invidious
       endpoint: auth_playlists
 
-- title: Watch history
-  id: watch_history
+- title: 360 & VR videos
+  id: vr360
+  defaultEnabled: false
   feedSources:
-    - id: inv_auth_history
-      title: Watch history
+    - id: yt_vr360
+      title: 360 & VR videos
       apiType: Invidious
-      endpoint: watch_history
+      endpoint: yt_browse_mix
+      optional: true
+      queryParams:
+        browseId: UCzuqhhs6NWbgTzMuM09WKDQ
+        client: tv
+
+- title: Popular
+  id: popular
+  defaultEnabled: false
+  feedSources:
+    - id: inv_popular
+      title: Popular
+      apiType: Invidious
+      endpoint: popular

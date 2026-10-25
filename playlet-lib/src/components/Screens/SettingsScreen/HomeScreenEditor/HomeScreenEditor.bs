@@ -108,7 +108,9 @@ function OnValueChange()
         node.id = feed.id
         node.title = Tr(feed.title)
         nodes.push(node)
-        checkedState.push(false)
+        ' YourTube: sections missing from the saved layout show on Home unless defaultEnabled: false
+        ' (HomeScreenUtils.GetFeed), so the editor shows them the same way
+        checkedState.push(feed.defaultEnabled <> false)
     end for
 
     labelCount = content.getChildCount()

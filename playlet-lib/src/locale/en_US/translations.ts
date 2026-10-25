@@ -106,6 +106,42 @@
         <translation>Popular</translation>
     </message>
     <message>
+        <source>Live now</source>
+        <translation>Live now</translation>
+    </message>
+    <message>
+        <source>Music</source>
+        <translation>Music</translation>
+    </message>
+    <message>
+        <source>Gaming</source>
+        <translation>Gaming</translation>
+    </message>
+    <message>
+        <source>News</source>
+        <translation>News</translation>
+    </message>
+    <message>
+        <source>Sports</source>
+        <translation>Sports</translation>
+    </message>
+    <message>
+        <source>Movies &amp; trailers</source>
+        <translation>Movies &amp; trailers</translation>
+    </message>
+    <message>
+        <source>Learning &amp; science</source>
+        <translation>Learning &amp; science</translation>
+    </message>
+    <message>
+        <source>Fashion &amp; beauty</source>
+        <translation>Fashion &amp; beauty</translation>
+    </message>
+    <message>
+        <source>360 &amp; VR videos</source>
+        <translation>360 &amp; VR videos</translation>
+    </message>
+    <message>
         <source>Videos</source>
         <translation>Videos</translation>
     </message>

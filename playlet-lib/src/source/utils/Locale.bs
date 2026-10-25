@@ -51,6 +51,16 @@ namespace Locale
         Releases = "Releases"
         Podcasts = "Podcasts"
         Courses = "Courses"
+        ' YourTube: deep Home rows
+        LiveNow = "Live now"
+        Music = "Music"
+        Gaming = "Gaming"
+        News = "News"
+        Sports = "Sports"
+        MoviesTrailers = "Movies & trailers"
+        LearningScience = "Learning & science"
+        FashionBeauty = "Fashion & beauty"
+        VrVideos = "360 & VR videos"
     end enum
 
     @locale

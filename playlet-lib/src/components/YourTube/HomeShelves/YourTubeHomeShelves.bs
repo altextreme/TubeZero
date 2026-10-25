@@ -1,0 +1,146 @@
+import "pkg:/components/Services/Innertube/BrowseEndpoint.bs"
+import "pkg:/components/Services/Innertube/Parser.bs"
+import "pkg:/source/utils/OptionUtils.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: Innertube browse pages split into one feed per shelf, for a deep Home screen.
+' Used by YourTubeHomeShelvesRouter (runs in the web server task).
+namespace YourTubeHomeShelves
+
+    ' Browses browseId and returns { feeds: [{ title, items, continuation? }] } with one feed per shelf,
+    ' empty shelves dropped. Follows the page's "more shelves" continuation until minShelves is reached
+    ' or maxPages requests were made. options: accessToken, onBehalfOfUser, params, client ("tv"|"web"),
+    ' disableShorts, minShelves, maxPages.
+    function Browse(browseId as string, options = invalid as object) as object
+        clientType = Innertube.ClientType.Tv
+        if OptionUtils.GetOrDefault(options, "client", "tv") = "web"
+            clientType = Innertube.ClientType.Web
+        end if
+        accessToken = OptionUtils.Get(options, "accessToken")
+        disableShorts = OptionUtils.GetOrDefault(options, "disableShorts", false)
+        minShelves = OptionUtils.GetOrDefault(options, "minShelves", 0)
+        maxPages = OptionUtils.GetOrDefault(options, "maxPages", 1)
+
+        requestOptions = {}
+        if options <> invalid
+            requestOptions.Append(options)
+        end if
+        requestOptions.Delete("continuation")
+
+        feeds = []
+        cacheControl = invalid
+        pages = 0
+        while pages < maxPages
+            request = Innertube.CreateBrowseRequest(browseId, clientType, requestOptions)
+            if not StringUtils.IsNullOrEmpty(accessToken)
+                request.Header("Authorization", "Bearer " + accessToken)
+            end if
+
+            response = request.Await()
+            pages += 1
+            if not response.IsSuccess()
+                if feeds.Count() > 0
+                    exit while
+                end if
+                return {
+                    error: response.ErrorMessage()
+                }
+            end if
+            if cacheControl = invalid
+                cacheControl = Innertube.ParseResponseForCacheControl(response)
+            end if
+
+            context = {
+                request: request
+                disableShorts: disableShorts
+                browseId: browseId
+                disableCreatorOnTheRise: true
+                yourTubeSplitShelves: true
+            }
+            pageFeeds = Innertube.ParseResponseDataForFeeds(response.Json(), context)
+            for each feed in pageFeeds
+                if IsArray(feed.items) and feed.items.Count() > 0
+                    feeds.Push(feed)
+                end if
+            end for
+
+            nextPage = ValidString(context.yourTubeSectionContinuation)
+            if nextPage = "" or feeds.Count() >= minShelves
+                exit while
+            end if
+            requestOptions.continuation = nextPage
+        end while
+
+        result = {
+            feeds: feeds
+        }
+        if cacheControl <> invalid
+            result["cache-control"] = cacheControl
+        end if
+        return result
+    end function
+
+    ' Interleaves the shelves' videos (round robin, deduplicated) into one list, so a category row
+    ' shows a bit of every shelf (e.g. News: top stories, live, each topic). Channel tiles and
+    ' untitled items are skipped. Shelves whose title contains one of skipTitles are left out.
+    function MixFeeds(feeds as object, maxItems as integer, skipTitles = invalid as object) as object
+        lists = []
+        for each feed in feeds
+            if not IsArray(feed.items)
+                continue for
+            end if
+            title = LCase(ValidString(feed.title))
+            skip = false
+            if IsArray(skipTitles)
+                for each skipTitle in skipTitles
+                    if title.InStr(LCase(skipTitle)) <> -1
+                        skip = true
+                        exit for
+                    end if
+                end for
+            end if
+            if not skip
+                lists.Push(feed.items)
+            end if
+        end for
+
+        items = []
+        seen = {}
+        index = 0
+        while items.Count() < maxItems
+            added = false
+            for each list in lists
+                if index >= list.Count()
+                    continue for
+                end if
+                added = true
+                item = list[index]
+                if not IsAssociativeArray(item)
+                    continue for
+                end if
+                itemType = ValidString(item["type"])
+                key = ""
+                if itemType = "video"
+                    key = ValidString(item["videoId"])
+                else if itemType = "playlist"
+                    key = ValidString(item["playlistId"])
+                end if
+                if key = "" or seen.DoesExist(key) or StringUtils.IsNullOrEmpty(item["title"])
+                    continue for
+                end if
+                seen[key] = true
+                items.Push(item)
+                if items.Count() >= maxItems
+                    exit for
+                end if
+            end for
+            if not added
+                exit while
+            end if
+            index += 1
+        end while
+        return items
+    end function
+
+end namespace

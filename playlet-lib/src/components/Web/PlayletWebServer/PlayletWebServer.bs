@@ -21,6 +21,7 @@ import "pkg:/components/Web/WebServer/Middleware/CsrfMiddleware.bs"
 import "pkg:/components/Web/WebServer/Middleware/EtagMiddleware.bs"
 import "pkg:/components/Web/WebServer/Middleware/HttpStaticFilesRouter.bs"
 import "pkg:/components/Web/WebServer/WebSockets/WebSocketMiddleware.bs"
+import "pkg:/components/YourTube/HomeShelves/YourTubeHomeShelvesRouter.bs"
 import "pkg:/components/YourTube/Live/YourTubeLiveRouter.bs"
 
 function Init()
@@ -89,6 +90,7 @@ function SetupRoutes(server as object)
     server.UseRouter(new Http.PlayletInvidiousBackendRouter(server))
     server.UseRouter(new Http.InnertubeRouter(server))
     server.UseRouter(new Http.YourTubeLiveRouter(server)) ' YourTube: Live tab phone page + API
+    server.UseRouter(new Http.YourTubeHomeShelvesRouter(server)) ' YourTube: Home shelves (one row per shelf)
 
     etags = new Http.EtagUtils()
     server.UseRouter(new Http.HttpStaticFilesRouter("/", "libpkg:/www", etags, { staticFiles: true, staticCompressed: true }))

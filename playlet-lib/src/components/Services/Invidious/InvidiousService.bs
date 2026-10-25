@@ -303,11 +303,18 @@ namespace Invidious
                         error: ERROR_NOT_AUTHENTICATED
                     }
                 end if
+                ' YourTube: built-in-backend-only routes fall back to a standard endpoint for Invidious accounts
+                if IsString(endpoint.builtInFallback) and auth.serverUrl <> PLAYLET_BUILT_IN_INSTANCE and m.endpoints[endpoint.builtInFallback] <> invalid
+                    endpoint = m.endpoints[endpoint.builtInFallback]
+                end if
                 request = HttpClient.Get(auth.serverUrl + endpoint.url)
                 request.Headers(m.GetAuthenticationHeaders(auth.token))
                 if not StringUtils.IsNullOrEmpty(auth.activeIdentifyToken)
                     request.QueryParam("activeIdentifyToken", auth.activeIdentifyToken)
                 end if
+            else if endpoint.builtInOnly = true
+                ' YourTube: routes only the built-in backend implements
+                request = HttpClient.Get(PLAYLET_BUILT_IN_INSTANCE + endpoint.url)
             else
                 request = HttpClient.Get(m.GetInstance() + endpoint.url)
             end if

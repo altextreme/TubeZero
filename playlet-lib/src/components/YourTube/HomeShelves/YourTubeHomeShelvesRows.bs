@@ -1,0 +1,113 @@
+import "pkg:/components/Services/Invidious/InvidiousToContentNode.bs"
+import "pkg:/components/VideoFeed/FeedLoadState.bs"
+import "pkg:/components/VideoFeed/PaginationType.bs"
+import "pkg:/source/utils/Logging.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: row helpers for the deep Home screen, called from VideoRowListRowContentJob.
+namespace YourTubeHomeShelvesRows
+
+    ' Inserts one row per extra shelf right after anchorRow (e.g. every shelf of the signed-in
+    ' YouTube home after "Recommended"). Each row pages with its own continuation through the
+    ' anchor's endpoint. Returns how many rows were added.
+    function InsertShelfRows(anchorRow as object, shelves as object, anchorSource as object, instance as dynamic) as integer
+        parent = anchorRow.getParent()
+        if parent = invalid or not IsArray(shelves) or shelves.Count() = 0
+            return 0
+        end if
+
+        ' Index of the anchor row among its siblings
+        insertIndex = -1
+        siblingCount = parent.getChildCount()
+        for i = 0 to siblingCount - 1
+            if parent.getChild(i).isSameNode(anchorRow)
+                insertIndex = i + 1
+                exit for
+            end if
+        end for
+        if insertIndex = -1
+            return 0
+        end if
+
+        added = 0
+        for each shelf in shelves
+            if not IsAssociativeArray(shelf) or not IsArray(shelf.items)
+                continue for
+            end if
+
+            itemNodes = []
+            for each item in shelf.items
+                itemNode = InvidiousContent.ToRowCellContentNode(item, instance)
+                if itemNode <> invalid
+                    itemNode.feedSourcesIndex = 0
+                    itemNodes.Push(itemNode)
+                end if
+            end for
+            if itemNodes.Count() = 0
+                continue for
+            end if
+
+            title = ValidString(shelf.title)
+            if title = ""
+                title = anchorRow.title
+            end if
+
+            continuation = ValidString(shelf.continuation)
+            loadState = FeedLoadState.Loaded
+            if continuation <> ""
+                loadState = FeedLoadState.LoadedPage
+            end if
+
+            feedSource = {
+                id: `${anchorSource.id}_shelf_${added + 1}`
+                title: title
+                apiType: anchorSource.apiType
+                endpoint: anchorSource.endpoint
+                state: {
+                    loadState: loadState
+                    continuation: continuation
+                    queryParams: {}
+                    paginationType: PaginationType.Continuation
+                }
+            }
+
+            row = CreateObject("roSGNode", "FeedContentNode")
+            row.title = title
+            row.feedSourcesIndex = 0
+            row.feedSources = [feedSource]
+            row.loadState = loadState
+            row.appendChildren(itemNodes)
+
+            parent.insertChild(row, insertIndex + added)
+            added += 1
+        end for
+
+        LogInfo("Added", added, "home shelf rows after", anchorRow.title)
+        return added
+    end function
+
+    ' Home-style screens (HomeScreen and the screens extending it) drop rows that load empty,
+    ' like the YouTube app does. Other row lists (channel tabs, search) keep their rows.
+    function RemoveRowIfEmpty(rowList as object, row as object) as boolean
+        if row.getChildCount() > 0
+            return false
+        end if
+        screen = rowList.screen
+        if screen = invalid or not screen.hasField("feedFile")
+            return false
+        end if
+        return RemoveRow(row)
+    end function
+
+    function RemoveRow(row as object) as boolean
+        parent = row.getParent()
+        if parent = invalid
+            return false
+        end if
+        LogInfo("Removing home row:", row.title)
+        parent.removeChild(row)
+        return true
+    end function
+
+end namespace

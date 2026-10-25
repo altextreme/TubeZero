@@ -1,6 +1,7 @@
 import "pkg:/components/Dialog/DialogUtils.bs"
 import "pkg:/components/Services/Invidious/InvidiousService.bs"
 import "pkg:/components/Services/Invidious/InvidiousToContentNode.bs"
+import "pkg:/components/YourTube/HomeShelves/YourTubeHomeShelvesRows.bs"
 
 @job("VideoRowListRowContentJob")
 function ExecuteJob() as void
@@ -32,6 +33,7 @@ function ExecuteJob() as void
 
             if feedSourcesIndex >= feedSources.Count()
                 feedContentNode.loadState = FeedLoadState.Loaded
+                YourTubeHomeShelvesRows.RemoveRowIfEmpty(rowList, feedContentNode) ' YourTube
 
                 if not someContentReadySet
                     rowList.someContentReady = false
@@ -46,6 +48,7 @@ function ExecuteJob() as void
                 feedSourcesIndex += 1
                 if feedSourcesIndex >= feedSources.Count()
                     feedContentNode.loadState = FeedLoadState.Loaded
+                    YourTubeHomeShelvesRows.RemoveRowIfEmpty(rowList, feedContentNode) ' YourTube
                     if not someContentReadySet
                         rowList.someContentReady = false
                     end if
@@ -65,6 +68,13 @@ function ExecuteJob() as void
             })
 
             if not response.success
+                ' YourTube: optional rows (Home categories) disappear quietly instead of showing an error dialog
+                if feedSource.optional = true and response.cancelled <> true
+                    LogWarnNoTelemetry(feedSource.id, "optional feedSource failed:", response.error)
+                    YourTubeHomeShelvesRows.RemoveRow(feedContentNode)
+                    JobSuccess()
+                    return
+                end if
                 if RemoveSingleFailedRow(response.error, feedSource, feedSources, feedContentNode)
                     JobSuccess()
                     return
@@ -106,6 +116,11 @@ function ExecuteJob() as void
             else
                 feedContentNode.appendChildren(itemNodes)
                 addedItemCount = itemNodes.Count()
+            end if
+
+            ' YourTube: the signed-in home returns its other shelves with the first page; one row each
+            if not hadContinuation and IsArray(response.result.shelves)
+                YourTubeHomeShelvesRows.InsertShelfRows(feedContentNode, response.result.shelves, feedSource, instance)
             end if
 
             hasContinuation = not StringUtils.IsNullOrEmpty(response.result.continuation)
