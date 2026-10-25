@@ -45,8 +45,11 @@ function OnNodeReady()
     SetNavigation(m.linkWithTvButton, RemoteKeys.Up, m.linkWithWifiButton)
     SetNavigation(m.linkWithWifiButton, RemoteKeys.Up, m.webAppButton)
 
-    SetNavigation(invalid, RemoteKeys.Back, m.navBar)
-    SetNavigation(invalid, RemoteKeys.Left, m.navBar)
+    ' YourTube: when pushed from Settings, Back bubbles up to YourTubeStandaloneScreen, which closes it
+    if not m.top.standalone
+        SetNavigation(invalid, RemoteKeys.Back, m.navBar)
+        SetNavigation(invalid, RemoteKeys.Left, m.navBar)
+    end if
 
     address = m.webserver@.GetServerAddress()
     isValidAddress = not StringUtils.IsNullOrEmpty(address)

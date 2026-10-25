@@ -26,6 +26,8 @@ while read -r symbol name size color; do
 done <<'LIST'
 home home 48
 home_fill1 home_fill 48
+slideshow shorts 48
+slideshow_fill1 shorts_fill 48
 search search 48
 search_fill1 search_fill 48
 subscriptions subscriptions 48

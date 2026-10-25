@@ -1,2 +1,2 @@
-<!-- YourTube: "You" nav screen. Home's screen (top bar + rows) with its own feeds (set in Init). -->
+<!-- YourTube: "You" nav screen. Home's screen (top bar + rows) with its own feeds (set in Init), followed by the bookmark groups. -->
 <component name="YourTubeYouScreen" extends="HomeScreen" />

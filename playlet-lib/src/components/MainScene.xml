@@ -32,6 +32,10 @@
                                 icon="pkg:/images/icons/home.png" />
                             <!-- YourTube: YouTube TV sections -->
                             <NavBarItemContent
+                                screen="YourTubeShortsScreen"
+                                text="Shorts"
+                                icon="pkg:/images/icons/ms/shorts.png" />
+                            <NavBarItemContent
                                 screen="YourTubeSubscriptionsScreen"
                                 text="Subscriptions"
                                 icon="pkg:/images/icons/ms/subscriptions.png" />
@@ -43,22 +47,12 @@
                                 screen="YourTubeLiveScreen"
                                 text="Live"
                                 icon="pkg:/images/icons/ms/live_tv.png" />
-                            <NavBarItemContent
-                                screen="BookmarksScreen"
-                                text="Bookmarks"
-                                icon="pkg:/images/icons/star.png" />
+                            <!-- YourTube: Bookmarks moved into You (rows after history/playlists);
+                                 Remote and Info moved into Settings > More (YourTubeOpenScreenControl) -->
                             <NavBarItemContent
                                 screen="SettingsScreen"
                                 text="Settings"
                                 icon="pkg:/images/icons/settings.png" />
-                            <NavBarItemContent
-                                screen="RemoteScreen"
-                                text="Remote"
-                                icon="pkg:/images/icons/phone.png" />
-                            <NavBarItemContent
-                                screen="AppInfoScreen"
-                                text="Info"
-                                icon="pkg:/images/icons/info.png" />
                         </ContentNode>
                     </NavBar>
                 </AppRoot>

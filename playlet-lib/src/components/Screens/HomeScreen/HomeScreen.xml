@@ -11,6 +11,10 @@
         <field id="invidious" type="node" bind="/Invidious" />
         <field id="preferences" type="node" bind="/Preferences" />
         <field id="feedFile" type="string" value="libpkg:/config/default_home_layout.yaml" />
+        <!-- YourTube: the You screen sets includeBookmarks so bookmark groups follow its own rows (Bookmarks left the rail).
+             Bound here because a component that extends HomeScreen can't add its own AutoBind fields. -->
+        <field id="includeBookmarks" type="boolean" value="false" />
+        <field id="bookmarksService" type="node" bind="/BookmarksService" />
     </interface>
     <children>
         <!-- YourTube: YouTube TV top bar; rows start below it (were at y=50). First shelf uses big 480x270 cards. -->

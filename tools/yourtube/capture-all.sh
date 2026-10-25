@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # YourTube: screenshots every interactive state over ECP (keys) + tools/screenshot.js (needs .env).
 # Each section relaunches the app so it starts from a known state. Output: out/screens/all/<section>-<n>-<name>.jpg
-# Usage: [OUT=out/screens/other] tools/yourtube/capture-all.sh [section...]   (sections: home nav search empty settings live profile player comments chat related channel filters menu exit)
+# Usage: [OUT=out/screens/other] tools/yourtube/capture-all.sh [section...]   (sections: home nav search empty shorts settings live profile player comments chat related channel filters menu exit)
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 TV="$(sed -n 's/^ROKU_DEV_TARGET=//p' .env)"; TV="${TV:-192.168.1.164}"
@@ -32,14 +32,13 @@ nav() {
     shot nav-01-home
     key Up; shot nav-02-search
     key Up; shot nav-03-profile
-    keys Down Down Down; shot nav-04-subscriptions
-    key Down; shot nav-05-you
-    key Down; shot nav-06-live
-    key Down; shot nav-07-bookmarks
+    # rail: Profile 0, Search 1, Home 2, Shorts 3, Subscriptions 4, You 5, Live 6, Settings 7
+    keys Down Down Down; shot nav-04-shorts
+    key Down; shot nav-05-subscriptions
+    key Down; shot nav-06-you
+    key Down; shot nav-07-live
     key Down; shot nav-08-settings
-    key Down; shot nav-09-remote
-    key Down; shot nav-10-info
-    key Right; shot nav-11-collapsed-current-info
+    key Right; shot nav-09-collapsed-current-settings
 }
 
 search() {
@@ -58,26 +57,39 @@ search() {
 
 empty() {
     echo "empty"; fresh; nav_open
-    key Down 2; shot empty-01-subscriptions-nav 3
+    key Down; key Down 2; shot empty-01-subscriptions-nav 3
     key Right; shot empty-02-subscriptions-focused
     key Left; key Down 2; shot empty-03-you-nav 3
     key Right; shot empty-04-you-focused
 }
 
+shorts() {
+    echo "shorts"; fresh; nav_open
+    key Down; shot shorts-01-nav 3
+    key Right; shot shorts-02-focused
+}
+
 settings() {
     echo "settings"; fresh; nav_open
-    keys Down Down Down Down Down; shot settings-01-nav 2
+    keys Down Down Down Down Down; shot settings-01-nav 2   # Home + 5 = Settings (index 7)
     key Right; shot settings-02-category
     key Right; shot settings-03-control-1
     key Down; shot settings-04-control-2
     key Down; shot settings-05-control-3
     key Down; shot settings-06-control-4
     keys Left Down; shot settings-07-category-2
+    # Settings > More (last category): Phone remote, About
+    local i; for i in $(seq 1 10); do key Down 0.5; done; shot settings-08-more-category 1.5
+    key Right; shot settings-09-phone-remote-button
+    key Select 2; shot settings-10-phone-remote-page 2
+    key Back 1.5; key Down; shot settings-11-about-button
+    key Select 2; shot settings-12-about-page 2
+    key Back 1.5; shot settings-13-back-in-settings
 }
 
 live() {
     echo "live"; fresh; nav_open
-    keys Down Down Down; shot live-01-nav 2
+    keys Down Down Down Down; shot live-01-nav 2
     key Right; shot live-02-list
 }
 
@@ -155,7 +167,7 @@ exit_dialog() {
 }
 
 sections=("$@")
-[ ${#sections[@]} -eq 0 ] && sections=(home nav search empty settings live profile player comments chat related channel filters menu exit)
+[ ${#sections[@]} -eq 0 ] && sections=(home nav search empty shorts settings live profile player comments chat related channel filters menu exit)
 for s in "${sections[@]}"; do
     case "$s" in exit) exit_dialog ;; *) "$s" ;; esac
 done

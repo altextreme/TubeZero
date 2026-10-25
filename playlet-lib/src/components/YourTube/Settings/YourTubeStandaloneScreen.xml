@@ -1,0 +1,21 @@
+<!--
+    YourTube: full-screen page that hosts a former nav-rail screen (RemoteScreen, AppInfoScreen) when it is opened
+    from Settings > More. Opaque backdrop + heading; Back closes it (PopScreen) and focus returns to Settings.
+    Set `heading`, then `screenName` (after the page is pushed, so the hosted screen can bind to the scene).
+-->
+<component name="YourTubeStandaloneScreen" extends="Group" includes="Focus">
+    <interface>
+        <field id="heading" type="string" alias="HeadingLabel.text" />
+        <field id="screenName" type="string" onChange="OnScreenNameChange" />
+    </interface>
+    <children>
+        <Rectangle width="1280" height="720" color="0x0F0F0FFF" />
+        <Label
+            id="HeadingLabel"
+            color="0xF1F1F1FF"
+            translation="[104,40]">
+            <Font role="font" uri="font:BoldSystemFontFile" size="30" />
+        </Label>
+        <Group id="ScreenSlot" />
+    </children>
+</component>

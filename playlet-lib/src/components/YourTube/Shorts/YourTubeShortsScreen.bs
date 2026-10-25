@@ -1,0 +1,22 @@
+import "pkg:/components/Navigation/Navigation.bs"
+import "pkg:/source/utils/RemoteKeys.bs"
+
+' YourTube: placeholder Shorts screen (see the XML). Back/Left return to the nav rail like the other screens.
+function Init()
+    m.top.focusable = true
+end function
+
+function OnNodeReady()
+    SetNavigation(invalid, RemoteKeys.Back, m.navBar)
+    SetNavigation(invalid, RemoteKeys.Left, m.navBar)
+end function
+
+function OnFocusChange() as void
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if NavigationKeyHandler(key, press).handled
+        return true
+    end if
+    return false
+end function

@@ -1,0 +1,20 @@
+<!--
+    YourTube: Shorts nav screen. PLACEHOLDER so the rail item has a screen to show; the real Shorts screen
+    replaces this component (same name, same navBar binding).
+-->
+<component name="YourTubeShortsScreen" extends="Group" includes="AutoBind,Focus">
+    <interface>
+        <field id="navBar" type="node" bind="/NavBar" />
+    </interface>
+    <children>
+        <Label
+            text="Shorts"
+            width="1280"
+            height="720"
+            horizAlign="center"
+            vertAlign="center"
+            color="0xF1F1F1FF">
+            <Font role="font" uri="font:BoldSystemFontFile" size="30" />
+        </Label>
+    </children>
+</component>

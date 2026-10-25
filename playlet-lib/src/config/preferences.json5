@@ -344,4 +344,27 @@
       },
     ],
   },
+  // YourTube: Remote and Info left the nav rail; they open as full pages from here (YourTubeOpenScreenControl)
+  {
+    displayText: "More",
+    key: "more",
+    description: "Phone remote and app info",
+    visibility: "tv",
+    children: [
+      {
+        displayText: "Phone remote",
+        key: "more.phone_remote",
+        description: "Control TubeZero from your phone or cast from the YouTube app",
+        visibility: "tv",
+        rokuComponent: "YourTubeOpenScreenControl",
+      },
+      {
+        displayText: "About TubeZero",
+        key: "more.about",
+        description: "Version info and credits",
+        visibility: "tv",
+        rokuComponent: "YourTubeOpenScreenControl",
+      },
+    ],
+  },
 ]

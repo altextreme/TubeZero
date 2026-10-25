@@ -4,4 +4,5 @@ function Init()
     m.top.emptySignedOutTitle = "Sign in to see your history and playlists"
     m.top.emptySignedOutMessage = "Your watch history, Watch later and playlists show up here."
     m.top.feedFile = "libpkg:/config/yourtube/you_layout.yaml"
+    m.top.includeBookmarks = true ' bookmark groups follow history and playlists (Bookmarks left the nav rail)
 end function

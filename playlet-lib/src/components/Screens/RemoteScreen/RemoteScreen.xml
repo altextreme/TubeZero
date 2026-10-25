@@ -6,6 +6,8 @@
         <field id="jobQueue" type="node" bind="/JobQueue" />
         <field id="url" type="string" onChange="OnUrlSet" />
         <field id="qrCodeUrl" type="string" onChange="OnUrlSet" />
+        <!-- YourTube: true when opened from Settings > More (pushed, no nav rail): Back/Left don't go to the rail -->
+        <field id="standalone" type="boolean" value="false" />
     </interface>
     <children>
         <Group id="noInternet" visible="false">
