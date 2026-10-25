@@ -3,6 +3,7 @@
 import "pkg:/components/YourTube/ChannelSearch/YourTubeChannelSearch.bs"
 import "pkg:/components/YourTube/FeedFilters/YourTubeFeedFilters.bs"
 import "pkg:/components/YourTube/HomeChips/YourTubeHomeChips.bs"
+import "pkg:/components/YourTube/LiveNow/YourTubeLiveNow.bs"
 import "pkg:/source/services/HttpClient.bs"
 import "pkg:/source/utils/StringUtils.bs"
 
@@ -180,6 +181,32 @@ namespace Tests
             m.assertEqual(YourTubeFeedFilters.ParseDuration("0:45"), 45)
             m.assertEqual(YourTubeFeedFilters.ParseDuration(""), 0)
             m.assertEqual(YourTubeFeedFilters.ParseDuration("LIVE"), 0)
+        end function
+
+        @describe("YourTubeLiveNow.PickLive")
+
+        @it("keeps live videos once each, in feed order, up to the limit")
+        function _()
+            items = [
+                { type: "video", videoId: "aaaaaaaaaaa", liveNow: true }
+                { type: "video", videoId: "bbbbbbbbbbb", liveNow: false }
+                { type: "video", videoId: "ccccccccccc" }
+                { type: "video", videoId: "aaaaaaaaaaa", liveNow: true }
+                { type: "video", videoId: "ddddddddddd", liveNow: true }
+                { type: "video", videoId: "eeeeeeeeeee", liveNow: true }
+                "not an item"
+            ]
+            live = YourTubeLiveNow.PickLive(items, 2)
+            m.assertEqual(live.Count(), 2)
+            m.assertEqual(live[0].videoId, "aaaaaaaaaaa")
+            m.assertEqual(live[1].videoId, "ddddddddddd")
+            m.assertEqual(YourTubeLiveNow.PickLive(items, 20).Count(), 3)
+        end function
+
+        @it("returns nothing without live items")
+        function _()
+            m.assertEqual(YourTubeLiveNow.PickLive([{ type: "video", videoId: "x" }], 20).Count(), 0)
+            m.assertEqual(YourTubeLiveNow.PickLive(invalid, 20).Count(), 0)
         end function
 
     end class

@@ -73,7 +73,10 @@ function OnNodeReady()
     m.profilesService.ObserveFieldScoped("currentProfileChanged", FuncName(OnProfileChanged))
 
     m.videoGrid@.BindNode()
-    m.videoGrid.feeds = HomeScreenUtils.GetFeed(m.top.feedFile, m.preferences)
+    ' feeds[0]: the subscriptions feed (the grid); feeds[1]: live now (row above the grid, Live now chip)
+    m.layoutFeeds = HomeScreenUtils.GetFeed(m.top.feedFile, m.preferences)
+    m.showingLiveFeed = false
+    ShowSubscriptionsFeed()
     LoadChannels()
 end function
 
@@ -234,8 +237,10 @@ function HasUsableFocus() as boolean
 end function
 
 function OnProfileChanged() as void
-    ' The grid reloads itself (VideoRowList watches the profile too); filters start over
-    SetFilter(0)
+    ' Filters start over; the subscriptions feed (with or without the live row, by account type) reloads
+    m.filterBar.activeIndex = 0
+    m.videoGrid.filter = ""
+    ShowSubscriptionsFeed()
     LoadChannels()
 end function
 
@@ -361,13 +366,57 @@ function OnFilterSelected() as void
     SetFilter(m.filterBar.selected)
 end function
 
+' "Live now" asks the server for the live streams (YouTube accounts); the other chips filter the loaded feed.
 function SetFilter(index as integer) as void
     if index < 0 or index >= m.filterIds.Count()
         return
     end if
     m.filterBar.activeIndex = index
-    m.videoGrid.filter = m.filterIds[index]
+    filter = m.filterIds[index]
+    liveFeed = GetLayoutFeed(1)
+    if filter = "live" and liveFeed <> invalid and IsYouTubeProfile()
+        m.showingLiveFeed = true
+        m.videoGrid.leadFeed = {}
+        m.videoGrid.filter = ""
+        m.videoGrid.feeds = [liveFeed]
+    else if m.showingLiveFeed
+        m.videoGrid.filter = filter
+        ShowSubscriptionsFeed()
+    else
+        m.videoGrid.filter = filter
+    end if
     UpdateView()
+end function
+
+function ShowSubscriptionsFeed() as void
+    m.showingLiveFeed = false
+    feed = GetLayoutFeed(0)
+    liveFeed = GetLayoutFeed(1)
+    if liveFeed <> invalid and IsYouTubeProfile()
+        m.videoGrid.leadFeed = liveFeed
+    else
+        m.videoGrid.leadFeed = {}
+    end if
+    if feed = invalid
+        m.videoGrid.feeds = []
+    else
+        m.videoGrid.feeds = [feed]
+    end if
+end function
+
+function GetLayoutFeed(index as integer) as dynamic
+    if not IsArray(m.layoutFeeds) or index >= m.layoutFeeds.Count()
+        return invalid
+    end if
+    return m.layoutFeeds[index]
+end function
+
+function IsYouTubeProfile() as boolean
+    profile = invalid
+    if m.profilesService <> invalid
+        profile = m.profilesService.currentProfile
+    end if
+    return profile <> invalid and profile.type = "youtube"
 end function
 
 function GetContextMenuOptionsForItem(_rowItem as object) as object

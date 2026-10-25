@@ -7,3 +7,13 @@
       title: Subscriptions
       apiType: Invidious
       endpoint: auth_feed
+
+# Live now from your subscriptions: the row above the grid, and the "Live now" chip's source
+- title: Live now
+  id: yt_subscriptions_live_row
+  feedSources:
+    - id: yt_subscriptions_live
+      title: Live now
+      apiType: Invidious
+      endpoint: yt_subscriptions_live
+      optional: true

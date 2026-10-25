@@ -16,5 +16,8 @@
         <field id="feedNode" type="node" />
         <!-- Client-side filter of the loaded cards (YourTubeFeedFilters ids: "", today, unwatched, live, videos, shorts) -->
         <field id="filter" type="string" onChange="OnFilterChange" />
+        <!-- Optional titled row above the grid (Subscriptions: "Live now"), loaded with the feed and shown only
+             when it has cards and no filter is on. A feed like feeds[0]; read when the feeds load. -->
+        <field id="leadFeed" type="assocarray" />
     </interface>
 </component>

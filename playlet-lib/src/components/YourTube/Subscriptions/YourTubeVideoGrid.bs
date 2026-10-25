@@ -10,6 +10,8 @@ const GRID_LOAD_MORE_ROWS = 2
 const GRID_PLACEHOLDER_ROWS = 2
 ' With a filter on, stop paging in after this many pages in a row added no matching card
 const GRID_FILTER_MAX_EMPTY_PAGES = 4
+' Height of the lead row (its title + cards)
+const GRID_LEAD_ROW_HEIGHT = 330
 
 function Init()
     m.feedNode = invalid
@@ -17,6 +19,9 @@ function Init()
     ' Every card loaded so far, in order; the rows show the ones matching the filter
     m.allItems = []
     m.emptyFilterPages = 0
+    m.leadNode = invalid
+    m.leadJob = invalid
+    m.gridRowHeights = invalid
 end function
 
 ' Overrides VideoRowList.InitContent (runs on feeds change, Refresh and profile change).
@@ -28,6 +33,9 @@ function InitContent() as void
     m.top.videoCount = 0
     m.allItems = []
     m.emptyFilterPages = 0
+    m.leadNode = invalid
+    m.leadJob = invalid
+    SetLeadRowShown(false)
 
     root = CreateRoot()
 
@@ -63,6 +71,89 @@ function InitContent() as void
     m.top.feedState = "loading"
     m.top.content = root
     LoadNextPage()
+    LoadLeadRow()
+end function
+
+' YourTube: the lead row ("Live now") loads once with the feed through the same row job, then goes on top
+' of the grid if it has cards.
+function LoadLeadRow() as void
+    leadFeed = m.top.leadFeed
+    if not IsAssociativeArray(leadFeed) or not IsArray(leadFeed.feedSources) or leadFeed.feedSources.Count() = 0
+        return
+    end if
+    leadNode = CreateObject("roSGNode", "FeedContentNode")
+    leadNode.title = ValidString(leadFeed.title)
+    leadNode.feedSourcesIndex = 0
+    leadNode.loadState = FeedLoadState.None
+    feedSources = leadFeed.feedSources
+    for i = 0 to feedSources.Count() - 1
+        feedSources[i].state = { loadState: FeedLoadState.None }
+    end for
+    leadNode.feedSources = feedSources
+    m.leadNode = leadNode
+
+    leadNode.loadState = FeedLoadState.Loading
+    input = {
+        rowList: m.top
+        feedContentNode: leadNode
+        invidious: m.top.invidious
+    }
+    callback = JobSystem.CreateCallback(OnLeadRowDone)
+    m.leadJob = callback
+    m.pendingLoadJobs[callback.id] = { callback: callback, content: leadNode }
+    JobSystem.QueueJob(m.top.jobQueue, Jobs.VideoRowListRowContentJob, input, callback)
+end function
+
+function OnLeadRowDone(event as object) as void
+    callback = event.getRoSGNode()
+    JobSystem.UnobserveCallback(callback)
+    m.pendingLoadJobs.Delete(callback.id)
+    if m.leadJob = invalid or not callback.isSameNode(m.leadJob)
+        return
+    end if
+    m.leadJob = invalid
+    if event.getInfo().cancel = true or m.leadNode = invalid
+        return
+    end if
+    ' The lead row is complete with its first page (no paging along it)
+    m.leadNode.loadState = FeedLoadState.Loaded
+    PlaceLeadRow(m.top.content)
+end function
+
+' Puts the loaded lead row first in root when it has cards and no filter is on.
+function PlaceLeadRow(root as object) as void
+    leadNode = m.leadNode
+    show = root <> invalid and leadNode <> invalid and leadNode.getChildCount() > 0 and ValidString(m.top.filter) = ""
+    if show
+        first = root.getChild(0)
+        if first = invalid or not first.isSameNode(leadNode)
+            root.insertChild(leadNode, 0)
+        end if
+    end if
+    SetLeadRowShown(show)
+end function
+
+' Titled, taller first row while the lead row shows; plain rows otherwise.
+function SetLeadRowShown(shown as boolean) as void
+    if m.gridRowHeights = invalid
+        m.gridRowHeights = m.top.rowHeights
+    end if
+    gridRowHeight = 290
+    if IsArray(m.gridRowHeights) and m.gridRowHeights.Count() > 0
+        gridRowHeight = m.gridRowHeights[0]
+    end if
+    if shown
+        m.top.rowLabelOffset = [[90, 0]]
+        m.top.showRowLabel = [true, false]
+        m.top.rowHeights = [GRID_LEAD_ROW_HEIGHT, gridRowHeight]
+    else
+        m.top.showRowLabel = [false]
+        m.top.rowHeights = [gridRowHeight]
+    end if
+end function
+
+function IsLeadRow(row as dynamic) as boolean
+    return row <> invalid and m.leadNode <> invalid and row.isSameNode(m.leadNode)
 end function
 
 ' Overrides VideoRowList.LoadRowsIfNeeded: page in more when focus nears the last rows.
@@ -180,6 +271,7 @@ function OnFilterChange() as void
     root = CreateRoot()
     m.top.content = root
     PlaceItems(root, m.allItems)
+    PlaceLeadRow(root)
     if m.feedNode.loadState = FeedLoadState.Loading
         AppendLoadingRow(root)
     end if
@@ -204,6 +296,9 @@ function PlaceItems(root as object, items as object) as void
     rowCount = root.getChildCount()
     if rowCount > 0
         lastRow = root.getChild(rowCount - 1)
+    end if
+    if IsLeadRow(lastRow)
+        lastRow = invalid
     end if
     added = 0
     for each item in items

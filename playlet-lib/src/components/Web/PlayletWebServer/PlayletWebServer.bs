@@ -24,6 +24,7 @@ import "pkg:/components/Web/WebServer/WebSockets/WebSocketMiddleware.bs"
 import "pkg:/components/YourTube/HomeShelves/YourTubeHomeShelvesRouter.bs"
 import "pkg:/components/YourTube/Library/YourTubeLibraryRouter.bs"
 import "pkg:/components/YourTube/ChannelSearch/YourTubeChannelSearchRouter.bs" ' YourTube
+import "pkg:/components/YourTube/LiveNow/YourTubeLiveNowRouter.bs" ' YourTube
 import "pkg:/components/YourTube/Live/YourTubeLiveRouter.bs"
 import "pkg:/components/YourTube/Shorts/YourTubeShortsRouter.bs"
 import "pkg:/components/YourTube/Pairing/YourTubePairingRouter.bs"
@@ -101,6 +102,7 @@ function SetupRoutes(server as object)
     server.UseRouter(new Http.YourTubeShortsRouter(server)) ' YourTube: Shorts diagnostics
     server.UseRouter(new Http.YourTubeLibraryRouter(server)) ' YourTube: You screen library rows, history search, library diagnostics
     server.UseRouter(new Http.YourTubeChannelSearchRouter(server)) ' YourTube: search inside a channel
+    server.UseRouter(new Http.YourTubeLiveNowRouter(server)) ' YourTube: live now from your subscriptions
 
     etags = new Http.EtagUtils()
     server.UseRouter(new Http.HttpStaticFilesRouter("/", "libpkg:/www", etags, { staticFiles: true, staticCompressed: true }))

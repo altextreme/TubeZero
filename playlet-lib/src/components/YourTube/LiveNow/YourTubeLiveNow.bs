@@ -1,0 +1,76 @@
+import "pkg:/components/Services/Innertube/InnertubeService.bs"
+import "pkg:/source/utils/OptionUtils.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+' YourTube: "Live now from your subscriptions" (top of Home and the Subscriptions screen). The subscriptions
+' feed (FEsubscriptions, TV client) marks streams that are live (thumbnail overlay style LIVE / LIVE badge,
+' parsed into liveNow); this pages through the newest part of the feed and keeps those.
+namespace YourTubeLiveNow
+
+    const MAX_PAGES = 3
+    const MAX_ITEMS = 20
+
+    ' Returns { items } (live videos, newest first) or { error }. options: accessToken, onBehalfOfUser,
+    ' cancellation, maxPages.
+    function Fetch(options as object) as object
+        maxPages = OptionUtils.GetOrDefault(options, "maxPages", MAX_PAGES)
+        requestOptions = {}
+        requestOptions.Append(options)
+        requestOptions.Delete("continuation")
+        requestOptions.disableShorts = true
+
+        items = []
+        pages = 0
+        while pages < maxPages
+            result = InnertubeService.GetSubscriptions(requestOptions)
+            pages += 1
+            if result.error <> invalid
+                if pages = 1
+                    return result
+                end if
+                exit while
+            end if
+            continuation = ""
+            for each feed in ValidArray(result.feeds)
+                items.Append(ValidArray(feed.items))
+                if continuation = "" and not StringUtils.IsNullOrEmpty(feed.continuation)
+                    continuation = feed.continuation
+                end if
+            end for
+            if continuation = ""
+                exit while
+            end if
+            requestOptions.continuation = continuation
+        end while
+
+        return {
+            items: PickLive(items, MAX_ITEMS)
+        }
+    end function
+
+    ' The live videos among feed items (parser AAs), once each, in feed order.
+    function PickLive(items as object, maxItems as integer) as object
+        live = []
+        seen = {}
+        if not IsArray(items)
+            return live
+        end if
+        for each item in items
+            if not IsAssociativeArray(item) or not ValidBool(item.liveNow)
+                continue for
+            end if
+            videoId = ValidString(item.videoId)
+            if videoId = "" or seen.DoesExist(videoId)
+                continue for
+            end if
+            seen[videoId] = true
+            live.Push(item)
+            if live.Count() >= maxItems
+                exit for
+            end if
+        end for
+        return live
+    end function
+
+end namespace

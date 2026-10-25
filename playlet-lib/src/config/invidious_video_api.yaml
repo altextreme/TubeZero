@@ -249,3 +249,12 @@ yt_channel_search:
   builtInOnly: true
   paginationType: Continuation
   cacheSeconds: 300 # 5 minutes
+
+# YourTube: "Live now from your subscriptions" (top of Home and Subscriptions). Built-in backend
+# (YourTubeLiveNowRouter): the live streams in the newest pages of the YouTube subscriptions feed.
+# Invidious-account profiles don't have it; the rows using it are optional and disappear.
+yt_subscriptions_live:
+  title: Live now
+  url: /api/v1/yourtube/subscriptions-live
+  authenticated: true
+  cacheSeconds: 120 # 2 minutes

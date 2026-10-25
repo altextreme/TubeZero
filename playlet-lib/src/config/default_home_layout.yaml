@@ -3,6 +3,16 @@
 # "Recommended" expands into one row per shelf of the signed-in YouTube home.
 # optional: true  = the row disappears quietly if its source fails (no error dialog).
 # defaultEnabled: false = listed in Settings > Edit home screen but off until the user turns it on.
+# "Live now from your subscriptions" disappears when none of your channels is live (or signed out).
+- title: Live now from your subscriptions
+  id: subscriptions_live
+  feedSources:
+    - id: yt_subscriptions_live
+      title: Live now
+      apiType: Invidious
+      endpoint: yt_subscriptions_live
+      optional: true
+
 - title: Recommended
   id: recommended
   feedSources:

@@ -1,0 +1,49 @@
+import "pkg:/components/Web/WebServer/Http/HttpRouter.bs"
+import "pkg:/components/YourTube/LiveNow/YourTubeLiveNow.bs"
+import "pkg:/source/utils/StringUtils.bs"
+
+namespace Http
+
+    ' YourTube: built-in backend route for "Live now from your subscriptions".
+    '   GET .../yourtube/subscriptions-live  (Authorization: Bearer)  ->  { items }
+    class YourTubeLiveNowRouter extends HttpRouter
+
+        function new(_server as object)
+            super()
+        end function
+
+        @get("/playlet-invidious-backend/api/v1/yourtube/subscriptions-live")
+        function GetSubscriptionsLive(context as object) as boolean
+            request = context.request
+            response = context.response
+
+            accessToken = request.headers["authorization"]
+            if StringUtils.IsNullOrEmpty(accessToken) or not accessToken.StartsWith("Bearer ")
+                response.Json({
+                    "error": "Missing or invalid 'Authorization' header. Please login again."
+                })
+                response.http_code = 403
+                return true
+            end if
+
+            options = {
+                "accessToken": accessToken.Mid("Bearer ".Len())
+            }
+            activeIdentifyToken = request.query.activeIdentifyToken
+            if not StringUtils.IsNullOrEmpty(activeIdentifyToken)
+                options.onBehalfOfUser = activeIdentifyToken
+            end if
+
+            result = YourTubeLiveNow.Fetch(options)
+            if result.error <> invalid
+                response.Json(result)
+                response.http_code = 500
+                return true
+            end if
+            response.Json(result)
+            return true
+        end function
+
+    end class
+
+end namespace
